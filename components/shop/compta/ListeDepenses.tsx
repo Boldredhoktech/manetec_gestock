@@ -4,7 +4,7 @@ import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 interface Depense {
     id: string; public_id: string; libelle: string
     montant: number; moyen_paiement: string; date_depense: string
-    expense_categories: { nom: string } | null
+    expense_categories: { nom: string } | { nom: string }[] | null
 }
 
 interface Props { depenses: Depense[] }
@@ -39,7 +39,10 @@ export default function ListeDepenses({ depenses }: Props) {
                                 <p className="text-xs font-mono text-muted-foreground mt-0.5">{d.public_id}</p>
                             </td>
                             <td className="px-4 py-3 text-xs text-muted-foreground">
-                                {d.expense_categories?.nom ?? '—'}
+                                {(Array.isArray(d.expense_categories)
+                                        ? d.expense_categories[0]?.nom
+                                        : d.expense_categories?.nom
+                                ) ?? '—'}
                             </td>
                             <td className="px-4 py-3 text-xs text-muted-foreground">
                                 {MOYENS_PAIEMENT.find(m => m.code === d.moyen_paiement)?.label ?? d.moyen_paiement}

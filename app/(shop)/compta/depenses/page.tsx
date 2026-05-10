@@ -1,3 +1,5 @@
+// app/(shop)/compta/depenses/page.tsx
+
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
