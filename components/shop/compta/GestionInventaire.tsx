@@ -22,7 +22,7 @@ interface InvItem {
     products: {
         id: string; nom: string; unite: string; prix_achat: number
         categories: { nom: string } | { nom: string }[] | null
-    } | null
+    } | { id: string; nom: string; unite: string; prix_achat: number; categories: { nom: string } | { nom: string }[] | null }[] | null
 }
 
 interface Inventaire {
@@ -81,9 +81,9 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
         const pertes      = items.filter(i => (i.ecart ?? 0) < 0)
         const gains       = items.filter(i => (i.ecart ?? 0) > 0)
         const valPertes   = pertes.reduce((acc, i) =>
-            acc + Math.abs(i.ecart ?? 0) * (i.products?.prix_achat ?? 0), 0)
+            acc + Math.abs(i.ecart ?? 0) * ((Array.isArray(i.products) ? i.products[0] : i.products)?.prix_achat ?? 0), 0)
         const valGains    = gains.reduce((acc, i) =>
-            acc + Math.abs(i.ecart ?? 0) * (i.products?.prix_achat ?? 0), 0)
+            acc + Math.abs(i.ecart ?? 0) * ((Array.isArray(i.products) ? i.products[0] : i.products)?.prix_achat ?? 0), 0)
         return { total, comptes, avecEcart, pertes: pertes.length, gains: gains.length, valPertes, valGains }
     }, [inventaireEnCours, quantites])
 
@@ -93,9 +93,11 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
         return inventaireEnCours.inventory_items
             .filter(item => {
                 if (!item.products) return false
-                const matchRecherche = item.products.nom
+                const prod = Array.isArray(item.products) ? item.products[0] : item.products
+                if (!prod) return false
+                const matchRecherche = prod.nom
                         .toLowerCase().includes(recherche.toLowerCase()) ||
-                    (Array.isArray(item.products.categories) ? item.products.categories[0]?.nom : item.products.categories?.nom ?? '')
+                    (Array.isArray(prod.categories) ? prod.categories[0]?.nom : prod.categories?.nom ?? '')
                         .toLowerCase().includes(recherche.toLowerCase())
 
                 const qteReelle = item.quantite_reelle !== null
@@ -119,7 +121,9 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                 const bCompte = b.quantite_reelle !== null || quantites[b.id] !== undefined
                 if (!aCompte && bCompte) return -1
                 if (aCompte && !bCompte) return 1
-                return a.products!.nom.localeCompare(b.products!.nom)
+                return (Array.isArray(a.products) ? a.products[0] : a.products)!.nom.localeCompare(
+                    (Array.isArray(b.products) ? b.products[0] : b.products)!.nom
+                )
             })
     }, [inventaireEnCours, filtre, recherche, quantites])
 
@@ -425,7 +429,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                         ) : (
                             <div className="divide-y divide-gray-50">
                                 {articlesFiltres.map((item, i) => {
-                                    const p             = item.products!
+                                    const p             = (Array.isArray(item.products) ? item.products[0] : item.products)!
                                     const valeurSaisie  = quantites[item.id]
                                     const qteSaisie     = valeurSaisie !== undefined ? parseFloat(valeurSaisie) : null
                                     const qteReelle     = item.quantite_reelle ?? qteSaisie
