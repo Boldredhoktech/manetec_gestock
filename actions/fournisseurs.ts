@@ -9,43 +9,54 @@ import { redirect } from 'next/navigation'
 export async function creerFournisseur(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!user || user.user_metadata?.type_acteur !== 'shop') {
+        return { erreur: 'Non autorisé.' }
+    }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    const nom        = (formData.get('nom') as string)?.trim()
-    const nomContact = (formData.get('nomContact') as string)?.trim() || null
-    const telephone  = (formData.get('telephone') as string)?.trim() || null
-    const email      = (formData.get('email') as string)?.trim() || null
-    const adresse    = (formData.get('adresse') as string)?.trim() || null
-    const ville      = (formData.get('ville') as string)?.trim() || null
-    const pays       = (formData.get('pays') as string)?.trim() || null
-    const ifu        = (formData.get('ifu') as string)?.trim() || null
-    const rccm       = (formData.get('rccm') as string)?.trim() || null
+    const nom          = (formData.get('nom') as string)?.trim()
+    const telephone    = (formData.get('telephone') as string)?.trim()  || null
+    const email        = (formData.get('email') as string)?.trim()      || null
+    const adresse      = (formData.get('adresse') as string)?.trim()    || null
+    const ville        = (formData.get('ville') as string)?.trim()      || null
+    const pays         = (formData.get('pays') as string)?.trim()       || null
+    const ifu          = (formData.get('ifu') as string)?.trim()        || null
+    const rccm         = (formData.get('rccm') as string)?.trim()       || null
+    const nomContact   = (formData.get('nomContact') as string)?.trim() || null
+    const posteContact = (formData.get('posteContact') as string)?.trim() || null
+    const notes        = (formData.get('notes') as string)?.trim()      || null
 
-    if (!nom) return { erreur: 'Le nom est obligatoire.' }
+    if (!nom) return { erreur: 'Le nom du fournisseur est obligatoire.' }
 
-    const { data: publicId } = await adminClient
+    // Générer le public_id
+    const { data: publicIdData } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'SUP' })
 
-    const { error } = await adminClient.from('suppliers').insert({
-        public_id:   publicId,
-        shop_id:     shopId,
-        nom,
-        nom_contact: nomContact,
-        telephone,
-        email,
-        adresse,
-        ville,
-        pays,
-        ifu,
-        rccm,
-        est_actif:   true,
-        created_by:  user.user_metadata.user_id,
-    })
+    const { error } = await adminClient
+        .from('suppliers')
+        .insert({
+            public_id:     publicIdData,
+            shop_id:       shopId,
+            nom,
+            telephone,
+            email,
+            adresse,
+            ville,
+            pays,
+            ifu,
+            rccm,
+            nom_contact:   nomContact,
+            poste_contact: posteContact,
+            notes,
+            solde_dû:      0,
+        })
 
-    if (error) return { erreur: 'Erreur lors de la création.' }
+    if (error) {
+        console.error('Erreur création fournisseur:', error)
+        return { erreur: `Erreur lors de la création : ${error.message}` }
+    }
 
     revalidatePath('/stock/fournisseurs')
     redirect('/stock/fournisseurs')

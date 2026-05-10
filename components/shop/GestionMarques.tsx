@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState } from 'react'
 import { creerMarque } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
@@ -53,11 +54,12 @@ export default function GestionMarques({ marques }: Props) {
                 ) : (
                     <div className="divide-y divide-border">
                         {marques.map(m => (
-                            <div key={m.id} className="flex items-center gap-2.5 px-4 py-3">
+                            <Link key={m.id} href={`/stock/marques/${m.id}`}
+                                  className="flex items-center gap-2.5 px-4 py-3 hover:bg-muted/40 transition-colors group">
                                 <Award className="w-4 h-4 text-muted-foreground shrink-0" />
-                                <span className="text-sm font-medium text-foreground">{m.nom}</span>
+                                <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{m.nom}</span>
                                 <span className="text-xs font-mono text-muted-foreground ml-auto">{m.public_id}</span>
-                            </div>
+                            </Link>
                         ))}
                     </div>
                 )}

@@ -5,6 +5,7 @@ import { toggleActivationProduit } from '@/actions/produits'
 import { formatMontant } from '@/lib/utils'
 import { Search, AlertTriangle, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface Produit {
     id: string
@@ -95,18 +96,20 @@ export default function TableauProduits({ produits }: Props) {
                                 return (
                                     <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                                         <td className="px-4 py-3">
-                                            <div className="flex items-center gap-2.5">
-                                                <div className="bg-muted p-1.5 rounded">
-                                                    <Package className="w-3.5 h-3.5 text-muted-foreground" />
+                                            <Link href={`/stock/produits/${p.id}`} className="group flex items-center gap-2.5 hover:opacity-80 transition-opacity">
+                                                <div className="bg-[#1a56db]/10 p-1.5 rounded group-hover:bg-[#1a56db]/20 transition-colors">
+                                                    <Package className="w-3.5 h-3.5 text-[#1a56db]" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-medium text-foreground">{p.nom}</p>
-                                                    <p className="text-xs font-mono text-muted-foreground">
+                                                    <p className="font-semibold text-gray-900 group-hover:text-[#1a56db] transition-colors">
+                                                        {p.nom}
+                                                    </p>
+                                                    <p className="text-xs font-mono text-gray-400 mt-0.5">
                                                         {p.public_id}
                                                         {p.sku && ` · ${p.sku}`}
                                                     </p>
                                                 </div>
-                                            </div>
+                                            </Link>
                                         </td>
                                         <td className="px-4 py-3 text-xs text-muted-foreground">
                                             {TYPE_LABELS[p.type_produit]}
@@ -118,12 +121,12 @@ export default function TableauProduits({ produits }: Props) {
                                             {formatMontant(p.prix_vente)}
                                         </td>
                                         <td className="px-4 py-3">
-                        <span className={`flex items-center gap-1 text-xs font-medium ${
-                            enAlerte ? 'text-destructive' : 'text-green-600'
-                        }`}>
-                          {enAlerte && <AlertTriangle className="w-3.5 h-3.5" />}
-                            {stock} {p.unite}
-                        </span>
+                                            <span className={`flex items-center gap-1 text-xs font-medium ${
+                                                enAlerte ? 'text-destructive' : 'text-green-600'
+                                            }`}>
+                                                {enAlerte && <AlertTriangle className="w-3.5 h-3.5" />}
+                                                {stock} {p.unite}
+                                            </span>
                                         </td>
                                         <td className="px-4 py-3">
                                             <Button

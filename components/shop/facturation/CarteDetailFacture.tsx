@@ -1,3 +1,9 @@
+// components/shop/facturation/CarteDetailFacture.tsx
+'use client'
+
+import { useState } from 'react'
+import { Download, Loader2 } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { formatDate, formatMontant } from '@/lib/utils'
 
 interface Props {
@@ -14,6 +20,18 @@ const STATUT_CONFIG: Record<string, { label: string; classe: string }> = {
 
 export default function CarteDetailFacture({ facture, boutique }: Props) {
     const config = STATUT_CONFIG[facture.statut]
+    const [telecharge, setTelecharge] = useState(false)
+
+    async function handleTelecharger() {
+        setTelecharge(true)
+        const resp = await fetch(`/api/v1/pdf/facture/${facture.id}`)
+        const blob = await resp.blob()
+        const link = document.createElement('a')
+        link.href     = URL.createObjectURL(blob)
+        link.download = `facture-${facture.public_id}.pdf`
+        link.click()
+        setTelecharge(false)
+    }
 
     return (
         <div className="bg-card border border-border rounded-xl p-6 space-y-6">
@@ -27,9 +45,17 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
                         {facture.date_echeance && ` · Échéance le ${formatDate(facture.date_echeance)}`}
                     </p>
                 </div>
-                <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${config?.classe}`}>
-          {config?.label ?? facture.statut}
-        </span>
+                <div className="flex items-center gap-2">
+                    <span className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold border ${config?.classe}`}>
+                        {config?.label ?? facture.statut}
+                    </span>
+                    <Button variant="outline" size="sm" onClick={handleTelecharger} disabled={telecharge}>
+                        {telecharge
+                            ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            : <><Download className="w-3.5 h-3.5 mr-1.5" />PDF</>
+                        }
+                    </Button>
+                </div>
             </div>
 
             {/* Boutique ↔ Client */}

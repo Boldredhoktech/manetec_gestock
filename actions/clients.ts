@@ -17,11 +17,16 @@ export async function creerClient(formData: FormData) {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    const nom       = (formData.get('nom') as string)?.trim()
+    const nom      = (formData.get('nom') as string)?.trim()
     const telephone = (formData.get('telephone') as string)?.trim() || null
-    const email     = (formData.get('email') as string)?.trim() || null
-    const adresse   = (formData.get('adresse') as string)?.trim() || null
-    const notes     = (formData.get('notes') as string)?.trim() || null
+    const email    = (formData.get('email') as string)?.trim() || null
+    const adresse  = (formData.get('adresse') as string)?.trim() || null
+    const ville    = (formData.get('ville') as string)?.trim() || null
+    const pays     = (formData.get('pays') as string)?.trim() || null
+    const site_web = (formData.get('site_web') as string)?.trim() || null
+    const ifu      = (formData.get('ifu') as string)?.trim() || null
+    const rccm     = (formData.get('rccm') as string)?.trim() || null
+    const notes    = (formData.get('notes') as string)?.trim() || null
 
     if (!nom) return { erreur: 'Le nom est obligatoire.' }
 
@@ -29,12 +34,17 @@ export async function creerClient(formData: FormData) {
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'CLI' })
 
     const { error } = await adminClient.from('clients').insert({
-        public_id:  publicId,
-        shop_id:    shopId,
+        public_id:   publicId,
+        shop_id:     shopId,
         nom,
         telephone,
         email,
         adresse,
+        ville,
+        pays,
+        site_web,
+        ifu,
+        rccm,
         notes,
         est_anonyme: false,
         est_actif:   true,
@@ -152,7 +162,6 @@ export async function operationSoldeClient(formData: FormData) {
 export async function modifierClient(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
@@ -163,18 +172,24 @@ export async function modifierClient(formData: FormData) {
     const telephone   = (formData.get('telephone') as string)?.trim() || null
     const email       = (formData.get('email') as string)?.trim() || null
     const adresse     = (formData.get('adresse') as string)?.trim() || null
+    const ville       = (formData.get('ville') as string)?.trim() || null
+    const pays        = (formData.get('pays') as string)?.trim() || null
+    const site_web    = (formData.get('site_web') as string)?.trim() || null
+    const ifu         = (formData.get('ifu') as string)?.trim() || null
+    const rccm        = (formData.get('rccm') as string)?.trim() || null
     const notes       = (formData.get('notes') as string)?.trim() || null
 
     if (!nom) return { erreur: 'Le nom est obligatoire.' }
 
     const { error } = await adminClient
         .from('clients')
-        .update({ nom, telephone, email, adresse, notes })
+        .update({ nom, telephone, email, adresse, ville, pays, site_web, ifu, rccm, notes })
         .eq('id', clientId)
         .eq('shop_id', user.user_metadata.shop_id)
 
     if (error) return { erreur: 'Erreur lors de la modification.' }
 
+    revalidatePath(`/admin/clients/${clientId}`)
     revalidatePath('/admin/clients')
     return { succes: true }
 }

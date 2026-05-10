@@ -1,46 +1,55 @@
-export const PLANS = {
-    STARTER: 'starter',
-    PRO: 'pro',
-    ENTERPRISE: 'enterprise',
-} as const
+export type PlanId = 'starter' | 'pro' | 'enterprise'
 
-export type Plan = typeof PLANS[keyof typeof PLANS]
+export interface PlanLimites {
+    max_produits:     number
+    max_utilisateurs: number
+    max_clients:      number
+    factures_a4:      boolean
+    devis:            boolean
+    rapports:         boolean
+    communications:   boolean
+    multi_entrepots:  boolean
+    label:            string
+}
 
-export const PLAN_LIMITES = {
+const PLANS: Record<PlanId, PlanLimites> = {
     starter: {
-        utilisateurs_max: 1,
-        entrepots_max: 1,
-        produits_max: 100,
-        modules: ['ventes_basique', 'stock_consultation', 'clients_basique'],
-        historique_jours: 30,
-        email_notifications: false,
-        export_pdf: false,
-        api_access: false,
+        max_produits:     50,
+        max_utilisateurs: 2,
+        max_clients:      100,
+        factures_a4:      false,
+        devis:            false,
+        rapports:         false,
+        communications:   false,
+        multi_entrepots:  false,
+        label:            'Starter',
     },
     pro: {
-        utilisateurs_max: 5,
-        entrepots_max: 3,
-        produits_max: -1, // illimité
-        modules: ['tous'],
-        historique_jours: -1, // illimité
-        email_notifications: true,
-        export_pdf: true,
-        api_access: false,
+        max_produits:     500,
+        max_utilisateurs: 10,
+        max_clients:      1000,
+        factures_a4:      true,
+        devis:            true,
+        rapports:         true,
+        communications:   false,
+        multi_entrepots:  true,
+        label:            'Pro',
     },
     enterprise: {
-        utilisateurs_max: -1,
-        entrepots_max: -1,
-        produits_max: -1,
-        modules: ['tous'],
-        historique_jours: -1,
-        email_notifications: true,
-        export_pdf: true,
-        api_access: true,
+        max_produits:     999999,
+        max_utilisateurs: 999999,
+        max_clients:      999999,
+        factures_a4:      true,
+        devis:            true,
+        rapports:         true,
+        communications:   true,
+        multi_entrepots:  true,
+        label:            'Enterprise',
     },
-} as const
-
-export const PLAN_LABELS: Record<Plan, string> = {
-    starter: 'Starter',
-    pro: 'Pro',
-    enterprise: 'Enterprise',
 }
+
+export function getPlanLimites(plan: string): PlanLimites {
+    return PLANS[(plan as PlanId)] ?? PLANS.starter
+}
+
+export { PLANS }

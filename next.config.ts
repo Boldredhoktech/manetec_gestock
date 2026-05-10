@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
+    serverExternalPackages: ['argon2', '@react-pdf/renderer'],
     experimental: {
         serverActions: {
             allowedOrigins: ['localhost:3000'],
@@ -15,6 +16,19 @@ const nextConfig: NextConfig = {
                 pathname: '/storage/v1/object/public/**',
             },
         ],
+    },
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+            // Ces packages ne doivent jamais être bundlés côté client
+            config.resolve.fallback = {
+                ...config.resolve.fallback,
+                fs:     false,
+                net:    false,
+                tls:    false,
+                crypto: false,
+            }
+        }
+        return config
     },
 }
 

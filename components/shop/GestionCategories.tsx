@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useActionState } from 'react'
 import { creerCategorie } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
@@ -86,17 +87,19 @@ export default function GestionCategories({ categories }: Props) {
                     <div className="divide-y divide-border">
                         {racines.map(c => (
                             <div key={c.id}>
-                                <div className="flex items-center gap-2.5 px-4 py-3">
+                                <Link href={`/stock/categories/${c.id}`}
+                                      className="flex items-center gap-2.5 px-4 py-3 hover:bg-muted/40 transition-colors group">
                                     <Tags className="w-4 h-4 text-primary shrink-0" />
-                                    <span className="text-sm font-medium text-foreground">{c.nom}</span>
+                                    <span className="text-sm font-medium text-foreground group-hover:text-primary transition-colors">{c.nom}</span>
                                     <span className="text-xs font-mono text-muted-foreground ml-auto">{c.public_id}</span>
-                                </div>
+                                </Link>
                                 {sousCategs.filter(s => s.parent_id === c.id).map(s => (
-                                    <div key={s.id} className="flex items-center gap-2.5 px-4 py-2.5 bg-muted/20 pl-10">
+                                    <Link key={s.id} href={`/stock/categories/${s.id}`}
+                                          className="flex items-center gap-2.5 px-4 py-2.5 bg-muted/20 pl-10 hover:bg-muted/40 transition-colors group">
                                         <Tags className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-                                        <span className="text-sm text-foreground">{s.nom}</span>
+                                        <span className="text-sm text-foreground group-hover:text-primary transition-colors">{s.nom}</span>
                                         <span className="text-xs font-mono text-muted-foreground ml-auto">{s.public_id}</span>
-                                    </div>
+                                    </Link>
                                 ))}
                             </div>
                         ))}

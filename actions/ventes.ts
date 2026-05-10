@@ -19,6 +19,8 @@ export interface LigneVente {
     stock_disponible: number
     prix_minimum:   number | null
     unite:          string
+    necessite_imei: boolean
+    necessite_serie: boolean
 }
 
 export interface PaiementVente {
@@ -130,7 +132,7 @@ export async function rechercherProduitsPOS(
         .select(`
       id, public_id, nom, type_produit, sku, code_barres,
       prix_vente, prix_gros, prix_minimum, unite,
-      tva_pct, remise_max_pct,
+      tva_pct, remise_max_pct, necessite_imei, necessite_serie,
       stock_levels!inner(quantite, warehouse_id)
     `)
         .eq('shop_id', shopId)

@@ -3,9 +3,15 @@
 import { useActionState } from 'react'
 import { creerFournisseur } from '@/actions/fournisseurs'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, Building2, Phone, Mail, MapPin, Globe } from 'lucide-react'
 
 const etatInitial = { erreur: undefined as string | undefined }
+
+const PAYS = [
+    'Bénin','Togo','Côte d\'Ivoire','Sénégal','Mali',
+    'Burkina Faso','Niger','Ghana','Nigeria','Cameroun',
+    'Chine','Inde','France','Maroc','Afrique du Sud','Autre',
+]
 
 export default function FormulaireFournisseur() {
     const [etat, action, enAttente] = useActionState(
@@ -17,73 +23,147 @@ export default function FormulaireFournisseur() {
     )
 
     return (
-        <form action={action} className="space-y-5">
+        <form action={action} className="space-y-5 py-2">
+
             {etat.erreur && (
-                <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-4 py-3 text-sm">
+                <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>{etat.erreur}</span>
                 </div>
             )}
 
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-                <h2 className="text-sm font-semibold text-foreground">Informations</h2>
+            {/* Infos générales */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[#1a56db] flex items-center gap-2">
+                    <Building2 className="w-4 h-4" />
+                    Informations générales
+                </h2>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-foreground">
-                        Nom <span className="text-destructive">*</span>
+                    <label className="text-sm font-medium text-gray-700">
+                        Nom du fournisseur <span className="text-red-500">*</span>
                     </label>
-                    <input name="nom" type="text" required placeholder="Nom du fournisseur"
+                    <input name="nom" type="text" required
+                           placeholder="Ex: Distribex Import-Export"
                            disabled={enAttente}
-                           className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                           className={inputClass} />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Nom contact</label>
-                        <input name="nomContact" type="text" placeholder="Personne à contacter"
+                        <label className="text-sm font-medium text-gray-700">Nom du contact</label>
+                        <input name="nomContact" type="text"
+                               placeholder="Personne référente"
                                disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                               className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Téléphone</label>
-                        <input name="telephone" type="tel" placeholder="+229 97 00 00 00"
+                        <label className="text-sm font-medium text-gray-700">Poste du contact</label>
+                        <input name="posteContact" type="text"
+                               placeholder="Ex: Directeur commercial"
                                disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Email</label>
-                        <input name="email" type="email" placeholder="email@fournisseur.com"
-                               disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Ville</label>
-                        <input name="ville" type="text" placeholder="Ville"
-                               disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">IFU</label>
-                        <input name="ifu" type="text" placeholder="IFU"
-                               disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
-                    </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">RCCM</label>
-                        <input name="rccm" type="text" placeholder="RCCM"
-                               disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                               className={inputClass} />
                     </div>
                 </div>
             </div>
 
-            <Button type="submit" disabled={enAttente} className="w-full">
+            {/* Coordonnées */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[#1a56db] flex items-center gap-2">
+                    <Phone className="w-4 h-4" />
+                    Coordonnées
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Téléphone</label>
+                        <div className="relative">
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input name="telephone" type="tel"
+                                   placeholder="+229 97 00 00 00"
+                                   disabled={enAttente}
+                                   className={inputClass + ' pl-9'} />
+                        </div>
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Email</label>
+                        <div className="relative">
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <input name="email" type="email"
+                                   placeholder="contact@fournisseur.com"
+                                   disabled={enAttente}
+                                   className={inputClass + ' pl-9'} />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Adresse</label>
+                    <div className="relative">
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input name="adresse" type="text"
+                               placeholder="Adresse complète du fournisseur"
+                               disabled={enAttente}
+                               className={inputClass + ' pl-9'} />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Ville</label>
+                        <input name="ville" type="text"
+                               placeholder="Ex: Lagos"
+                               disabled={enAttente}
+                               className={inputClass} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">Pays</label>
+                        <select name="pays" disabled={enAttente} className={inputClass}>
+                            <option value="">— Sélectionner —</option>
+                            {PAYS.map(p => (
+                                <option key={p} value={p}>{p}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {/* Infos légales */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[#1a56db] flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    Informations légales
+                </h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">IFU</label>
+                        <input name="ifu" type="text"
+                               placeholder="Numéro IFU"
+                               disabled={enAttente}
+                               className={inputClass} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-gray-700">RCCM</label>
+                        <input name="rccm" type="text"
+                               placeholder="Numéro RCCM"
+                               disabled={enAttente}
+                               className={inputClass} />
+                    </div>
+                </div>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-gray-700">Notes internes</label>
+                    <textarea name="notes" rows={3}
+                              placeholder="Conditions de paiement, délais, remarques..."
+                              disabled={enAttente}
+                              className={inputClass + ' resize-none'} />
+                </div>
+            </div>
+
+            <Button type="submit" disabled={enAttente}
+                    className="w-full py-3 font-bold text-base rounded-xl"
+                    style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}>
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
                     : 'Créer le fournisseur'
@@ -92,3 +172,9 @@ export default function FormulaireFournisseur() {
         </form>
     )
 }
+
+const inputClass = `
+  w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
+  focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40
+  transition-colors disabled:opacity-50
+`

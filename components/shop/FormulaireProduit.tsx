@@ -184,6 +184,47 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                 </div>
             </div>
 
+            {/* Options avancées */}
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <h2 className="text-sm font-semibold text-foreground">Options avancées</h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                    <label className="flex items-center gap-2.5 cursor-pointer p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
+                        <input type="checkbox" name="necessite_imei" value="true"
+                               disabled={enAttente} className="rounded" />
+                        <div>
+                            <p className="text-sm font-bold text-blue-700">Nécessite IMEI</p>
+                            <p className="text-xs text-blue-500">Téléphones, tablettes</p>
+                        </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer p-3 bg-purple-50 border border-purple-200 rounded-xl hover:bg-purple-100 transition-colors">
+                        <input type="checkbox" name="necessite_serie" value="true"
+                               disabled={enAttente} className="rounded" />
+                        <div>
+                            <p className="text-sm font-bold text-purple-700">N° de série requis</p>
+                            <p className="text-xs text-purple-500">Électronique, machines</p>
+                        </div>
+                    </label>
+
+                    <label className="flex items-center gap-2.5 cursor-pointer p-3 bg-amber-50 border border-amber-200 rounded-xl hover:bg-amber-100 transition-colors">
+                        <input type="checkbox" name="est_retournable" value="true"
+                               defaultChecked disabled={enAttente} className="rounded" />
+                        <div>
+                            <p className="text-sm font-bold text-amber-700">Retournable</p>
+                            <p className="text-xs text-amber-500">Retour client autorisé</p>
+                        </div>
+                    </label>
+
+                    <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                        <p className="text-xs font-bold text-green-700 mb-1.5">Garantie (mois)</p>
+                        <input type="number" name="garantie_mois" min="0"
+                               placeholder="0 = aucune" disabled={enAttente}
+                               className="w-full px-2.5 py-1.5 bg-white border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                    </div>
+                </div>
+            </div>
+
             <Button type="submit" disabled={enAttente} className="w-full">
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>

@@ -115,6 +115,19 @@ export async function creerBoutique(formData: FormData) {
         })
     }).eq('id', boutique.id)
 
+    // Envoyer l'email de bienvenue si email fourni
+    if (email) {
+        const { envoyerEmailBienvenueBoutique } = await import('@/lib/resend/notifications')
+        await envoyerEmailBienvenueBoutique({
+            emailDestinataire: email,
+            nomBoutique:       nom,
+            shopPublicId:      shopPublicId,
+            identifiant:       identifiantAdmin,
+            motDePasse:        motDePasseTemp,
+            nomProprietaire:   nomProprietaire,
+        })
+    }
+
     // Audit log
     await adminClient.from('audit_logs').insert({
         shop_id:             boutique.id,
@@ -127,8 +140,6 @@ export async function creerBoutique(formData: FormData) {
         reference_public_id: boutique.public_id,
         details_json:        { nom, plan, devise },
     })
-
-    // TODO Tranche 1 finale : envoyer email Resend si email fourni
 
     revalidatePath('/redhok/boutiques')
     redirect('/redhok/boutiques')
@@ -145,10 +156,10 @@ export async function changerPlanAbonnement(formData: FormData) {
 
     const adminClient = createAdminClient()
 
-    const shopId          = formData.get('shopId') as string
-    const nouveauPlan     = formData.get('plan') as string
-    const joursExpiration = parseInt(formData.get('joursExpiration') as string) || 30
-    const noteActivation  = (formData.get('noteActivation') as string)?.trim()
+    const shopId             = formData.get('shopId') as string
+    const nouveauPlan        = formData.get('plan') as string
+    const joursExpiration    = parseInt(formData.get('joursExpiration') as string) || 30
+    const noteActivation     = (formData.get('noteActivation') as string)?.trim()
     const activationManuelle = formData.get('activationManuelle') === 'true'
 
     if (!shopId || !nouveauPlan) {
@@ -223,6 +234,139 @@ export async function toggleActivationBoutique(
         details_json:   { est_active: estActive },
     })
 
+    // Notifier le propriétaire du changement de statut
+    const { data: boutique } = await adminClient
+        .from('shops').select('nom, email').eq('id', shopId).single()
+
+    if (boutique?.email) {
+        const { data: adminShop } = await adminClient
+            .from('shop_users').select('nom_complet')
+            .eq('shop_id', shopId).eq('role', 'super_admin_boutique').single()
+
+        const { envoyerNotifStatutBoutique } = await import('@/lib/resend/notifications')
+        await envoyerNotifStatutBoutique({
+            emailDestinataire: boutique.email,
+            nomBoutique:       boutique.nom,
+            nomProprietaire:   adminShop?.nom_complet ?? 'Propriétaire',
+            estActive:         estActive,
+        })
+    }
+
     revalidatePath('/redhok/boutiques')
     return { succes: true }
+}
+
+// ── Modifier les paramètres de la boutique ─────────────────────
+export async function modifierParametresBoutique(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.type_acteur !== 'shop') {
+        return { erreur: 'Non autorisé.' }
+    }
+    if (user.user_metadata?.role !== 'super_admin_boutique') {
+        return { erreur: 'Réservé au SuperAdmin boutique.' }
+    }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const nom                   = (formData.get('nom') as string)?.trim()
+    const adresse               = (formData.get('adresse') as string)?.trim() || null
+    const ville                 = (formData.get('ville') as string)?.trim() || null
+    const pays                  = (formData.get('pays') as string)?.trim() || null
+    const telephone_1           = (formData.get('telephone_1') as string)?.trim() || null
+    const telephone_2           = (formData.get('telephone_2') as string)?.trim() || null
+    const email                 = (formData.get('email') as string)?.trim() || null
+    const site_web              = (formData.get('site_web') as string)?.trim() || null
+    const ifu                   = (formData.get('ifu') as string)?.trim() || null
+    const rccm                  = (formData.get('rccm') as string)?.trim() || null
+    const devise                = (formData.get('devise') as string)?.trim() || 'FCFA'
+    const remise_max_pct        = parseFloat(formData.get('remise_max_pct') as string) || 15
+    const message_pied_facture  = (formData.get('message_pied_facture') as string)?.trim() || null
+    const message_recu_thermique = (formData.get('message_recu_thermique') as string)?.trim() || null
+
+    if (!nom) return { erreur: 'Le nom de la boutique est obligatoire.' }
+    if (remise_max_pct < 0 || remise_max_pct > 100) {
+        return { erreur: 'La remise maximum doit être entre 0 et 100%.' }
+    }
+
+    const { error } = await adminClient
+        .from('shops')
+        .update({
+            nom,
+            adresse,
+            ville,
+            pays,
+            telephone_1,
+            telephone_2,
+            email,
+            site_web,
+            ifu,
+            rccm,
+            devise,
+            remise_max_pct,
+            message_pied_facture,
+            message_recu_thermique,
+        })
+        .eq('id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour.' }
+
+    revalidatePath('/admin/parametres')
+    revalidatePath('/admin/dashboard')
+    return { succes: true }
+}
+
+// ── Upload logo boutique ───────────────────────────────────────
+export async function uploadLogoBoutique(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.type_acteur !== 'shop') {
+        return { erreur: 'Non autorisé.' }
+    }
+
+    const shopId    = user.user_metadata.shop_id as string
+    const fichier   = formData.get('logo') as File
+
+    if (!fichier || fichier.size === 0) return { erreur: 'Aucun fichier sélectionné.' }
+    if (fichier.size > 2 * 1024 * 1024) return { erreur: 'Le logo ne doit pas dépasser 2 Mo.' }
+
+    const ext      = fichier.name.split('.').pop()?.toLowerCase()
+    const extsOk   = ['jpg','jpeg','png','webp','svg']
+    if (!ext || !extsOk.includes(ext)) {
+        return { erreur: 'Format non supporté. Utilisez JPG, PNG, WEBP ou SVG.' }
+    }
+
+    const adminClient = createAdminClient()
+    const chemin      = `logos/${shopId}/logo.${ext}`
+
+    // Upload dans Supabase Storage (bucket "boutiques")
+    const { error: uploadError } = await adminClient.storage
+        .from('boutiques')
+        .upload(chemin, fichier, {
+            upsert:      true,
+            contentType: fichier.type,
+        })
+
+    if (uploadError) return { erreur: 'Erreur lors de l\'upload : ' + uploadError.message }
+
+    // Récupérer l'URL publique
+    const { data: urlData } = adminClient.storage
+        .from('boutiques')
+        .getPublicUrl(chemin)
+
+    const logoUrl = urlData.publicUrl + `?t=${Date.now()}` // cache-busting
+
+    // Enregistrer l'URL en base
+    const { error: dbError } = await adminClient
+        .from('shops')
+        .update({ logo_url: logoUrl })
+        .eq('id', shopId)
+
+    if (dbError) return { erreur: 'Logo uploadé mais non enregistré.' }
+
+    revalidatePath('/admin/parametres')
+    return { succes: true, logoUrl }
 }

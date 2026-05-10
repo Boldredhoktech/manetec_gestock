@@ -15,6 +15,14 @@ export interface LigneFacture {
     tva_pct:       number
 }
 
+// ── Limites par plan ───────────────────────────────────────────
+function getPlanLimites(plan: string) {
+    return {
+        factures_a4: plan === 'pro' || plan === 'enterprise',
+        devis:       plan === 'pro' || plan === 'enterprise',
+    }
+}
+
 // ── Clients entreprise ─────────────────────────────────────────
 export async function creerClientEntreprise(formData: FormData) {
     const supabase = await createClient()
@@ -68,6 +76,16 @@ export async function creerDevis(
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
+
+    // ✅ LECTURE DU PLAN DEPUIS LA DB (jamais depuis le JWT)
+    const { data: boutique } = await adminClient
+        .from('shops').select('plan').eq('id', shopId).single()
+    const plan    = boutique?.plan ?? 'starter'
+    const limites = getPlanLimites(plan)
+
+    if (!limites.devis) {
+        return { erreur: 'La création de devis nécessite le plan Pro ou Enterprise.' }
+    }
 
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
 
@@ -228,6 +246,16 @@ export async function creerFactureDirecte(
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
+
+    // ✅ LECTURE DU PLAN DEPUIS LA DB (jamais depuis le JWT)
+    const { data: boutique } = await adminClient
+        .from('shops').select('plan').eq('id', shopId).single()
+    const plan    = boutique?.plan ?? 'starter'
+    const limites = getPlanLimites(plan)
+
+    if (!limites.factures_a4) {
+        return { erreur: 'La création de factures A4 nécessite le plan Pro ou Enterprise.' }
+    }
 
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
 

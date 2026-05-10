@@ -2,19 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Search, ChevronRight, AlertCircle } from 'lucide-react'
+import { Search, ChevronRight, AlertCircle, UserSquare } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 
 interface Client {
-    id: string
-    public_id: string
-    nom: string
-    telephone: string | null
-    email: string | null
-    credit_balance: number
-    advance_balance: number
-    change_balance: number
-    est_actif: boolean
+    id: string; public_id: string; nom: string
+    telephone: string | null; email: string | null
+    credit_balance: number; advance_balance: number
+    change_balance: number; est_actif: boolean
 }
 
 interface Props { clients: Client[] }
@@ -30,89 +25,112 @@ export default function TableauClients({ clients }: Props) {
 
     return (
         <div className="space-y-4">
+
+            {/* Barre recherche */}
             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input
                     type="text"
                     placeholder="Rechercher par nom, téléphone, ID..."
                     value={recherche}
                     onChange={e => setRecherche(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40 shadow-sm"
                 />
             </div>
 
             {filtres.length === 0 ? (
-                <div className="text-center py-16 text-muted-foreground text-sm">
-                    Aucun client trouvé.
+                <div className="text-center py-16 space-y-3">
+                    <div className="w-16 h-16 bg-[#1a56db]/10 rounded-2xl flex items-center justify-center mx-auto">
+                        <UserSquare className="w-8 h-8 text-[#1a56db]/40" />
+                    </div>
+                    <p className="text-sm text-gray-400">Aucun client trouvé.</p>
                 </div>
             ) : (
-                <div className="bg-card border border-border rounded-xl overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                            <thead>
-                            <tr className="border-b border-border bg-muted/40">
-                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Client</th>
-                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Téléphone</th>
-                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Crédit dû</th>
-                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Avance</th>
-                                <th className="text-left px-4 py-3 font-medium text-muted-foreground">Monnaie</th>
-                                <th className="px-4 py-3" />
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-border">
-                            {filtres.map(c => (
-                                <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                                    <td className="px-4 py-3">
-                                        <div>
-                                            <p className="font-medium text-foreground">{c.nom}</p>
-                                            <p className="text-xs font-mono text-muted-foreground mt-0.5">
-                                                {c.public_id}
-                                            </p>
-                                        </div>
-                                    </td>
-                                    <td className="px-4 py-3 text-muted-foreground text-xs">
-                                        {c.telephone ?? '—'}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {c.credit_balance > 0 ? (
-                                            <span className="flex items-center gap-1 text-destructive text-xs font-medium">
-                          <AlertCircle className="w-3.5 h-3.5" />
-                                                {formatMontant(c.credit_balance)}
-                        </span>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {c.advance_balance > 0 ? (
-                                            <span className="text-xs font-medium text-green-600">
-                          {formatMontant(c.advance_balance)}
-                        </span>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        {c.change_balance > 0 ? (
-                                            <span className="text-xs font-medium text-blue-600">
-                          {formatMontant(c.change_balance)}
-                        </span>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">—</span>
-                                        )}
-                                    </td>
-                                    <td className="px-4 py-3">
-                                        <Link
-                                            href={`/admin/clients/${c.id}`}
-                                            className="flex items-center gap-1 text-xs text-primary hover:underline"
-                                        >
-                                            Voir <ChevronRight className="w-3.5 h-3.5" />
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))}
-                            </tbody>
-                        </table>
+                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+
+                    {/* En-tête tableau */}
+                    <div
+                        className="grid grid-cols-12 gap-3 px-5 py-3 text-xs font-bold text-white"
+                        style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                    >
+                        <div className="col-span-4">Client</div>
+                        <div className="col-span-2">Téléphone</div>
+                        <div className="col-span-2 text-right">Crédit dû</div>
+                        <div className="col-span-2 text-right">Avance</div>
+                        <div className="col-span-1 text-right">Monnaie</div>
+                        <div className="col-span-1" />
+                    </div>
+
+                    {/* Lignes */}
+                    <div className="divide-y divide-gray-50">
+                        {filtres.map((c, i) => (
+                            <Link
+                                key={c.id}
+                                href={`/admin/clients/${c.id}`}
+                                className={`grid grid-cols-12 gap-3 items-center px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group ${
+                                    i % 2 === 0 ? '' : 'bg-gray-50/50'
+                                }`}
+                            >
+                                {/* Nom + ID */}
+                                <div className="col-span-4 flex items-center gap-2.5 min-w-0">
+                                    <div className="shrink-0 w-8 h-8 bg-[#1a56db]/10 rounded-full flex items-center justify-center group-hover:bg-[#1a56db]/20 transition-colors">
+                    <span className="text-xs font-black text-[#1a56db]">
+                      {c.nom.charAt(0).toUpperCase()}
+                    </span>
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#1a56db] transition-colors">
+                                            {c.nom}
+                                        </p>
+                                        <p className="text-xs font-mono text-gray-400 mt-0.5">{c.public_id}</p>
+                                    </div>
+                                </div>
+
+                                {/* Téléphone */}
+                                <div className="col-span-2">
+                                    <p className="text-xs text-gray-500">{c.telephone ?? '—'}</p>
+                                </div>
+
+                                {/* Crédit dû */}
+                                <div className="col-span-2 text-right">
+                                    {c.credit_balance > 0 ? (
+                                        <span className="inline-flex items-center gap-1 text-xs font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded-full">
+                      <AlertCircle className="w-3 h-3" />
+                                            {formatMontant(c.credit_balance)}
+                    </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-300">—</span>
+                                    )}
+                                </div>
+
+                                {/* Avance */}
+                                <div className="col-span-2 text-right">
+                                    {c.advance_balance > 0 ? (
+                                        <span className="text-xs font-bold text-green-600">
+                      {formatMontant(c.advance_balance)}
+                    </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-300">—</span>
+                                    )}
+                                </div>
+
+                                {/* Monnaie */}
+                                <div className="col-span-1 text-right">
+                                    {c.change_balance > 0 ? (
+                                        <span className="text-xs font-bold text-blue-600">
+                      {formatMontant(c.change_balance)}
+                    </span>
+                                    ) : (
+                                        <span className="text-xs text-gray-300">—</span>
+                                    )}
+                                </div>
+
+                                {/* Flèche */}
+                                <div className="col-span-1 flex justify-end">
+                                    <ChevronRight className="w-4 h-4 text-[#1a56db] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                                </div>
+                            </Link>
+                        ))}
                     </div>
                 </div>
             )}

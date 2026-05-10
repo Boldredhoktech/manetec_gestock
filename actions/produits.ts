@@ -151,6 +151,10 @@ export async function creerProduit(formData: FormData) {
     const prixMinimum   = parseFloat(formData.get('prixMinimum') as string) || null
     const seuilAlerte   = parseInt(formData.get('seuilAlerte') as string) || 5
     const description   = (formData.get('description') as string)?.trim() || null
+    const necessiteImei   = formData.get('necessite_imei') === 'true'
+    const necessiteSerie  = formData.get('necessite_serie') === 'true'
+    const estRetournable  = formData.get('est_retournable') === 'true'
+    const garantieMois    = parseInt(formData.get('garantie_mois') as string) || null
 
     // Stock initial
     const stockInitial  = parseFloat(formData.get('stockInitial') as string) || 0
@@ -205,6 +209,10 @@ export async function creerProduit(formData: FormData) {
             prix_gros:    prixGros || null,
             prix_minimum: prixMinimum || null,
             seuil_alerte: seuilAlerte,
+            necessite_imei:  necessiteImei,
+            necessite_serie: necessiteSerie,
+            est_retournable: estRetournable,
+            garantie_mois:   garantieMois,
             est_actif:    true,
             created_by:   user.user_metadata.user_id,
         })
@@ -309,5 +317,62 @@ export async function toggleActivationProduit(
         .eq('id', productId)
 
     revalidatePath('/stock/produits')
+    return { succes: true }
+}
+
+// ── Créer une variante produit ─────────────────────────────────
+export async function creerVarianteProduit(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+
+    const shopId        = user.user_metadata.shop_id as string
+    const adminClient   = createAdminClient()
+    const productId     = formData.get('productId') as string
+    const nom           = (formData.get('nom') as string)?.trim()
+    const attributeType = (formData.get('attributeType') as string) || 'other'
+    const colorHex      = (formData.get('colorHex') as string) || null
+
+    if (!nom || !productId) return { erreur: 'Données manquantes.' }
+
+    const { error } = await adminClient.from('product_variants').insert({
+        shop_id:        shopId,
+        product_id:     productId,
+        nom,
+        attribute_type: attributeType,
+        color_hex:      colorHex || null,
+        est_actif:      true,
+    })
+
+    if (error) return { erreur: 'Erreur lors de la création de la variante.' }
+
+    revalidatePath(`/stock/produits/${productId}`)
+    return { succes: true }
+}
+
+// ── Modifier un entrepôt ───────────────────────────────────────
+export async function modifierEntrepot(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+
+    const adminClient  = createAdminClient()
+    const entrepotId   = formData.get('entrepotId') as string
+    const nom          = (formData.get('nom') as string)?.trim()
+    const description  = (formData.get('description') as string)?.trim() || null
+    const adresse      = (formData.get('adresse') as string)?.trim() || null
+
+    if (!nom) return { erreur: 'Le nom est obligatoire.' }
+
+    const { error } = await adminClient
+        .from('warehouses')
+        .update({ nom, description, adresse })
+        .eq('id', entrepotId)
+        .eq('shop_id', user.user_metadata.shop_id)
+
+    if (error) return { erreur: 'Erreur lors de la modification.' }
+
+    revalidatePath(`/stock/entrepots/${entrepotId}`)
+    revalidatePath('/stock/entrepots')
     return { succes: true }
 }

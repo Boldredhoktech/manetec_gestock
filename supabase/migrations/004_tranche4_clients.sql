@@ -90,3 +90,11 @@ CREATE TRIGGER trg_check_client_credit
 
 -- ── Client anonyme par défaut (créé automatiquement par boutique)
 -- Sera créé côté application lors du onboarding boutique
+
+-- Ajout champs manquants table clients
+ALTER TABLE clients
+    ADD COLUMN IF NOT EXISTS ville    TEXT,
+    ADD COLUMN IF NOT EXISTS pays     TEXT,
+    ADD COLUMN IF NOT EXISTS site_web TEXT,
+    ADD COLUMN IF NOT EXISTS ifu      TEXT,
+    ADD COLUMN IF NOT EXISTS rccm     TEXT;

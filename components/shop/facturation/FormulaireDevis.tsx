@@ -9,14 +9,15 @@ import type { LigneFacture } from '@/actions/facturation'
 import { useRouter } from 'next/navigation'
 
 interface Props {
-    clients:  { id: string; nom: string }[]
-    produits: { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
+    clients:                 { id: string; nom: string; source?: string }[]
+    produits:                { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
+    clientIdPreselectionne?: string
 }
 
-export default function FormulaireDevis({ clients, produits }: Props) {
+export default function FormulaireDevis({ clients, produits, clientIdPreselectionne }: Props) {
     const router = useRouter()
     const [lignes, setLignes]               = useState<LigneFacture[]>([])
-    const [clientId, setClientId]           = useState('')
+    const [clientId, setClientId]           = useState(clientIdPreselectionne ?? '')
     const [objet, setObjet]                 = useState('')
     const [dateValidite, setDateValidite]   = useState('')
     const [remisePct, setRemisePct]         = useState(0)
@@ -64,7 +65,16 @@ export default function FormulaireDevis({ clients, produits }: Props) {
                         <select value={clientId} onChange={e => setClientId(e.target.value)}
                                 className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring">
                             <option value="">— Aucun —</option>
-                            {clients.map(c => <option key={c.id} value={c.id}>{c.nom}</option>)}
+                            <optgroup label="Clients boutique">
+                                {clients.filter(c => c.source === 'boutique').map(c => (
+                                    <option key={c.id} value={c.id}>{c.nom}</option>
+                                ))}
+                            </optgroup>
+                            <optgroup label="Clients entreprise">
+                                {clients.filter(c => c.source === 'entreprise').map(c => (
+                                    <option key={c.id} value={c.id}>{c.nom}</option>
+                                ))}
+                            </optgroup>
                         </select>
                     </div>
                     <div className="space-y-1.5">

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import React from 'react'
 import {
     ShoppingCart, Plus, UserSquare, Package,
     Warehouse, FileText, Tags, BarChart3,
@@ -56,7 +57,7 @@ const ACCES: AccesRapide[] = [
         description: 'Catalogue complet',
         href:        '/stock/produits',
         icone:       Package,
-        couleur:     'text-cyan-600',
+        couleur:     'text-blue-600',
         fond:        'bg-cyan-50 border-cyan-200 hover:bg-cyan-100',
         roles:       ['super_admin_boutique', 'stock_manager', 'comptable'],
     },
@@ -108,14 +109,12 @@ export default function AccesRapidesBoutique({ role }: Props) {
             <h2 className="text-sm font-semibold text-foreground">Accès rapides</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {accesFiltres.map(acces => {
-                    const Icone = acces.icone
-                    return (
-                        <Link
-                            key={acces.href + acces.label}
-                            href={acces.href}
-                            className={`border rounded-xl p-4 transition-colors space-y-2 ${acces.fond}`}
-                        >
-                            <div className={`w-8 h-8 rounded-lg flex items-center justify-center bg-white border`}>
+                    const Icone  = acces.icone
+                    const isPOS  = acces.href === '/pos'
+                    const classe = `border rounded-xl p-4 transition-colors space-y-2 ${acces.fond}`
+                    const inner  = (
+                        <>
+                            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white border">
                                 <Icone className={`w-4 h-4 ${acces.couleur}`} />
                             </div>
                             <div>
@@ -126,6 +125,25 @@ export default function AccesRapidesBoutique({ role }: Props) {
                                     {acces.description}
                                 </p>
                             </div>
+                        </>
+                    )
+                    return isPOS ? (
+                        <a
+                            key={acces.href + acces.label}
+                            href={acces.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={classe}
+                        >
+                            {inner}
+                        </a>
+                    ) : (
+                        <Link
+                            key={acces.href + acces.label}
+                            href={acces.href}
+                            className={classe}
+                        >
+                            {inner}
                         </Link>
                     )
                 })}

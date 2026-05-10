@@ -1,6 +1,9 @@
+'use client'
+
 import { formatDate, formatMontant } from '@/lib/utils'
 import Link from 'next/link'
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Download, Loader2 } from 'lucide-react'
+import { useState } from 'react'
 
 interface Bon {
     id: string; public_id: string; statut: string
@@ -18,6 +21,19 @@ const STATUT_CONFIG: Record<string, { label: string; classe: string }> = {
 }
 
 export default function TableauBonsCommande({ bons }: Props) {
+    const [enAttenteId, setEnAttenteId] = useState<string | null>(null)
+
+    async function handleTelecharger(bonId: string, publicId: string) {
+        setEnAttenteId(bonId)
+        const resp = await fetch(`/api/v1/pdf/bon-commande/${bonId}`)
+        const blob = await resp.blob()
+        const link = document.createElement('a')
+        link.href     = URL.createObjectURL(blob)
+        link.download = `bc-${publicId}.pdf`
+        link.click()
+        setEnAttenteId(null)
+    }
+
     return (
         <div className="bg-card border border-border rounded-xl p-5 space-y-3">
             <div className="flex items-center justify-between">
@@ -41,16 +57,29 @@ export default function TableauBonsCommande({ bons }: Props) {
                                     </p>
                                 </div>
                                 <div className="flex items-center gap-3">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${config?.classe}`}>
-                    {config?.label}
-                  </span>
+                                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${config?.classe}`}>
+                                        {config?.label}
+                                    </span>
                                     <span className="text-xs font-medium text-foreground">
-                    {formatMontant(b.montant_total)}
-                  </span>
-                                    <Link href={`/stock/fournisseurs/commandes/${b.id}`}
-                                          className="text-primary hover:text-primary/80">
-                                        <ChevronRight className="w-4 h-4" />
-                                    </Link>
+                                        {formatMontant(b.montant_total)}
+                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            disabled={enAttenteId === b.id}
+                                            onClick={() => handleTelecharger(b.id, b.public_id)}
+                                            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50"
+                                        >
+                                            {enAttenteId === b.id
+                                                ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                : <Download className="w-3.5 h-3.5" />
+                                            }
+                                        </button>
+                                        <Link href={`/stock/fournisseurs/commandes/${b.id}`}
+                                              className="flex items-center gap-1 text-xs text-primary hover:underline">
+                                            Voir <ChevronRight className="w-3.5 h-3.5" />
+                                        </Link>
+                                    </div>
                                 </div>
                             </div>
                         )

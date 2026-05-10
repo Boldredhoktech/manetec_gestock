@@ -10,7 +10,7 @@ import {
     PERMISSIONS_PAR_DEFAUT,
     EXTENSIONS_VENDEUR,
 } from '@/lib/constants/permissions'
-import { PLAN_LIMITES } from '@/lib/constants/plans'
+import { getPlanLimites } from '@/lib/constants/plans'
 
 // ── Créer un utilisateur boutique ─────────────────────────────
 export async function creerUtilisateur(formData: FormData) {
@@ -26,11 +26,17 @@ export async function creerUtilisateur(formData: FormData) {
     }
 
     const shopId    = user.user_metadata.shop_id as string
-    const shopPlan  = user.user_metadata.shop_plan as string
     const adminClient = createAdminClient()
 
-    // Vérifier la limite d'utilisateurs selon le plan
-    const limites = PLAN_LIMITES[shopPlan as keyof typeof PLAN_LIMITES]
+    // Récupérer le plan directement depuis la base (source de vérité)
+    const { data: boutique } = await adminClient
+        .from('shops')
+        .select('plan')
+        .eq('id', shopId)
+        .single()
+
+    const limites = getPlanLimites(boutique?.plan)
+
     if (limites.utilisateurs_max !== -1) {
         const { count } = await adminClient
             .from('shop_users')
@@ -40,15 +46,15 @@ export async function creerUtilisateur(formData: FormData) {
 
         if ((count ?? 0) >= limites.utilisateurs_max) {
             return {
-                erreur: `Votre plan ${shopPlan} est limité à ${limites.utilisateurs_max} utilisateur(s). Passez au plan supérieur.`,
+                erreur: `Votre plan ${boutique?.plan ?? 'actuel'} est limité à ${limites.utilisateurs_max} utilisateur(s). Passez au plan supérieur.`,
             }
         }
     }
 
-    const nomComplet    = (formData.get('nomComplet') as string)?.trim()
-    const identifiant   = (formData.get('identifiant') as string)?.trim().toLowerCase()
-    const motDePasse    = formData.get('motDePasse') as string
-    const role          = formData.get('role') as string
+    const nomComplet  = (formData.get('nomComplet') as string)?.trim()
+    const identifiant = (formData.get('identifiant') as string)?.trim().toLowerCase()
+    const motDePasse  = formData.get('motDePasse') as string
+    const role        = formData.get('role') as string
     const permissionsEtendues = formData.getAll('permissions') as string[]
 
     if (!nomComplet || !identifiant || !motDePasse || !role) {
@@ -59,7 +65,6 @@ export async function creerUtilisateur(formData: FormData) {
         return { erreur: 'Le mot de passe doit contenir au moins 6 caractères.' }
     }
 
-    // Vérifier unicité identifiant dans la boutique
     const { data: existant } = await adminClient
         .from('shop_users')
         .select('id')
@@ -71,36 +76,31 @@ export async function creerUtilisateur(formData: FormData) {
         return { erreur: 'Cet identifiant est déjà utilisé dans cette boutique.' }
     }
 
-    // Générer public_id
     const { data: publicId } = await adminClient
-        .rpc('generate_public_id', {
-            p_shop_id: shopId,
-            p_prefix:  'UTS',
-        })
+        .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'UTS' })
 
     if (!publicId) {
         return { erreur: 'Erreur lors de la génération de l\'identifiant.' }
     }
 
     const passwordHash = await argon2.hash(motDePasse, {
-        type:         argon2.argon2id,
-        memoryCost:   65536,
-        timeCost:     3,
-        parallelism:  1,
+        type: argon2.argon2id,
+        memoryCost: 65536,
+        timeCost: 3,
+        parallelism: 1,
     })
 
-    // Créer l'utilisateur
     const { data: nouvelUser, error } = await adminClient
         .from('shop_users')
         .insert({
-            public_id:      publicId,
-            shop_id:        shopId,
-            nom_complet:    nomComplet,
+            public_id:     publicId,
+            shop_id:       shopId,
+            nom_complet:   nomComplet,
             identifiant,
-            password_hash:  passwordHash,
+            password_hash: passwordHash,
             role,
-            est_actif:      true,
-            created_by:     user.user_metadata.user_id,
+            est_actif:     true,
+            created_by:    user.user_metadata.user_id,
         })
         .select()
         .single()
@@ -109,10 +109,8 @@ export async function creerUtilisateur(formData: FormData) {
         return { erreur: 'Erreur lors de la création de l\'utilisateur.' }
     }
 
-    // Insérer les permissions par défaut du rôle
     const permissionsDefaut = PERMISSIONS_PAR_DEFAUT[role as keyof typeof PERMISSIONS_PAR_DEFAUT] ?? []
 
-    // Pour le vendeur : ajouter les extensions accordées
     const toutesPermissions = role === ROLES.VENDEUR
         ? [
             ...permissionsDefaut,
@@ -131,18 +129,17 @@ export async function creerUtilisateur(formData: FormData) {
         )
     }
 
-    // Audit log
     await adminClient.from('audit_logs').insert({
-        shop_id:              shopId,
-        user_id:              user.user_metadata.user_id,
-        user_public_id:       user.user_metadata.public_id,
-        user_nom:             user.user_metadata.nom_complet,
-        type_acteur:          'shop',
-        event_type:           'USER_CREATED',
-        reference_type:       'shop_user',
-        reference_id:         nouvelUser.id,
-        reference_public_id:  nouvelUser.public_id,
-        details_json:         { role, identifiant },
+        shop_id:             shopId,
+        user_id:             user.user_metadata.user_id,
+        user_public_id:      user.user_metadata.public_id,
+        user_nom:            user.user_metadata.nom_complet,
+        type_acteur:         'shop',
+        event_type:          'USER_CREATED',
+        reference_type:      'shop_user',
+        reference_id:        nouvelUser.id,
+        reference_public_id: nouvelUser.public_id,
+        details_json:        { role, identifiant },
     })
 
     revalidatePath('/admin/utilisateurs')
@@ -161,17 +158,14 @@ export async function modifierPermissionsVendeur(formData: FormData) {
     const shopId      = user.user_metadata.shop_id as string
     const userId      = formData.get('userId') as string
     const permissions = formData.getAll('permissions') as string[]
-
     const adminClient = createAdminClient()
 
-    // Supprimer les anciennes extensions uniquement (garder les permissions par défaut)
     await adminClient
         .from('shop_user_permissions')
         .delete()
         .eq('user_id', userId)
         .in('permission', EXTENSIONS_VENDEUR)
 
-    // Réinsérer les nouvelles extensions
     if (permissions.length > 0) {
         await adminClient.from('shop_user_permissions').insert(
             permissions
@@ -215,7 +209,7 @@ export async function toggleActivationUtilisateur(
     return { succes: true }
 }
 
-// ── Débloquer un utilisateur (règle SEC2) ─────────────────────
+// ── Débloquer un utilisateur ──────────────────────────────────
 export async function debloquerUtilisateur(userId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -229,22 +223,61 @@ export async function debloquerUtilisateur(userId: string) {
     await adminClient
         .from('shop_users')
         .update({
-            est_bloque:           false,
-            tentatives_echecs:    0,
-            bloque_le:            null,
+            est_bloque:        false,
+            tentatives_echecs: 0,
+            bloque_le:         null,
         })
         .eq('id', userId)
 
     await adminClient.from('audit_logs').insert({
-        shop_id:    user.user_metadata.shop_id,
-        user_id:    user.user_metadata.user_id,
-        user_nom:   user.user_metadata.nom_complet,
-        type_acteur: 'shop',
-        event_type: 'USER_UNBLOCKED',
+        shop_id:        user.user_metadata.shop_id,
+        user_id:        user.user_metadata.user_id,
+        user_nom:       user.user_metadata.nom_complet,
+        type_acteur:    'shop',
+        event_type:     'USER_UNBLOCKED',
         reference_type: 'shop_user',
-        details_json: { user_id: userId },
+        details_json:   { user_id: userId },
     })
 
     revalidatePath('/admin/utilisateurs')
+    return { succes: true }
+}
+
+// ── Mettre à jour les permissions d'un utilisateur ──────────────
+export async function mettreAJourPermissions(
+    userId:      string,
+    shopId:      string,
+    permissions: string[]
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.role !== 'super_admin_boutique') {
+        return { erreur: 'Réservé au SuperAdmin.' }
+    }
+
+    const adminClient = createAdminClient()
+
+    // Supprimer toutes les permissions existantes
+    await adminClient
+        .from('shop_user_permissions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('shop_id', shopId)
+
+    // Réinsérer les nouvelles
+    if (permissions.length > 0) {
+        const { error } = await adminClient
+            .from('shop_user_permissions')
+            .insert(permissions.map(p => ({
+                user_id:     userId,
+                shop_id:     shopId,
+                permission:  p,
+                accorde_par: user.user_metadata.user_id,
+            })))
+
+        if (error) return { erreur: 'Erreur lors de la mise à jour.' }
+    }
+
+    revalidatePath(`/admin/utilisateurs/${userId}`)
     return { succes: true }
 }
