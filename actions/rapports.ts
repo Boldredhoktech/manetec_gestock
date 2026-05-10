@@ -394,18 +394,18 @@ export async function getDonneesRapportFournisseurs(shopId: string) {
     const { data: boutique } = await adminClient
         .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
 
-    const { data: fournisseurs } = await adminClient
+    // Note: solde_dû contient un caractère accentué qui casse le parser de types
+    // Supabase. On caste la réponse en any[] pour contourner le problème.
+    const { data: fournisseursRaw } = await adminClient
         .from('suppliers')
-        .select(`
-      public_id, nom, telephone, email,
-      solde_du:solde_dû,
-      purchase_orders(id, created_at)
-    `)
+        .select('public_id, nom, telephone, email, solde_dû, purchase_orders(id, created_at)')
         .eq('shop_id', shopId)
         .order('solde_dû', { ascending: false })
 
-    const formates = (fournisseurs ?? []).map(f => {
-        const commandes = ((f as any).purchase_orders as any[]) ?? []
+    const fournisseurs = (fournisseursRaw ?? []) as any[]
+
+    const formates = fournisseurs.map((f: any) => {
+        const commandes = (f.purchase_orders as any[]) ?? []
         const dernierAchat = commandes.length > 0
             ? format(
                 new Date(Math.max(...commandes.map((c: any) => new Date(c.created_at).getTime()))),
@@ -413,11 +413,12 @@ export async function getDonneesRapportFournisseurs(shopId: string) {
             )
             : null
         return {
-            public_id:     f.public_id,
-            nom:           f.nom,
-            telephone:     f.telephone,
-            email:         f.email,
-            solde_du:      (f as any).solde_du as number ?? 0,
+            public_id:     f.public_id    as string,
+            nom:           f.nom          as string,
+            telephone:     f.telephone    as string | null,
+            email:         f.email        as string | null,
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            solde_du:     (f['solde_dû']  as number) ?? 0,
             nb_commandes:  commandes.length,
             dernier_achat: dernierAchat,
         }
