@@ -171,19 +171,19 @@ export async function creerProduit(formData: FormData) {
         .eq('id', shopId)
         .single()
 
-    const { PLAN_LIMITES } = await import('@/lib/constants/plans')
-    const limites = PLAN_LIMITES[(boutique?.plan ?? 'starter') as keyof typeof PLAN_LIMITES]
+    const { PLANS } = await import('@/lib/constants/plans')
+    const limites = PLANS[(boutique?.plan ?? 'starter') as keyof typeof PLANS]
 
-    if (limites.produits_max !== -1) {
+    if (limites.max_produits !== -1) {
         const { count } = await adminClient
             .from('products')
             .select('*', { count: 'exact', head: true })
             .eq('shop_id', shopId)
             .eq('est_actif', true)
 
-        if ((count ?? 0) >= limites.produits_max) {
+        if ((count ?? 0) >= limites.max_produits) {
             return {
-                erreur: `Votre plan est limité à ${limites.produits_max} produits. Passez au plan supérieur.`,
+                erreur: `Votre plan est limité à ${limites.max_produits} produits. Passez au plan supérieur.`,
             }
         }
     }

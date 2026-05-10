@@ -37,16 +37,16 @@ export async function creerUtilisateur(formData: FormData) {
 
     const limites = getPlanLimites(boutique?.plan)
 
-    if (limites.utilisateurs_max !== -1) {
+    if (limites.max_utilisateurs !== -1) {
         const { count } = await adminClient
             .from('shop_users')
             .select('*', { count: 'exact', head: true })
             .eq('shop_id', shopId)
             .eq('est_actif', true)
 
-        if ((count ?? 0) >= limites.utilisateurs_max) {
+        if ((count ?? 0) >= limites.max_utilisateurs) {
             return {
-                erreur: `Votre plan ${boutique?.plan ?? 'actuel'} est limité à ${limites.utilisateurs_max} utilisateur(s). Passez au plan supérieur.`,
+                erreur: `Votre plan ${boutique?.plan ?? 'actuel'} est limité à ${limites.max_utilisateurs} utilisateur(s). Passez au plan supérieur.`,
             }
         }
     }
