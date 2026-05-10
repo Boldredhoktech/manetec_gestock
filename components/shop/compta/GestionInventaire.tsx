@@ -21,7 +21,7 @@ interface InvItem {
     ecart:              number | null
     products: {
         id: string; nom: string; unite: string; prix_achat: number
-        categories: { nom: string } | null
+        categories: { nom: string } | { nom: string }[] | null
     } | null
 }
 
@@ -30,7 +30,7 @@ interface Inventaire {
     statut: string; created_at: string
     valeur_pertes: number; valeur_gains: number
     nb_ecarts_negatifs: number; nb_ecarts_positifs: number
-    warehouses:      { nom: string } | null
+    warehouses:      { nom: string } | { nom: string }[] | null
     inventory_items: InvItem[]
 }
 
@@ -95,7 +95,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                 if (!item.products) return false
                 const matchRecherche = item.products.nom
                         .toLowerCase().includes(recherche.toLowerCase()) ||
-                    (item.products.categories?.nom ?? '')
+                    (Array.isArray(item.products.categories) ? item.products.categories[0]?.nom : item.products.categories?.nom ?? '')
                         .toLowerCase().includes(recherche.toLowerCase())
 
                 const qteReelle = item.quantite_reelle !== null
@@ -287,7 +287,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     </h2>
                                 </div>
                                 <p className="text-xs font-mono text-gray-400">
-                                    {inventaireEnCours.public_id} · {inventaireEnCours.warehouses?.nom}
+                                    {inventaireEnCours.public_id} · {Array.isArray(inventaireEnCours.warehouses) ? inventaireEnCours.warehouses[0]?.nom : inventaireEnCours.warehouses?.nom}
                                     · Démarré le {formatDate(inventaireEnCours.created_at)}
                                 </p>
                             </div>
@@ -457,7 +457,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                             {/* Catégorie */}
                                             <div className="col-span-2">
                         <span className="text-xs text-gray-500">
-                          {p.categories?.nom ?? '—'}
+                          {(Array.isArray(p.categories) ? p.categories[0]?.nom : p.categories?.nom) ?? '—'}
                         </span>
                                             </div>
 
@@ -660,7 +660,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     <div className="flex items-center gap-2 mt-0.5">
                                         <p className="text-xs font-mono text-gray-400">{inv.public_id}</p>
                                         <span className="text-gray-300">·</span>
-                                        <p className="text-xs text-gray-400">{inv.warehouses?.nom}</p>
+                                        <p className="text-xs text-gray-400">{Array.isArray(inv.warehouses) ? inv.warehouses[0]?.nom : inv.warehouses?.nom}</p>
                                         <span className="text-gray-300">·</span>
                                         <p className="text-xs text-gray-400">{formatDate(inv.created_at)}</p>
                                     </div>
