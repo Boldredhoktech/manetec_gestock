@@ -6,7 +6,7 @@ interface Props {
         totalVentes: number; totalFactures: number; totalEntrees: number
         totalDepenses: number; totalSalaires: number; totalFournisseurs: number
         totalSorties: number; resultat: number; nbVentes: number
-        depenses: { libelle: string; montant: number; expense_categories: { nom: string } | null }[]
+        depenses: { libelle: string; montant: number; expense_categories: { nom: string } | { nom: string }[] | null }[]
     }
 }
 
@@ -117,7 +117,10 @@ export default function TableauBordComptable({ donnees }: Props) {
                                     <span className="font-medium text-foreground">{d.libelle}</span>
                                     {d.expense_categories && (
                                         <span className="text-muted-foreground ml-2">
-                      · {d.expense_categories.nom}
+                      · {(Array.isArray(d.expense_categories)
+                                                ? d.expense_categories[0]?.nom
+                                                : d.expense_categories?.nom
+                                        ) ?? ''}
                     </span>
                                     )}
                                 </div>

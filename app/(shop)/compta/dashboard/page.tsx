@@ -1,3 +1,5 @@
+// app/(shop)/compta/dashboard/page.tsx
+
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
