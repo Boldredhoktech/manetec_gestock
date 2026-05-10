@@ -397,14 +397,15 @@ export async function getDonneesRapportFournisseurs(shopId: string) {
     const { data: fournisseurs } = await adminClient
         .from('suppliers')
         .select(`
-      public_id, nom, telephone, email, solde_dû,
+      public_id, nom, telephone, email,
+      solde_du:solde_dû,
       purchase_orders(id, created_at)
     `)
         .eq('shop_id', shopId)
         .order('solde_dû', { ascending: false })
 
     const formates = (fournisseurs ?? []).map(f => {
-        const commandes = (f.purchase_orders as any[]) ?? []
+        const commandes = ((f as any).purchase_orders as any[]) ?? []
         const dernierAchat = commandes.length > 0
             ? format(
                 new Date(Math.max(...commandes.map((c: any) => new Date(c.created_at).getTime()))),
@@ -412,12 +413,12 @@ export async function getDonneesRapportFournisseurs(shopId: string) {
             )
             : null
         return {
-            public_id:    f.public_id,
-            nom:          f.nom,
-            telephone:    f.telephone,
-            email:        f.email,
-            solde_du:     f.solde_dû,
-            nb_commandes: commandes.length,
+            public_id:     f.public_id,
+            nom:           f.nom,
+            telephone:     f.telephone,
+            email:         f.email,
+            solde_du:      (f as any).solde_du as number ?? 0,
+            nb_commandes:  commandes.length,
             dernier_achat: dernierAchat,
         }
     })
