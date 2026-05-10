@@ -14,7 +14,8 @@ interface Facture {
     montant_paye: number
     montant_restant: number
     objet: string | null
-    business_clients: { nom: string } | null
+    // Supabase retourne un tableau pour les jointures, même pour un seul objet
+    business_clients: { nom: string } | { nom: string }[] | null
 }
 
 interface Props { factures: Facture[] }
@@ -72,7 +73,7 @@ export default function TableauFactures({ factures }: Props) {
                                     </p>
                                 </td>
                                 <td className="px-4 py-3 text-xs text-foreground">
-                                    {f.business_clients?.nom ?? '—'}
+                                    {(Array.isArray(f.business_clients) ? f.business_clients[0]?.nom : f.business_clients?.nom) ?? '—'}
                                 </td>
                                 <td className="px-4 py-3">
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${
