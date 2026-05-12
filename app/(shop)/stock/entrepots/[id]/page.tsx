@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Lock, Unlock, Star } from 'lucide-react'
+import { ArrowLeft, Star } from 'lucide-react'
 import CarteInfosEntrepot from '@/components/shop/entrepots/CarteInfosEntrepot'
 import CarteStockEntrepot from '@/components/shop/entrepots/CarteStockEntrepot'
 import CarteDerniersMovements from '@/components/shop/entrepots/CarteDerniersMovements'
@@ -34,7 +34,7 @@ export default async function PageFicheEntrepot({ params }: Props) {
     if (!entrepot) notFound()
 
     // Produits avec stock dans cet entrepôt
-    const { data: stockLevels } = await adminClient
+    const { data: stockLevelsRaw } = await adminClient
         .from('stock_levels')
         .select(`
       quantite,
@@ -48,6 +48,15 @@ export default async function PageFicheEntrepot({ params }: Props) {
         .eq('warehouse_id', id)
         .eq('shop_id', shopId)
         .order('quantite', { ascending: true })
+
+    // Normalisation : Supabase retourne products comme un tableau lors d'un join,
+    // mais le composant CarteStockEntrepot attend un objet unique ou null.
+    const stockLevels = (stockLevelsRaw ?? []).map(s => ({
+        ...s,
+        products: Array.isArray(s.products)
+            ? (s.products[0] ?? null)
+            : s.products,
+    }))
 
     // 10 derniers mouvements de cet entrepôt
     const { data: mouvements } = await adminClient
@@ -64,14 +73,14 @@ export default async function PageFicheEntrepot({ params }: Props) {
         .limit(10)
 
     // Calculs
-    const produitsActifs  = (stockLevels ?? []).filter(s => (s.products as any)?.est_actif)
+    const produitsActifs  = stockLevels.filter(s => s.products?.est_actif)
     const totalProduits   = produitsActifs.length
     const enAlerte        = produitsActifs.filter(s =>
-        s.quantite <= (s.products as any)?.seuil_alerte
+        s.quantite <= (s.products?.seuil_alerte ?? 0)
     ).length
     const enRupture       = produitsActifs.filter(s => s.quantite <= 0).length
     const valeurStock     = produitsActifs.reduce((acc, s) =>
-        acc + s.quantite * ((s.products as any)?.prix_achat ?? 0), 0
+        acc + s.quantite * (s.products?.prix_achat ?? 0), 0
     )
 
     return (
@@ -135,7 +144,7 @@ export default async function PageFicheEntrepot({ params }: Props) {
                     {/* Colonne gauche — large */}
                     <div className="lg:col-span-2 space-y-5">
                         <CarteStockEntrepot
-                            stockLevels={stockLevels ?? []}
+                            stockLevels={stockLevels}
                             valeurStock={valeurStock}
                         />
                         <CarteDerniersMovements mouvements={mouvements ?? []} />
