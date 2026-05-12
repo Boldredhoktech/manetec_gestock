@@ -31,6 +31,13 @@ export default async function PageProduits() {
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false })
 
+    // Normalisation : categories et brands sont des relations *-to-one, Supabase les retourne en tableau
+    const produitsNormalises = (produits ?? []).map(p => ({
+        ...p,
+        categories: Array.isArray(p.categories) ? (p.categories[0] ?? null) : p.categories,
+        brands:     Array.isArray(p.brands)      ? (p.brands[0]      ?? null) : p.brands,
+    }))
+
     return (
         <div className="flex flex-col min-h-screen">
             <header className="border-b border-border bg-card px-6 py-4">
@@ -50,7 +57,7 @@ export default async function PageProduits() {
                 </div>
             </header>
             <main className="flex-1 p-6">
-                <TableauProduits produits={produits ?? []} />
+                <TableauProduits produits={produitsNormalises} />
             </main>
         </div>
     )
