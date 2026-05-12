@@ -10,8 +10,8 @@ import { formatMontant } from '@/lib/utils'
 import type { LigneVente } from '@/actions/ventes'
 
 interface Client {
-    id: string; nom: string; telephone: string | null
-    advance_balance: number; change_balance: number
+    id: string; public_id: string; nom: string; telephone: string | null
+    credit_balance: number; advance_balance: number; change_balance: number
 }
 
 interface Props {
