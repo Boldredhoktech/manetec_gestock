@@ -128,9 +128,8 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
 
                 {donnees.salaires.map((s, i) => (
                     <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                        <Text style={[styles.cell, { width: '25%', fontFamily: 'Helvetica-Bold' }]}
-                              numberOfLines={1}>{s.employe}</Text>
-                        <Text style={[styles.cell, { width: '15%' }]} numberOfLines={1}>
+                        <Text style={[styles.cell, { width: '25%', fontFamily: 'Helvetica-Bold', maxLines: 1 }]}>{s.employe}</Text>
+                        <Text style={[styles.cell, { width: '15%', maxLines: 1 }]}>
                             {s.poste ?? '—'}
                         </Text>
                         <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>

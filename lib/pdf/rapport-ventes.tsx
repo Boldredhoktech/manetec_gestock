@@ -216,10 +216,10 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                             {v.public_id}
                         </Text>
                         <Text style={[styles.cellule, { width: '15%' }]}>{v.date}</Text>
-                        <Text style={[styles.cellule, { width: '22%' }]} numberOfLines={1}>
+                        <Text style={[styles.cellule, { width: '22%', maxLines: 1 }]}>
                             {v.client_nom || 'Anonyme'}
                         </Text>
-                        <Text style={[styles.cellule, { width: '18%' }]} numberOfLines={1}>
+                        <Text style={[styles.cellule, { width: '18%', maxLines: 1 }]}>
                             {v.vendeur_nom}
                         </Text>
                         <Text style={[styles.cellule, { width: '8%', textAlign: 'center' }]}>

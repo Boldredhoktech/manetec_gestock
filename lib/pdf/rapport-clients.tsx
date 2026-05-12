@@ -109,7 +109,7 @@ export function RapportClientsPDF({ donnees }: { donnees: DonneesRapportClients 
                         <Text style={[styles.cell, { width: '12%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
                             {c.public_id}
                         </Text>
-                        <Text style={[styles.cell, { width: '22%' }]} numberOfLines={1}>{c.nom}</Text>
+                        <Text style={[styles.cell, { width: '22%', maxLines: 1 }]}>{c.nom}</Text>
                         <Text style={[styles.cell, { width: '14%' }]}>{c.telephone ?? '—'}</Text>
                         <Text style={[styles.cell, {
                             width: '13%', textAlign: 'right',

@@ -126,8 +126,8 @@ export function RapportMouvementsPDF({ donnees }: { donnees: DonneesRapportMouve
                             <Text style={[styles.cell, { width: '16%', color: estEntree ? couleurs.vert : couleurs.rouge }]}>
                                 {TYPE_LABELS[m.type_mouvement] ?? m.type_mouvement}
                             </Text>
-                            <Text style={[styles.cell, { width: '26%' }]} numberOfLines={1}>{m.produit_nom}</Text>
-                            <Text style={[styles.cell, { width: '16%' }]} numberOfLines={1}>{m.entrepot_nom}</Text>
+                            <Text style={[styles.cell, { width: '26%', maxLines: 1 }]}>{m.produit_nom}</Text>
+                            <Text style={[styles.cell, { width: '16%', maxLines: 1 }]}>{m.entrepot_nom}</Text>
                             <Text style={[styles.cell, {
                                 width: '10%', textAlign: 'center', fontFamily: 'Helvetica-Bold',
                                 color: estEntree ? couleurs.vert : couleurs.rouge,

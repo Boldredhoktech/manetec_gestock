@@ -133,7 +133,7 @@ export function RapportFacturesImpayeesPDF({ donnees }: { donnees: DonneesFactur
                                 <Text style={[styles.cell, { width: '14%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
                                     {f.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '22%' }]} numberOfLines={1}>{f.client_nom}</Text>
+                                <Text style={[styles.cell, { width: '22%', maxLines: 1 }]}>{f.client_nom}</Text>
                                 <Text style={[styles.cell, { width: '13%' }]}>{f.date_facture}</Text>
                                 <Text style={[styles.cell, { width: '13%', color: couleurs.rouge }]}>
                                     {f.date_echeance ?? '—'}
@@ -179,7 +179,7 @@ export function RapportFacturesImpayeesPDF({ donnees }: { donnees: DonneesFactur
                                 <Text style={[styles.cell, { width: '16%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
                                     {f.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '26%' }]} numberOfLines={1}>{f.client_nom}</Text>
+                                <Text style={[styles.cell, { width: '26%', maxLines: 1 }]}>{f.client_nom}</Text>
                                 <Text style={[styles.cell, { width: '16%' }]}>{f.date_facture}</Text>
                                 <Text style={[styles.cell, { width: '16%' }]}>{f.date_echeance ?? '—'}</Text>
                                 <Text style={[styles.cell, {

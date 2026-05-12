@@ -137,8 +137,7 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                                 <Text style={[styles.cell, { width: '10%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
                                     {p.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '30%', fontFamily: 'Helvetica-Bold', color: couleurs.rouge }]}
-                                      numberOfLines={1}>{p.nom}</Text>
+                                <Text style={[styles.cell, { width: '30%', fontFamily: 'Helvetica-Bold', color: couleurs.rouge, maxLines: 1 }]}>{p.nom}</Text>
                                 <Text style={[styles.cell, { width: '18%' }]}>{p.categorie ?? '—'}</Text>
                                 <Text style={[styles.cell, { width: '12%', textAlign: 'center', color: couleurs.rouge, fontFamily: 'Helvetica-Bold' }]}>
                                     {p.stock} {p.unite}
@@ -170,7 +169,7 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                         <Text style={[styles.cell, { width: '10%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
                             {p.public_id}
                         </Text>
-                        <Text style={[styles.cell, { width: '28%' }]} numberOfLines={1}>{p.nom}</Text>
+                        <Text style={[styles.cell, { width: '28%', maxLines: 1 }]}>{p.nom}</Text>
                         <Text style={[styles.cell, { width: '16%' }]}>{p.categorie ?? '—'}</Text>
                         <Text style={[styles.cell, { width: '12%', textAlign: 'center', fontFamily: 'Helvetica-Bold' }]}>
                             {p.stock} {p.unite}
