@@ -65,7 +65,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                         <div className="text-right px-4 py-2 bg-white/15 rounded-xl">
                             <p className="text-xs text-white/70">Solde dû</p>
                             <p className="text-base font-black text-white">
-                                {formatMontant((fournisseur as any)['solde_dû'] ?? 0, devise)}
+                                {formatMontant((fournisseur as any)['solde_du'] ?? 0, devise)}
                             </p>
                         </div>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
