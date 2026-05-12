@@ -8,7 +8,7 @@ import { formatMontant } from '@/lib/utils'
 interface Fournisseur {
     id: string; public_id: string; nom: string
     telephone: string | null; email: string | null
-    solde_dû: number; est_actif: boolean
+    solde_du: number; est_actif: boolean
 }
 
 interface Props { fournisseurs: Fournisseur[] }
@@ -57,10 +57,10 @@ export default function TableauFournisseurs({ fournisseurs }: Props) {
                                         {f.telephone ?? '—'}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {f.solde_dû > 0 ? (
+                                        {f.solde_du > 0 ? (
                                             <span className="flex items-center gap-1 text-destructive text-xs font-medium">
                           <AlertCircle className="w-3.5 h-3.5" />
-                                                {formatMontant(f.solde_dû)}
+                                                {formatMontant(f.solde_du)}
                         </span>
                                         ) : (
                                             <span className="text-xs text-green-600 font-medium">Soldé</span>
