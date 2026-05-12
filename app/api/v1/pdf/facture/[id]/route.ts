@@ -24,10 +24,10 @@ export async function GET(
     if (!donnees) return new NextResponse('Facture introuvable', { status: 404 })
 
     const buffer = await renderToBuffer(
-        React.createElement(FacturePDF, { donnees })
+        React.createElement(FacturePDF, { donnees }) as React.ReactElement<any>
     )
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
         headers: {
             'Content-Type':        'application/pdf',
             'Content-Disposition': `inline; filename="facture-${donnees.facture.public_id}.pdf"`,

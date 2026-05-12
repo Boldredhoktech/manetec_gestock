@@ -1,3 +1,5 @@
+// app/api/v1/pdf/rapport-pp/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { RapportProfitPertesPDF } from '@/lib/pdf/rapport-profits-pertes'
@@ -18,10 +20,10 @@ export async function GET(request: NextRequest) {
 
     const donnees = await getDonneesRapportPP(user.user_metadata.shop_id, mois, annee)
     const buffer  = await renderToBuffer(
-        React.createElement(RapportProfitPertesPDF, { donnees })
+        React.createElement(RapportProfitPertesPDF, { donnees }) as React.ReactElement<any>
     )
 
-    return new NextResponse(buffer, {
+    return new NextResponse(new Uint8Array(buffer), {
         headers: {
             'Content-Type':        'application/pdf',
             'Content-Disposition': `inline; filename="rapport-pp-${mois}-${annee}.pdf"`,
