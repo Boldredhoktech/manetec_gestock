@@ -8,13 +8,21 @@ import { ENTREPRISE } from '@/lib/config/entreprise'
 function LogoEntreprise({ className }: { className?: string }) {
     if (ENTREPRISE.logos.logos_actifs) {
         return (
-            <Image
-                src={ENTREPRISE.logos.application}
-                alt={ENTREPRISE.produit}
-                width={120}
-                height={36}
-                className={className}
-            />
+            <div className="landing-logo">
+                <Image
+                    src={ENTREPRISE.logos.application}
+                    alt={ENTREPRISE.produit}
+                    width={40}
+                    height={40}
+                    className={className}
+                    style={{ objectFit: 'contain', borderRadius: 8 }}
+                    priority
+                />
+                <div>
+                    <span className="landing-logo-produit">{ENTREPRISE.produit}</span>
+                    <span className="landing-logo-par">par {ENTREPRISE.nom}</span>
+                </div>
+            </div>
         )
     }
     return (
@@ -350,7 +358,7 @@ export default function LandingPage() {
                         <div className="landing-contact-card">
                             <h3 className="landing-contact-card-title">Démarrer maintenant</h3>
                             <p className="landing-contact-card-desc">
-                                Ouvrez votre boutique en 1 minutes et bénéficiez de 30 jours d'essai gratuit.
+                                Ouvrez votre boutique en 2 minutes et bénéficiez de 30 jours d'essai gratuit.
                             </p>
                             <Link href="/inscription" className="landing-contact-cta">
                                 Créer ma boutique gratuitement →
@@ -370,16 +378,24 @@ export default function LandingPage() {
                     <div className="landing-footer-top">
                         <div>
                             {ENTREPRISE.logos.logos_actifs ? (
-                                <Image
-                                    src={ENTREPRISE.logos.entreprise}
-                                    alt={ENTREPRISE.nom}
-                                    width={140}
-                                    height={40}
-                                    style={{ marginBottom: 12 }}
-                                />
+                                <div className="landing-logo" style={{ marginBottom: 12 }}>
+                                    <Image
+                                        src={ENTREPRISE.logos.application}
+                                        alt={ENTREPRISE.produit}
+                                        width={36}
+                                        height={36}
+                                        style={{ objectFit: 'contain', borderRadius: 8 }}
+                                    />
+                                    <div>
+                                        <span className="landing-logo-produit" style={{ color: '#fff' }}>
+                                            {ENTREPRISE.produit}
+                                        </span>
+                                        <span className="landing-logo-par">{ENTREPRISE.nom}</span>
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="landing-logo" style={{ marginBottom: 12 }}>
-                                    <div className="landing-logo-icon small">BR</div>
+                                    <div className="landing-logo-icon small">MG</div>
                                     <div>
                                         <span className="landing-logo-produit" style={{ color: '#fff' }}>
                                             {ENTREPRISE.nom}

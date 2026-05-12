@@ -1,6 +1,6 @@
 // lib/config/entreprise.ts
 // ═══════════════════════════════════════════════════════════════
-// Configuration centrale — Manetec Inter BJ / Manetec Gestock
+// Configuration centrale — Bold Redhok Tech / Manetec Gestock
 // Modifiez uniquement ce fichier pour mettre à jour :
 //   - Infos de contact
 //   - Prix des plans
@@ -20,34 +20,32 @@ export const ENTREPRISE = {
     // ── Logos et images ──────────────────────────────────────────
     // Placez vos fichiers dans /public/images/ et mettez à jour les chemins
     logos: {
-        // Logo de Manetec Inter BJ (entreprise)
+        // Logo de Bold Redhok Tech (entreprise)
         // Format recommandé : PNG transparent, 200×60px minimum
-        entreprise:   '/images/bold-redhok-logo.png',
+        entreprise:   '/logo/app_logo.png',
 
         // Logo de l'application Manetec Gestock
-        // Format recommandé : PNG transparent, 200×200px minimum (carré)
-        application:  '/images/manetec-gestock-logo.png',
+        // Fichier : public/logo/app_logo.png
+        application:  '/logo/app_logo.png',
 
         // Favicon (affiché dans l'onglet du navigateur)
-        favicon:      '/images/favicon.png',
+        favicon:      '/logo/app_logo.png',
 
-        // Si les logos ne sont pas encore uploadés, les initiales sont affichées
-        // (BR pour Bold Redhok, MG pour Manetec Gestock)
-        // Mettre à true quand les fichiers sont en place
-        logos_actifs: false,
+        // true = afficher le vrai logo, false = afficher les initiales MG
+        logos_actifs: true,
     },
 
     // ── Contact principal ────────────────────────────────────────
     telephone_1:      '+229 01 97 05 12 66',
     telephone_2:      '+229 01 95 48 53 49',
-    whatsapp:         '+229 0195485349',
-    email_contact:    'contact@manetec.com',
-    email_support:    'support@manetec.com',
-    email_commercial: 'commercial@manetec.com',
+    whatsapp:         '+229 01 95 48 53 49',
+    email_contact:    'contact@manetec.app',
+    email_support:    'support@manetec.app',
+    email_commercial: 'commercial@manetec.app',
 
     // ── Adresse ──────────────────────────────────────────────────
-    adresse:    'Sikecodji, Cotonou, Bénin',
-    quartier:   'Sikecodji',
+    adresse:    'Cotonou, Bénin',
+    quartier:   'Cadjehoun',
     ville:      'Cotonou',
     pays:       'Bénin',
 
@@ -68,7 +66,7 @@ export const ENTREPRISE = {
             // Prix affiché sur la landing page
             // Exemples : 'Gratuit', '5 000 FCFA', '€9.99'
             prix_affiche:   'Gratuit',
-            prix_mensuel:   10000,
+            prix_mensuel:   0,
             devise_prix:    'FCFA',
             duree:          '30 jours d\'essai',
             couleur:        '#64748b',
@@ -192,7 +190,7 @@ export const ENTREPRISE = {
             nom:   'Jean-Baptiste Okou',
             poste: 'Propriétaire, Quincaillerie Centrale',
             ville: 'Abidjan',
-            texte: 'Le POS est très rapide. Mes vendeurs ont appris en une heure. Je recommande vivement.',
+            texte: 'Le POS est très rapide. Mes vendeurs ont appris en 5 minutes. Je recommande vivement.',
             note:  5,
         },
     ],
