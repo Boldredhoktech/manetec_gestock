@@ -19,7 +19,7 @@ export default async function PageNouvelleReception({ params }: Props) {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    const [{ data: fournisseur }, { data: produits }, { data: entrepots }, { data: bons }] =
+    const [{ data: fournisseur }, { data: produits }, { data: entrepots }, { data: bonsRaw }] =
         await Promise.all([
             adminClient.from('suppliers').select('id, nom').eq('id', id).eq('shop_id', shopId).single(),
             adminClient.from('products').select('id, nom, unite, prix_achat')
@@ -33,6 +33,15 @@ export default async function PageNouvelleReception({ params }: Props) {
         ])
 
     if (!fournisseur) notFound()
+
+    // Normalisation : products dans purchase_order_items arrive comme tableau via join Supabase
+    const bons = (bonsRaw ?? []).map(b => ({
+        ...b,
+        purchase_order_items: (b.purchase_order_items ?? []).map((item: any) => ({
+            ...item,
+            products: Array.isArray(item.products) ? (item.products[0] ?? null) : item.products,
+        })),
+    }))
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -52,7 +61,7 @@ export default async function PageNouvelleReception({ params }: Props) {
                     fournisseurId={id}
                     produits={produits ?? []}
                     entrepots={entrepots ?? []}
-                    bons={bons ?? []}
+                    bons={bons}
                 />
             </main>
         </div>
