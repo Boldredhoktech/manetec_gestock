@@ -49,14 +49,22 @@ export default async function PageFicheEntrepot({ params }: Props) {
         .eq('shop_id', shopId)
         .order('quantite', { ascending: true })
 
-    // Normalisation : Supabase retourne products comme un tableau lors d'un join,
-    // mais le composant CarteStockEntrepot attend un objet unique ou null.
-    const stockLevels = (stockLevelsRaw ?? []).map(s => ({
-        ...s,
-        products: Array.isArray(s.products)
-            ? (s.products[0] ?? null)
-            : s.products,
-    }))
+    // Normalisation : Supabase retourne les relations (products, categories) comme
+    // des tableaux lors des joins, mais les composants attendent des objets uniques ou null.
+    const stockLevels = (stockLevelsRaw ?? []).map(s => {
+        const prod = Array.isArray(s.products) ? (s.products[0] ?? null) : s.products
+        return {
+            ...s,
+            products: prod
+                ? {
+                    ...prod,
+                    categories: Array.isArray(prod.categories)
+                        ? (prod.categories[0] ?? null)
+                        : prod.categories,
+                }
+                : null,
+        }
+    })
 
     // 10 derniers mouvements de cet entrepôt
     const { data: mouvements } = await adminClient
