@@ -1,6 +1,7 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
+import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
 
 const styles = StyleSheet.create({
     page: {

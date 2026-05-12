@@ -1,6 +1,7 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
+import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
 
 const styles = StyleSheet.create({
     page: {
@@ -69,7 +70,7 @@ interface DonneesRapportStock {
 }
 
 function fmt(n: number, d: string) {
-    return new Intl.NumberFormat('fr-FR').format(n) + ' ' + d
+    return formatMontantPDF(n, d)
 }
 
 export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {

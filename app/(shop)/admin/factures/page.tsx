@@ -23,18 +23,19 @@ export default async function PageFactures() {
     const [{ data: factures }, { data: devisList }] = await Promise.all([
         adminClient.from('factures')
             .select(`
-        id, public_id, statut, date_facture, date_echeance,
-        montant_ttc, montant_paye, montant_restant, objet,
-        business_clients(nom)
-      `)
+                id, public_id, statut, date_facture, date_echeance,
+                montant_ttc, montant_paye, montant_restant, objet,
+                clients(nom)
+            `)
             .eq('shop_id', shopId)
             .order('created_at', { ascending: false })
             .limit(50),
         adminClient.from('devis')
             .select(`
-        id, public_id, statut, date_devis, date_validite,
-        montant_ttc, objet, business_clients(nom)
-      `)
+                id, public_id, statut, date_devis, date_validite,
+                montant_ttc, objet,
+                clients(nom)
+            `)
             .eq('shop_id', shopId)
             .order('created_at', { ascending: false })
             .limit(50),
@@ -73,14 +74,14 @@ export default async function PageFactures() {
                         <FileText className="w-4 h-4" />
                         Factures ({factures?.length ?? 0})
                     </h2>
-                    <TableauFactures factures={factures ?? []} />
+                    <TableauFactures factures={(factures ?? []) as any[]} />
                 </div>
                 <div>
                     <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <ClipboardList className="w-4 h-4" />
                         Devis ({devisList?.length ?? 0})
                     </h2>
-                    <TableauDevis devis={devisList ?? []} />
+                    <TableauDevis devis={(devisList ?? []) as any[]} />
                 </div>
             </main>
         </div>

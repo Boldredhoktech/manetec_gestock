@@ -1,6 +1,7 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
+import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
 
 const styles = StyleSheet.create({
     page: {
@@ -197,7 +198,7 @@ const STATUT_LABELS: Record<string, { label: string; bg: string; color: string }
 }
 
 function fmt(n: number, d: string) {
-    return new Intl.NumberFormat('fr-FR').format(n) + ' ' + d
+    return formatMontantPDF(n, d)
 }
 
 export function FacturePDF({ donnees }: { donnees: DonneesFacturePDF }) {
@@ -365,16 +366,14 @@ export function FacturePDF({ donnees }: { donnees: DonneesFacturePDF }) {
                     </View>
                 )}
 
-                {/* MESSAGE PIED */}
-                {boutique.message_pied_facture && (
-                    <View style={[styles.noteBlock, { marginTop: 8, borderLeftColor: couleurs.texteFaible }]}>
-                        <Text style={styles.noteTexte}>{boutique.message_pied_facture}</Text>
-                    </View>
-                )}
-
-                {/* PIED DE PAGE */}
+                {/* MESSAGE PIED + PIED DE PAGE */}
                 <Text style={styles.pied}>
-                    {boutique.nom} — {facture.public_id} — Généré le {donnees.genere_le} — Manetec Gestock
+                    {boutique.nom}
+                    {boutique.message_pied_facture
+                        ? ` — ${boutique.message_pied_facture}`
+                        : ' — Manetec Gestock'
+                    }
+                    {' — '}{facture.public_id} — Généré le {donnees.genere_le}
                 </Text>
 
             </Page>

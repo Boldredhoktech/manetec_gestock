@@ -27,7 +27,7 @@ export default function FormulaireConnexionPlateforme() {
                     </div>
                 </div>
                 <h1 className="text-2xl font-bold text-foreground">
-                    Bold Redhok Tech
+                    Manetec Admin Plateform
                 </h1>
                 <p className="text-sm text-muted-foreground">
                     Accès réservé à l'équipe plateforme
@@ -111,7 +111,7 @@ export default function FormulaireConnexionPlateforme() {
 
             {/* Pied */}
             <p className="text-center text-xs text-muted-foreground">
-                Manetec Gestock · Plateforme Bold Redhok Tech
+                Manetec Gestock · Plateforme Manetec Inter BJ
             </p>
 
         </div>

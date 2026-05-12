@@ -67,7 +67,7 @@ export default function FormulaireConnexionBoutique() {
                         />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        Fourni par Bold Redhok Tech lors de la création de votre boutique
+                        Fourni par Manetec Gestock lors de la création de votre boutique
                     </p>
                 </div>
 
@@ -137,7 +137,7 @@ export default function FormulaireConnexionBoutique() {
 
             {/* Pied */}
             <p className="text-center text-xs text-muted-foreground">
-                Manetec Gestock · Propulsé par Bold Redhok Tech
+                Manetec Gestock · Propulsé par Manetec Inter BJ
             </p>
 
         </div>

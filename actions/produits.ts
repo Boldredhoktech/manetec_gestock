@@ -376,3 +376,97 @@ export async function modifierEntrepot(formData: FormData) {
     revalidatePath('/stock/entrepots')
     return { succes: true }
 }
+
+// ── À AJOUTER À LA FIN DE actions/produits.ts ─────────────────
+
+export async function modifierProduit(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const productId     = formData.get('productId') as string
+    const nom           = (formData.get('nom') as string)?.trim()
+    const description   = (formData.get('description') as string)?.trim() || null
+    const typeProduit   = (formData.get('type_produit') as string) || 'simple'
+    const sku           = (formData.get('sku') as string)?.trim() || null
+    const codeBarres    = (formData.get('code_barres') as string)?.trim() || null
+    const unite         = (formData.get('unite') as string)?.trim() || 'unité'
+    const categoryId    = (formData.get('category_id') as string) || null
+    const brandId       = (formData.get('brand_id') as string) || null
+    const prixAchat     = parseFloat(formData.get('prix_achat') as string) || 0
+    const prixVente     = parseFloat(formData.get('prix_vente') as string) || 0
+    const prixGros      = parseFloat(formData.get('prix_gros') as string) || null
+    const prixMinimum   = parseFloat(formData.get('prix_minimum') as string) || null
+    const tvaPct        = parseFloat(formData.get('tva_pct') as string) || 0
+    const seuilAlerte   = parseInt(formData.get('seuil_alerte') as string) || 0
+    const garantieMois  = parseInt(formData.get('garantie_mois') as string) || null
+    const necessiteImei  = formData.get('necessite_imei') === 'true'
+    const necessiteSerie = formData.get('necessite_serie') === 'true'
+    const estRetournable = formData.get('est_retournable') === 'true'
+
+    if (!nom)        return { erreur: 'Le nom est obligatoire.' }
+    if (!productId)  return { erreur: 'Produit introuvable.' }
+    if (prixVente <= 0) return { erreur: 'Le prix de vente doit être supérieur à 0.' }
+
+    // Enregistrer l'historique des prix si le prix de vente ou d'achat change
+    const { data: ancienProduit } = await adminClient
+        .from('products')
+        .select('prix_achat, prix_vente')
+        .eq('id', productId)
+        .single()
+
+    const prixChange = ancienProduit && (
+        ancienProduit.prix_vente !== prixVente ||
+        ancienProduit.prix_achat !== prixAchat
+    )
+
+    const { error } = await adminClient
+        .from('products')
+        .update({
+            nom,
+            description,
+            type_produit:    typeProduit,
+            sku,
+            code_barres:     codeBarres,
+            unite,
+            category_id:     categoryId || null,
+            brand_id:        brandId || null,
+            prix_achat:      prixAchat,
+            prix_vente:      prixVente,
+            prix_gros:       prixGros || null,
+            prix_minimum:    prixMinimum || null,
+            tva_pct:         tvaPct,
+            seuil_alerte:    seuilAlerte,
+            garantie_mois:   garantieMois || null,
+            necessite_imei:  necessiteImei,
+            necessite_serie: necessiteSerie,
+            est_retournable: estRetournable,
+        })
+        .eq('id', productId)
+        .eq('shop_id', shopId)
+
+    if (error) {
+        console.error('ERREUR MODIFIER PRODUIT:', error)
+        return { erreur: 'Erreur lors de la modification du produit.' }
+    }
+
+    // Enregistrer dans l'historique des prix si changement
+    if (prixChange) {
+        await adminClient.from('price_history').insert({
+            shop_id:            shopId,
+            product_id:         productId,
+            ancien_prix_achat:  ancienProduit!.prix_achat,
+            nouveau_prix_achat: prixAchat,
+            ancien_prix_vente:  ancienProduit!.prix_vente,
+            nouveau_prix_vente: prixVente,
+            created_by:         user.user_metadata.user_id,
+        })
+    }
+
+    revalidatePath(`/stock/produits/${productId}`)
+    revalidatePath('/stock/produits')
+    return { succes: true }
+}

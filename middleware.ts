@@ -1,10 +1,12 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 
-// Routes publiques — accessibles sans authentification
+// ── Routes publiques — accessibles sans authentification ───────
 const ROUTES_PUBLIQUES = [
     '/redhok/login',
     '/login',
+    '/inscription',   // Page création de boutique publique
+    '/',              // Landing page
 ]
 
 // Routes réservées à la plateforme Bold Redhok Tech
@@ -25,14 +27,13 @@ export async function middleware(request: NextRequest) {
         return NextResponse.next()
     }
 
-    // Laisser passer les routes publiques
-    if (ROUTES_PUBLIQUES.some(route => pathname.startsWith(route))) {
+    // Laisser passer les routes publiques (exact match pour '/')
+    if (pathname === '/') return NextResponse.next()
+    if (ROUTES_PUBLIQUES.some(route => route !== '/' && pathname.startsWith(route))) {
         return NextResponse.next()
     }
 
-    let response = NextResponse.next({
-        request,
-    })
+    let response = NextResponse.next({ request })
 
     const supabase = createServerClient(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +56,6 @@ export async function middleware(request: NextRequest) {
         }
     )
 
-    // Vérifier la session Supabase
     const { data: { user } } = await supabase.auth.getUser()
 
     // ── Protection routes plateforme /redhok ──────────────────
@@ -63,13 +63,9 @@ export async function middleware(request: NextRequest) {
         if (!user) {
             return NextResponse.redirect(new URL('/redhok/login', request.url))
         }
-
-        // Vérifier que c'est bien un admin plateforme
-        const rolePlateforme = user.user_metadata?.type_acteur
-        if (rolePlateforme !== 'platform') {
+        if (user.user_metadata?.type_acteur !== 'platform') {
             return NextResponse.redirect(new URL('/redhok/login', request.url))
         }
-
         return response
     }
 
@@ -78,12 +74,9 @@ export async function middleware(request: NextRequest) {
         if (!user) {
             return NextResponse.redirect(new URL('/login', request.url))
         }
-
-        const rolePlateforme = user.user_metadata?.type_acteur
-        if (rolePlateforme === 'platform') {
+        if (user.user_metadata?.type_acteur === 'platform') {
             return NextResponse.redirect(new URL('/redhok/dashboard', request.url))
         }
-
         return response
     }
 

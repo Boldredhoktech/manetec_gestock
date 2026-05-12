@@ -31,7 +31,7 @@ export default async function PageAgents() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-foreground">
-                            Équipe Bold Redhok Tech
+                            Équipe Manetec Inter BJ
                         </h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
                             {agents?.length ?? 0} membre(s)

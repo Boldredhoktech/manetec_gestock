@@ -82,17 +82,32 @@ export default function ParametresBoutique({ boutique }: Props) {
         setUploadEnCours(true)
         setEtatLogo({})
 
+        // ✅ UTILISE UNE ROUTE API au lieu de la Server Action
+        // Les Server Actions ne supportent pas bien les gros fichiers binaires
         const formData = new FormData()
-        formData.set('logo', file)
+        formData.append('logo', file)
 
-        const res = await uploadLogoBoutique(formData)
-        setUploadEnCours(false)
+        try {
+            const response = await fetch('/api/v1/upload/logo', {
+                method: 'POST',
+                body:   formData,
+                // Ne pas définir Content-Type — le navigateur le fait automatiquement avec le boundary
+            })
 
-        if (res?.erreur) {
-            setEtatLogo({ erreur: res.erreur })
-        } else {
-            setLogoUrl(res.logoUrl ?? '')
-            setEtatLogo({ succes: true })
+            const data = await response.json()
+
+            if (!response.ok || data.erreur) {
+                setEtatLogo({ erreur: data.erreur ?? 'Erreur lors de l\'upload.' })
+            } else {
+                setLogoUrl(data.logoUrl)
+                setEtatLogo({ succes: true })
+            }
+        } catch {
+            setEtatLogo({ erreur: 'Erreur réseau. Vérifiez votre connexion et réessayez.' })
+        } finally {
+            setUploadEnCours(false)
+            // Réinitialiser l'input pour permettre de re-sélectionner le même fichier
+            if (inputLogoRef.current) inputLogoRef.current.value = ''
         }
     }
 

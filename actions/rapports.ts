@@ -232,7 +232,7 @@ export async function getDonneesFacturePDF(factureId: string, shopId: string) {
       public_id, statut, date_facture, date_echeance, objet, note_client,
       montant_ht, remise_val, remise_pct, montant_tva, montant_ttc,
       montant_paye, montant_restant,
-      business_clients(nom, adresse, telephone, email, ifu, rccm),
+      clients(nom, adresse, telephone, email, ifu, rccm, ville, pays),
       facture_items(designation, quantite, prix_unitaire, remise_pct, tva_pct, montant_ttc)
     `).eq('id', factureId).eq('shop_id', shopId).single(),
         adminClient.from('shops').select(
@@ -269,7 +269,7 @@ export async function getDonneesFacturePDF(factureId: string, shopId: string) {
             montant_paye:    facture.montant_paye,
             montant_restant: facture.montant_restant,
         },
-        client: (facture.business_clients as any) ?? null,
+        client: (facture.clients as any) ?? null,
         lignes: ((facture.facture_items as any[]) ?? []),
         genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
     }
@@ -635,7 +635,7 @@ export async function getDonneesFacturesImpayees(shopId: string) {
         .select(`
       public_id, statut, date_facture, date_echeance,
       montant_ttc, montant_restant,
-      business_clients(nom)
+      clients(nom)
     `)
         .eq('shop_id', shopId)
         .in('statut', ['emise', 'partiellement_payee'])
@@ -651,7 +651,7 @@ export async function getDonneesFacturesImpayees(shopId: string) {
 
         return {
             public_id:       f.public_id,
-            client_nom:      (f.business_clients as any)?.nom ?? 'Client non spécifié',
+            client_nom:      (f.clients as any)?.nom ?? 'Client non spécifié',
             date_facture:    format(new Date(f.date_facture), 'dd/MM/yyyy', { locale: fr }),
             date_echeance:   f.date_echeance
                 ? format(new Date(f.date_echeance), 'dd/MM/yyyy', { locale: fr })

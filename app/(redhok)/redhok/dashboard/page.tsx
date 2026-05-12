@@ -54,7 +54,7 @@ export default async function PageDashboardRedhok() {
                     Bonjour, {admin.nom_complet} 👋
                 </h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                    Bold Redhok Tech · Vue d'ensemble de la plateforme
+                    Manetec Inter BJ · Vue d'ensemble de la plateforme
                 </p>
             </header>
 

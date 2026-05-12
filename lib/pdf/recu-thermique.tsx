@@ -3,6 +3,7 @@ import {
     Document, Page, Text, View, StyleSheet, Image,
 } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
+import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
 
 const styles = StyleSheet.create({
     page: {
@@ -120,16 +121,10 @@ const MOYENS_LABELS: Record<string, string> = {
     bank_transfer: 'Virement',
 }
 
-function fmt(montant: number, devise: string): string {
-    return new Intl.NumberFormat('fr-FR', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
-    }).format(montant) + ' ' + devise
-}
-
 export function RecuThermiquePDF({ donnees }: { donnees: DonneesRecu }) {
     const { boutique, vente, articles, paiements } = donnees
     const devise = boutique.devise
+    const fmt = (n: number, d: string) => formatMontantPDF(n, d)
 
     return (
         <Document>

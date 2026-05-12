@@ -7,11 +7,11 @@ import {
     Store, ShoppingCart, Package, UserSquare,
     FileText, Warehouse, Tags, Award, BarChart3,
     Receipt, ClipboardCheck, Send, Truck,
+    User, CreditCard, PackageCheck, FileInput,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
 import { useSessionBoutique } from '@/hooks/useSession'
-import { ROLES } from '@/lib/constants/permissions'
 
 const NAVIGATION_SUPER_ADMIN = [
     {
@@ -26,22 +26,23 @@ const NAVIGATION_SUPER_ADMIN = [
     {
         groupe: 'Ventes',
         items: [
-            { label: 'Caisse (POS)', href: '/pos',              icone: ShoppingCart },
-            { label: 'Factures',     href: '/admin/factures',   icone: FileText     },
-            { label: 'Rapports',     href: '/admin/rapports',   icone: BarChart3    },
-            // Dans NAVIGATION_SUPER_ADMIN, groupe Ventes, ajoutez :
-            { label: 'Communications', href: '/admin/communications', icone: Send },
+            { label: 'Caisse (POS)',   href: '/pos',                   icone: ShoppingCart },
+            { label: 'Factures',       href: '/admin/factures',        icone: FileText     },
+            { label: 'Rapports',       href: '/admin/rapports',        icone: BarChart3    },
+            { label: 'Communications', href: '/admin/communications',  icone: Send         },
         ],
     },
     {
         groupe: 'Stock',
         items: [
-            { label: 'Produits',     href: '/stock/produits',       icone: Package    },
-            { label: 'Entrepôts',    href: '/stock/entrepots',      icone: Warehouse  },
-            { label: 'Catégories',   href: '/stock/categories',     icone: Tags       },
-            { label: 'Marques',      href: '/stock/marques',        icone: Award      },
-            { label: 'Fournisseurs', href: '/stock/fournisseurs',   icone: Truck      },
-            { label: 'Mouvements',   href: '/stock/mouvements',     icone: BarChart3  },
+            { label: 'Produits',        href: '/stock/produits',              icone: Package      },
+            { label: 'Entrepôts',       href: '/stock/entrepots',             icone: Warehouse    },
+            { label: 'Catégories',      href: '/stock/categories',            icone: Tags         },
+            { label: 'Marques',         href: '/stock/marques',               icone: Award        },
+            { label: 'Fournisseurs',    href: '/stock/fournisseurs',          icone: Truck        },
+            { label: 'Réceptions',      href: '/stock/receptions',            icone: PackageCheck },
+            { label: 'Fact. fourn.',    href: '/stock/factures-fournisseurs', icone: FileInput    },
+            { label: 'Mouvements',      href: '/stock/mouvements',            icone: BarChart3    },
         ],
     },
     {
@@ -70,12 +71,14 @@ const NAVIGATION_STOCK_MANAGER = [
     {
         groupe: 'Stock',
         items: [
-            { label: 'Produits',     href: '/stock/produits',     icone: Package   },
-            { label: 'Entrepôts',    href: '/stock/entrepots',    icone: Warehouse },
-            { label: 'Catégories',   href: '/stock/categories',   icone: Tags      },
-            { label: 'Marques',      href: '/stock/marques',      icone: Award     },
-            { label: 'Fournisseurs', href: '/stock/fournisseurs', icone: Truck     },
-            { label: 'Mouvements',   href: '/stock/mouvements',   icone: BarChart3 },
+            { label: 'Produits',        href: '/stock/produits',              icone: Package      },
+            { label: 'Entrepôts',       href: '/stock/entrepots',             icone: Warehouse    },
+            { label: 'Catégories',      href: '/stock/categories',            icone: Tags         },
+            { label: 'Marques',         href: '/stock/marques',               icone: Award        },
+            { label: 'Fournisseurs',    href: '/stock/fournisseurs',          icone: Truck        },
+            { label: 'Réceptions',      href: '/stock/receptions',            icone: PackageCheck },
+            { label: 'Fact. fourn.',    href: '/stock/factures-fournisseurs', icone: FileInput    },
+            { label: 'Mouvements',      href: '/stock/mouvements',            icone: BarChart3    },
         ],
     },
 ]
@@ -98,14 +101,31 @@ const NAVIGATION_COMPTABLE = [
 const NAVIGATIONS_PAR_ROLE: Record<string, typeof NAVIGATION_SUPER_ADMIN> = {
     super_admin_boutique: NAVIGATION_SUPER_ADMIN,
     vendeur:              NAVIGATION_VENDEUR,
+    gestionnaire_stock:   NAVIGATION_STOCK_MANAGER,
     stock_manager:        NAVIGATION_STOCK_MANAGER,
     comptable:            NAVIGATION_COMPTABLE,
 }
 
-export default function SidebarAdmin() {
+const PLAN_LABELS: Record<string, string> = {
+    starter:    'Starter',
+    pro:        'Pro',
+    enterprise: 'Enterprise',
+}
+
+const PLAN_COLORS: Record<string, string> = {
+    starter:    'rgba(255,255,255,0.65)',
+    pro:        '#f59e0b',
+    enterprise: '#10b981',
+}
+
+interface Props { planReel?: string }
+
+export default function SidebarAdmin({ planReel }: Props) {
     const pathname    = usePathname()
     const { session } = useSessionBoutique()
     const navigation  = NAVIGATIONS_PAR_ROLE[session?.role ?? 'vendeur'] ?? NAVIGATION_VENDEUR
+    const plan        = planReel ?? session?.shop_plan ?? 'starter'
+    const estSuperAdmin = session?.role === 'super_admin_boutique'
 
     return (
         <aside className="sidebar-royal w-60 shrink-0 flex flex-col min-h-screen">
@@ -120,9 +140,20 @@ export default function SidebarAdmin() {
                         <p className="text-sm font-bold text-white leading-none truncate">
                             {session?.shop_nom ?? 'Boutique'}
                         </p>
-                        <p className="text-xs mt-0.5 capitalize" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                            Plan {session?.shop_plan ?? 'starter'}
-                        </p>
+                        {/* Plan cliquable pour le SuperAdmin */}
+                        {estSuperAdmin ? (
+                            <Link href="/admin/abonnement"
+                                  className="text-xs mt-0.5 font-semibold capitalize hover:underline transition-opacity hover:opacity-80"
+                                  style={{ color: PLAN_COLORS[plan] ?? 'rgba(255,255,255,0.65)' }}
+                            >
+                                Plan {PLAN_LABELS[plan] ?? plan}
+                            </Link>
+                        ) : (
+                            <p className="text-xs mt-0.5 font-semibold capitalize"
+                               style={{ color: PLAN_COLORS[plan] ?? 'rgba(255,255,255,0.65)' }}>
+                                Plan {PLAN_LABELS[plan] ?? plan}
+                            </p>
+                        )}
                     </div>
                 </div>
             </div>
@@ -143,22 +174,15 @@ export default function SidebarAdmin() {
                                         pathname.startsWith(item.href))
                                 return (
                                     item.href === '/pos' ? (
-                                        <a
-                                            key={item.href}
-                                            href={item.href}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5', actif && 'active')}
-                                        >
+                                        <a key={item.href} href={item.href}
+                                           target="_blank" rel="noopener noreferrer"
+                                           className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5', actif && 'active')}>
                                             <Icone className="w-4 h-4 shrink-0" />
                                             <span className="text-sm">{item.label}</span>
                                         </a>
                                     ) : (
-                                        <Link
-                                            key={item.href}
-                                            href={item.href}
-                                            className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5', actif && 'active')}
-                                        >
+                                        <Link key={item.href} href={item.href}
+                                              className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5', actif && 'active')}>
                                             <Icone className="w-4 h-4 shrink-0" />
                                             <span className="text-sm">{item.label}</span>
                                         </Link>
@@ -170,10 +194,11 @@ export default function SidebarAdmin() {
                 ))}
             </nav>
 
-            {/* Utilisateur + déconnexion */}
-            <div className="sidebar-footer px-3 py-4 space-y-2">
+            {/* Footer utilisateur */}
+            <div className="sidebar-footer px-3 py-4 space-y-1">
+
                 {session && (
-                    <div className="sidebar-user-card px-3 py-2.5">
+                    <div className="sidebar-user-card px-3 py-2.5 mb-2">
                         <p className="text-xs font-bold text-white truncate">
                             {session.nom_complet}
                         </p>
@@ -183,11 +208,28 @@ export default function SidebarAdmin() {
                         </p>
                     </div>
                 )}
-                <button
-                    type="button"
-                    onClick={() => deconnexion('shop')}
-                    className="sidebar-item flex items-center gap-3 px-3 py-2.5 w-full"
-                >
+
+                {/* Mon profil — accessible à tous */}
+                <Link href="/admin/profil"
+                      className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5',
+                          pathname === '/admin/profil' && 'active')}>
+                    <User className="w-4 h-4 shrink-0" />
+                    <span className="text-sm">Mon profil</span>
+                </Link>
+
+                {/* Mon abonnement — SuperAdmin uniquement */}
+                {estSuperAdmin && (
+                    <Link href="/admin/abonnement"
+                          className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5',
+                              pathname === '/admin/abonnement' && 'active')}>
+                        <CreditCard className="w-4 h-4 shrink-0" />
+                        <span className="text-sm">Mon abonnement</span>
+                    </Link>
+                )}
+
+                {/* Déconnexion */}
+                <button type="button" onClick={() => deconnexion('shop')}
+                        className="sidebar-item flex items-center gap-3 px-3 py-2.5 w-full">
                     <LogOut className="w-4 h-4 shrink-0" />
                     <span className="text-sm">Déconnexion</span>
                 </button>

@@ -30,7 +30,7 @@ export default async function PageNouvelAgent() {
                             Nouvel agent
                         </h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            Ajouter un membre à l'équipe Bold Redhok Tech
+                            Ajouter un membre à l'équipe Manetec Inter BJ
                         </p>
                     </div>
                 </div>

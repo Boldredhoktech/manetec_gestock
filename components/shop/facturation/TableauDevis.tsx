@@ -17,7 +17,7 @@ interface Devis {
     montant_ttc: number
     objet: string | null
     // Supabase retourne un tableau pour les jointures, même pour un seul objet
-    business_clients: { nom: string } | { nom: string }[] | null
+    clients: { nom: string } | { nom: string }[] | null
 }
 
 interface Props { devis: Devis[] }
@@ -80,7 +80,7 @@ export default function TableauDevis({ devis }: Props) {
                                     </p>
                                 </td>
                                 <td className="px-4 py-3 text-xs text-foreground">
-                                    {(Array.isArray(d.business_clients) ? d.business_clients[0]?.nom : d.business_clients?.nom) ?? '—'}
+                                    {(Array.isArray(d.clients) ? d.clients[0]?.nom : d.clients?.nom) ?? '—'}
                                 </td>
                                 <td className="px-4 py-3">
                     <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold border ${config?.classe ?? ''}`}>

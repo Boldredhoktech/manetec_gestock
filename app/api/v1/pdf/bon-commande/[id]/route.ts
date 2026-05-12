@@ -1,3 +1,5 @@
+// app/api/v1/pdf/bon-commande/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { BonCommandePDF } from '@/lib/pdf/bon-commande-pdf'

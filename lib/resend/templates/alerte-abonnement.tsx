@@ -138,7 +138,7 @@ export function EmailAlerteAbonnement({
                                                 padding: '13px 32px',
                                                 borderRadius: '8px',
                                             }}>
-                                                Contacter Bold Redhok Tech →
+                                                Contactez Manetec Inter BJ →
                                             </a>
                                         </td>
                                     </tr>
@@ -155,7 +155,7 @@ export function EmailAlerteAbonnement({
                                 textAlign: 'center',
                             }}>
                                 <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
-                                    Bold Redhok Tech · Manetec Gestock · Support automatique
+                                    Manetec Inter BJ · Manetec Gestock · Support automatique
                                 </p>
                             </td>
                         </tr>

@@ -26,7 +26,7 @@ export default function SidebarRedhok() {
                     </div>
                     <div className="min-w-0">
                         <p className="text-sm font-bold text-white leading-none">
-                            Bold Redhok Tech
+                            Manetec Inter BJ
                         </p>
                         <p className="text-xs mt-0.5" style={{ color: 'rgba(255,255,255,0.65)' }}>
                             Plateforme

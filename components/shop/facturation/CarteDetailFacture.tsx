@@ -69,17 +69,25 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
                 </div>
                 <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">À</p>
-                    {facture.business_clients ? (
+                    {facture.clients ? (
                         <>
-                            <p className="font-semibold text-foreground">{facture.business_clients.nom}</p>
-                            {facture.business_clients.adresse && (
-                                <p className="text-muted-foreground">{facture.business_clients.adresse}</p>
+                            <p className="font-semibold text-foreground">
+                                {(facture.clients as any).nom}
+                            </p>
+                            {(facture.clients as any).adresse && (
+                                <p className="text-muted-foreground">
+                                    {(facture.clients as any).adresse}
+                                </p>
                             )}
-                            {facture.business_clients.telephone && (
-                                <p className="text-muted-foreground">{facture.business_clients.telephone}</p>
+                            {(facture.clients as any).telephone && (
+                                <p className="text-muted-foreground">
+                                    {(facture.clients as any).telephone}
+                                </p>
                             )}
-                            {facture.business_clients.ifu && (
-                                <p className="text-muted-foreground text-xs">IFU : {facture.business_clients.ifu}</p>
+                            {(facture.clients as any).ifu && (
+                                <p className="text-muted-foreground text-xs">
+                                    IFU : {(facture.clients as any).ifu}
+                                </p>
                             )}
                         </>
                     ) : (

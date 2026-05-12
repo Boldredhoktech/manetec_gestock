@@ -1,4 +1,4 @@
-import SidebarAdmin from '@/components/shop/SidebarAdmin'
+import SidebarAdminWrapper from '@/components/shop/SidebarAdminWrapper'
 
 export default function LayoutAdmin({
                                         children,
@@ -7,7 +7,7 @@ export default function LayoutAdmin({
 }) {
     return (
         <div className="min-h-screen bg-background flex">
-            <SidebarAdmin />
+            <SidebarAdminWrapper />
             <div className="flex-1 flex flex-col min-w-0">
                 {children}
             </div>

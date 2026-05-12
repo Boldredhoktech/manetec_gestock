@@ -127,8 +127,8 @@ export function EmailStatutBoutique({
 
                                 {!estActive && (
                                     <p style={{ color: '#64748b', fontSize: '13px', marginTop: '16px' }}>
-                                        Pour toute question, contactez Bold Redhok Tech via votre canal habituel
-                                        ou par email à <strong>support@boldredhok.com</strong>.
+                                        Pour toute question, contactez Manetec Inter BJ via votre canal habituel
+                                        ou par email à <strong>support@manetec.app</strong>.
                                     </p>
                                 )}
                             </td>
@@ -143,7 +143,7 @@ export function EmailStatutBoutique({
                                 textAlign: 'center',
                             }}>
                                 <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
-                                    Bold Redhok Tech · Manetec Gestock
+                                    Manetec Inter BJ · Manetec Gestock
                                 </p>
                             </td>
                         </tr>

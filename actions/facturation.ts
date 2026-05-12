@@ -32,15 +32,15 @@ export async function creerClientEntreprise(formData: FormData) {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    const nom       = (formData.get('nom') as string)?.trim()
+    const nom        = (formData.get('nom') as string)?.trim()
     const nomContact = (formData.get('nomContact') as string)?.trim() || null
-    const telephone = (formData.get('telephone') as string)?.trim() || null
-    const email     = (formData.get('email') as string)?.trim() || null
-    const adresse   = (formData.get('adresse') as string)?.trim() || null
-    const ville     = (formData.get('ville') as string)?.trim() || null
-    const pays      = (formData.get('pays') as string)?.trim() || null
-    const ifu       = (formData.get('ifu') as string)?.trim() || null
-    const rccm      = (formData.get('rccm') as string)?.trim() || null
+    const telephone  = (formData.get('telephone') as string)?.trim() || null
+    const email      = (formData.get('email') as string)?.trim() || null
+    const adresse    = (formData.get('adresse') as string)?.trim() || null
+    const ville      = (formData.get('ville') as string)?.trim() || null
+    const pays       = (formData.get('pays') as string)?.trim() || null
+    const ifu        = (formData.get('ifu') as string)?.trim() || null
+    const rccm       = (formData.get('rccm') as string)?.trim() || null
 
     if (!nom) return { erreur: 'Le nom est obligatoire.' }
 
@@ -128,7 +128,12 @@ export async function creerDevis(
         created_by:     user.user_metadata.user_id,
     }).select().single()
 
-    if (error || !devis) return { erreur: 'Erreur lors de la création du devis.' }
+    if (error || !devis) {
+        console.error('ERREUR DEVIS:', JSON.stringify(error, null, 2))
+        return {
+            erreur: `Erreur: ${error?.message ?? 'devis null'} | Code: ${error?.code ?? '?'} | Details: ${error?.details ?? '?'}`
+        }
+    }
 
     await adminClient.from('devis_items').insert(
         lignesCalculees.map(l => ({
@@ -200,9 +205,13 @@ export async function convertirDevisEnFacture(devisId: string) {
         created_by:       user.user_metadata.user_id,
     }).select().single()
 
-    if (error || !facture) return { erreur: 'Erreur lors de la création de la facture.' }
+    if (error || !facture) {
+        console.error('ERREUR CONVERSION DEVIS→FACTURE:', JSON.stringify(error, null, 2))
+        return {
+            erreur: `Erreur: ${error?.message ?? 'facture null'} | Code: ${error?.code ?? '?'} | Details: ${error?.details ?? '?'}`
+        }
+    }
 
-    // Copier les lignes
     await adminClient.from('facture_items').insert(
         (devis.devis_items as any[]).map((l: any) => ({
             shop_id:       shopId,
@@ -221,9 +230,8 @@ export async function convertirDevisEnFacture(devisId: string) {
         }))
     )
 
-    // Marquer le devis comme accepté
     await adminClient.from('devis').update({
-        statut:             'accepte',
+        statut:              'accepte',
         converti_en_facture: facture.id,
     }).eq('id', devisId)
 
@@ -297,17 +305,28 @@ export async function creerFactureDirecte(
         created_by:      user.user_metadata.user_id,
     }).select().single()
 
-    if (error || !facture) return { erreur: 'Erreur lors de la création.' }
+    if (error || !facture) {
+        console.error('ERREUR FACTURE DIRECTE:', JSON.stringify(error, null, 2))
+        return {
+            erreur: `Erreur: ${error?.message ?? 'facture null'} | Code: ${error?.code ?? '?'} | Details: ${error?.details ?? '?'}`
+        }
+    }
 
     await adminClient.from('facture_items').insert(
         lignesCalc.map(l => ({
-            shop_id: shopId, facture_id: facture.id,
-            product_id: l.product_id || null,
-            designation: l.designation, quantite: l.quantite,
-            prix_unitaire: l.prix_unitaire, remise_pct: l.remise_pct,
-            remise_val: l.remise_val, montant_ht: l.montant_ht,
-            tva_pct: l.tva_pct, montant_tva: l.montant_tva,
-            montant_ttc: l.montant_ttc, ordre: l.ordre,
+            shop_id:       shopId,
+            facture_id:    facture.id,
+            product_id:    l.product_id || null,
+            designation:   l.designation,
+            quantite:      l.quantite,
+            prix_unitaire: l.prix_unitaire,
+            remise_pct:    l.remise_pct,
+            remise_val:    l.remise_val,
+            montant_ht:    l.montant_ht,
+            tva_pct:       l.tva_pct,
+            montant_tva:   l.montant_tva,
+            montant_ttc:   l.montant_ttc,
+            ordre:         l.ordre,
         }))
     )
 
@@ -321,12 +340,12 @@ export async function payerFacture(formData: FormData) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
 
-    const adminClient  = createAdminClient()
-    const factureId    = formData.get('factureId') as string
-    const montant      = parseFloat(formData.get('montant') as string)
-    const moyen        = formData.get('moyen') as string
-    const reference    = (formData.get('reference') as string) || ''
-    const note         = (formData.get('note') as string) || ''
+    const adminClient = createAdminClient()
+    const factureId   = formData.get('factureId') as string
+    const montant     = parseFloat(formData.get('montant') as string)
+    const moyen       = formData.get('moyen') as string
+    const reference   = (formData.get('reference') as string) || ''
+    const note        = (formData.get('note') as string) || ''
 
     if (!factureId || isNaN(montant) || montant <= 0) {
         return { erreur: 'Données invalides.' }

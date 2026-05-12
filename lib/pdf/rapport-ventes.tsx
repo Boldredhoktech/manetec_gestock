@@ -3,6 +3,7 @@ import {
     Document, Page, Text, View, StyleSheet,
 } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
+import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
 
 const styles = StyleSheet.create({
     page: {
@@ -143,10 +144,9 @@ interface DonneesRapportVentes {
 }
 
 function fmt(n: number, d: string) {
-    return new Intl.NumberFormat('fr-FR', {
-        minimumFractionDigits: 0,
+    return formatMontantPDF(n, d)
+    minimumFractionDigits: 0,
         maximumFractionDigits: 0,
-    }).format(n) + ' ' + d
 }
 
 export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes }) {

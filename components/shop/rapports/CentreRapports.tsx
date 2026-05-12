@@ -1,3 +1,5 @@
+// components/shop/rapports/CentreRapports.tsx
+
 'use client'
 
 import { useState } from 'react'

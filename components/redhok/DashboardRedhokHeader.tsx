@@ -30,7 +30,7 @@ export default function DashboardRedhokHeader({ admin }: Props) {
                         </div>
                         <div>
                             <p className="text-sm font-semibold text-foreground leading-none">
-                                Bold Redhok Tech
+                                Manetec Inter BJ
                             </p>
                             <p className="text-xs text-muted-foreground mt-0.5">
                                 Manetec Gestock · Plateforme

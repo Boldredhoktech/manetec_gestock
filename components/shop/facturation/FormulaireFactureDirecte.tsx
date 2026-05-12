@@ -9,7 +9,7 @@ import type { LigneFacture } from '@/actions/facturation'
 import { useRouter } from 'next/navigation'
 
 interface Props {
-    clients:                 { id: string; nom: string; source?: string }[]
+    clients:                 { id: string; nom: string }[]
     produits:                { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
     clientIdPreselectionne?: string
 }
@@ -62,49 +62,59 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Client</label>
-                        <select value={clientId} onChange={e => setClientId(e.target.value)}
-                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring">
-                            <option value="">— Aucun —</option>
-                            <optgroup label="Clients boutique">
-                                {clients.filter(c => c.source === 'boutique').map(c => (
-                                    <option key={c.id} value={c.id}>{c.nom}</option>
-                                ))}
-                            </optgroup>
-                            <optgroup label="Clients entreprise">
-                                {clients.filter(c => c.source === 'entreprise').map(c => (
-                                    <option key={c.id} value={c.id}>{c.nom}</option>
-                                ))}
-                            </optgroup>
+                        <select
+                            value={clientId}
+                            onChange={e => setClientId(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        >
+                            <option value="">— Aucun (facture sans client) —</option>
+                            {clients.map(c => (
+                                <option key={c.id} value={c.id}>{c.nom}</option>
+                            ))}
                         </select>
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Date d'échéance</label>
-                        <input type="date" value={dateEcheance}
-                               onChange={e => setDateEcheance(e.target.value)}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                        <input
+                            type="date"
+                            value={dateEcheance}
+                            onChange={e => setDateEcheance(e.target.value)}
+                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
                     </div>
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">Objet</label>
-                    <input type="text" value={objet} onChange={e => setObjet(e.target.value)}
-                           placeholder="Objet de la facture"
-                           className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                    <input
+                        type="text"
+                        value={objet}
+                        onChange={e => setObjet(e.target.value)}
+                        placeholder="Objet de la facture"
+                        className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                    />
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Remise globale (%)</label>
-                        <input type="number" min="0" max="100" step="0.5"
-                               value={remisePct} onChange={e => setRemisePct(parseFloat(e.target.value) || 0)}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                        <input
+                            type="number"
+                            min="0" max="100" step="0.5"
+                            value={remisePct}
+                            onChange={e => setRemisePct(parseFloat(e.target.value) || 0)}
+                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Note client</label>
-                        <input type="text" value={noteClient}
-                               onChange={e => setNoteClient(e.target.value)}
-                               placeholder="Note visible sur la facture"
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring" />
+                        <input
+                            type="text"
+                            value={noteClient}
+                            onChange={e => setNoteClient(e.target.value)}
+                            placeholder="Note visible sur la facture"
+                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
                     </div>
                 </div>
             </div>
@@ -115,8 +125,11 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
                 <EditeurLignes lignes={lignes} onChanger={setLignes} produits={produits} />
             </div>
 
-            <Button onClick={handleSoumettre} disabled={enAttente || lignes.length === 0}
-                    className="w-full">
+            <Button
+                onClick={handleSoumettre}
+                disabled={enAttente || lignes.length === 0}
+                className="w-full"
+            >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
                     : 'Créer la facture'

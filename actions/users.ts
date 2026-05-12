@@ -281,3 +281,112 @@ export async function mettreAJourPermissions(
     revalidatePath(`/admin/utilisateurs/${userId}`)
     return { succes: true }
 }
+
+// ── Changer son propre mot de passe ───────────────────────────
+export async function changerMotDePasse(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.type_acteur !== 'shop') {
+        return { erreur: 'Non autorisé.' }
+    }
+
+    const userId            = formData.get('userId') as string
+    const motDePasseActuel  = formData.get('motDePasseActuel') as string
+    const nouveauMotDePasse = formData.get('nouveauMotDePasse') as string
+
+    // Vérifier que l'utilisateur ne change que son propre mot de passe
+    if (userId !== user.user_metadata.user_id) {
+        return { erreur: 'Vous ne pouvez changer que votre propre mot de passe.' }
+    }
+
+    if (!motDePasseActuel || !nouveauMotDePasse) {
+        return { erreur: 'Tous les champs sont obligatoires.' }
+    }
+
+    if (nouveauMotDePasse.length < 6) {
+        return { erreur: 'Le nouveau mot de passe doit contenir au moins 6 caractères.' }
+    }
+
+    const adminClient = createAdminClient()
+
+    // Récupérer le hash actuel
+    const { data: utilisateur } = await adminClient
+        .from('shop_users')
+        .select('password_hash')
+        .eq('id', userId)
+        .single()
+
+    if (!utilisateur) return { erreur: 'Utilisateur introuvable.' }
+
+    // Vérifier le mot de passe actuel
+    let motDePasseValide = false
+    try {
+        motDePasseValide = await argon2.verify(utilisateur.password_hash, motDePasseActuel)
+    } catch {
+        return { erreur: 'Erreur lors de la vérification du mot de passe actuel.' }
+    }
+
+    if (!motDePasseValide) {
+        return { erreur: 'Le mot de passe actuel est incorrect.' }
+    }
+
+    // Hasher le nouveau mot de passe
+    let nouveauHash: string
+    try {
+        nouveauHash = await argon2.hash(nouveauMotDePasse, {
+            type:        argon2.argon2id,
+            memoryCost:  65536,
+            timeCost:    3,
+            parallelism: 1,
+        })
+    } catch {
+        return { erreur: 'Erreur lors du hashage du nouveau mot de passe.' }
+    }
+
+    // Mettre à jour en base
+    const { error } = await adminClient
+        .from('shop_users')
+        .update({ password_hash: nouveauHash })
+        .eq('id', userId)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour du mot de passe.' }
+
+    revalidatePath('/admin/profil')
+    return { succes: true }
+}
+
+// ── Modifier son nom complet ───────────────────────────────────
+export async function modifierNomComplet(userId: string, nomComplet: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user || user.user_metadata?.type_acteur !== 'shop') {
+        return { erreur: 'Non autorisé.' }
+    }
+
+    // Un utilisateur ne peut modifier que son propre nom
+    // (le SuperAdmin peut modifier le nom de n'importe quel utilisateur)
+    const estSuperAdmin = user.user_metadata.role === 'super_admin_boutique'
+    const estSonPropre  = userId === user.user_metadata.user_id
+
+    if (!estSonPropre && !estSuperAdmin) {
+        return { erreur: 'Vous ne pouvez modifier que votre propre nom.' }
+    }
+
+    const nom = nomComplet.trim()
+    if (!nom) return { erreur: 'Le nom ne peut pas être vide.' }
+
+    const adminClient = createAdminClient()
+    const { error } = await adminClient
+        .from('shop_users')
+        .update({ nom_complet: nom })
+        .eq('id', userId)
+        .eq('shop_id', user.user_metadata.shop_id)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour du nom.' }
+
+    revalidatePath('/admin/profil')
+    revalidatePath(`/admin/utilisateurs/${userId}`)
+    return { succes: true }
+}

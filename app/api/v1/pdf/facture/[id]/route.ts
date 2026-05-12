@@ -1,3 +1,5 @@
+// app/api/v1/pdf/facture/[id]/route.ts
+
 import { NextRequest, NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { FacturePDF } from '@/lib/pdf/facture-pdf'
