@@ -191,7 +191,7 @@ export function RecuThermiquePDF({ donnees }: { donnees: DonneesRecu }) {
                 {/* ── ARTICLES ── */}
                 {articles.map((art, i) => (
                     <View key={i} style={styles.ligneArticle}>
-                        <Text style={[styles.gras, { fontSize: 8 }]} numberOfLines={2}>
+                        <Text style={[styles.gras, { fontSize: 8, maxLines: 2 }]}>
                             {art.nom}
                         </Text>
                         <View style={styles.ligne}>
