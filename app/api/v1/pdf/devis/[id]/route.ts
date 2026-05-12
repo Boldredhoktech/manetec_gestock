@@ -88,7 +88,7 @@ export async function GET(
     }
 
     const buffer = await renderToBuffer(
-        React.createElement(DevisPDF, { donnees })
+        React.createElement(DevisPDF, { donnees }) as React.ReactElement<any>
     )
 
     return new NextResponse(buffer, {
