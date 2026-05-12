@@ -42,7 +42,7 @@ export default async function PageFicheProduit({ params }: Props) {
 
     if (!produit) notFound()
 
-    const { data: mouvements } = await adminClient
+    const { data: mouvementsRaw } = await adminClient
         .from('stock_movements')
         .select(`
       id, public_id, type_mouvement, quantite,
@@ -54,6 +54,12 @@ export default async function PageFicheProduit({ params }: Props) {
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false })
         .limit(5)
+
+    const mouvements = (mouvementsRaw ?? []).map(m => ({
+        ...m,
+        warehouses: Array.isArray(m.warehouses) ? (m.warehouses[0] ?? null) : m.warehouses,
+        shop_users: Array.isArray(m.shop_users) ? (m.shop_users[0] ?? null) : m.shop_users,
+    }))
 
     const { data: historiquePrix } = await adminClient
         .from('price_history')
