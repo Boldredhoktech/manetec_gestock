@@ -17,7 +17,7 @@ export default async function PageFournisseurs() {
     const adminClient = createAdminClient()
     const { data: fournisseurs } = await adminClient
         .from('suppliers')
-        .select('id, public_id, nom, telephone, email, solde_dû, est_actif, created_at')
+        .select('id, public_id, nom, telephone, email, solde_du, est_actif, created_at')
         .eq('shop_id', user.user_metadata.shop_id)
         .order('nom')
 
