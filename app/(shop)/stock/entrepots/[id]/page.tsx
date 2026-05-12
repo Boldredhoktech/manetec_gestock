@@ -67,7 +67,7 @@ export default async function PageFicheEntrepot({ params }: Props) {
     })
 
     // 10 derniers mouvements de cet entrepôt
-    const { data: mouvements } = await adminClient
+    const { data: mouvementsRaw } = await adminClient
         .from('stock_movements')
         .select(`
       id, public_id, type_mouvement, quantite,
@@ -79,6 +79,12 @@ export default async function PageFicheEntrepot({ params }: Props) {
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false })
         .limit(10)
+
+    const mouvements = (mouvementsRaw ?? []).map(m => ({
+        ...m,
+        products:   Array.isArray(m.products)   ? (m.products[0]   ?? null) : m.products,
+        shop_users: Array.isArray(m.shop_users) ? (m.shop_users[0] ?? null) : m.shop_users,
+    }))
 
     // Calculs
     const produitsActifs  = stockLevels.filter(s => s.products?.est_actif)
