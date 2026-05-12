@@ -119,7 +119,7 @@ export function RapportFournisseursPDF({ donnees }: { donnees: DonneesRapportFou
                                 <Text style={[styles.cell, { width: '12%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
                                     {f.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '30%', fontFamily: 'Helvetica-Bold' }]} numberOfLines={1}>
+                                <Text style={[styles.cell, { width: '30%', fontFamily: 'Helvetica-Bold', maxLines: 1 }]}>
                                     {f.nom}
                                 </Text>
                                 <Text style={[styles.cell, { width: '18%' }]}>{f.telephone ?? '—'}</Text>
@@ -136,14 +136,14 @@ export function RapportFournisseursPDF({ donnees }: { donnees: DonneesRapportFou
                     </>
                 )}
 
-                {sansDelete.length > 0 && (
+                {sansDette.length > 0 && (
                     <>
                         <Text style={{
                             fontSize: 10, fontFamily: 'Helvetica-Bold', color: couleurs.vert,
                             marginTop: 14, marginBottom: 6, paddingBottom: 3,
                             borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
                         }}>
-                            Fournisseurs soldés ({sansDelete.length})
+                            Fournisseurs soldés ({sansDette.length})
                         </Text>
                         <View style={styles.tableauEntete}>
                             <Text style={[styles.cellEnt, { width: '15%' }]}>ID</Text>
@@ -151,12 +151,12 @@ export function RapportFournisseursPDF({ donnees }: { donnees: DonneesRapportFou
                             <Text style={[styles.cellEnt, { width: '25%' }]}>Téléphone</Text>
                             <Text style={[styles.cellEnt, { width: '15%', textAlign: 'center' }]}>Cmds</Text>
                         </View>
-                        {sansDelete.map((f, i) => (
+                        {sansDette.map((f, i) => (
                             <View key={f.public_id} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
                                 <Text style={[styles.cell, { width: '15%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
                                     {f.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '45%' }]} numberOfLines={1}>{f.nom}</Text>
+                                <Text style={[styles.cell, { width: '45%', maxLines: 1 }]}>{f.nom}</Text>
                                 <Text style={[styles.cell, { width: '25%' }]}>{f.telephone ?? '—'}</Text>
                                 <Text style={[styles.cell, { width: '15%', textAlign: 'center' }]}>{f.nb_commandes}</Text>
                             </View>
