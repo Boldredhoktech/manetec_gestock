@@ -1,4 +1,5 @@
 export type PlanId = 'starter' | 'pro' | 'enterprise'
+export type Plan = PlanId
 
 export interface PlanLimites {
     max_produits:     number
