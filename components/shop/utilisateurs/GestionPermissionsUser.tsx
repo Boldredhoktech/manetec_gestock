@@ -95,11 +95,7 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
 
     async function handleToggleActivation() {
         setToggleEnCours(true)
-        const formData = new FormData()
-        formData.set('userId', utilisateur.id)
-        formData.set('shopId', shopId)
-        formData.set('estActif', String(!utilisateur.est_actif))
-        await toggleActivationUtilisateur(formData)
+        await toggleActivationUtilisateur(utilisateur.id, !utilisateur.est_actif)
         setToggleEnCours(false)
         router.refresh()
     }
