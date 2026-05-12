@@ -58,7 +58,7 @@ export function EmailBienvenueBoutions({
                                     Bienvenue sur Manetec Gestock
                                 </h1>
                                 <p style={{ color: 'rgba(255,255,255,0.8)', margin: '8px 0 0', fontSize: '14px' }}>
-                                    Propulsé par Bold Redhok Tech
+                                    Propulsé par Manetec Inter BJ
                                 </p>
                             </td>
                         </tr>
@@ -171,7 +171,7 @@ export function EmailBienvenueBoutions({
                                 textAlign: 'center',
                             }}>
                                 <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
-                                    Bold Redhok Tech · Manetec Gestock
+                                    Manetec Inter BJ · Manetec Gestock
                                 </p>
                                 <p style={{ color: '#94a3b8', fontSize: '11px', margin: '4px 0 0' }}>
                                     Cet email a été envoyé automatiquement. Ne pas répondre.

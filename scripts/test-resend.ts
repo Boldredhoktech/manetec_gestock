@@ -22,7 +22,7 @@ async function testerResend() {
     const { data, error } = await resend.emails.send({
         from:    expediteur,
         // ⚠️ Remplacez par votre email personnel pour recevoir le test
-        to:      ['opokuhemrickkwaku@gmail.com'],
+        to:      ['ruph@manetec.app'],
         subject: '✅ Test Manetec Gestock — Resend fonctionne',
         html: `
             <div style="font-family: sans-serif; max-width: 500px; margin: 0 auto; padding: 24px;">
