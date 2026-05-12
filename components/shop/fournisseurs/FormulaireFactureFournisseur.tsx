@@ -139,7 +139,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                         </div>
                         <div className="col-span-1">
                             <label className="text-xs text-gray-400 mb-1 block">Qté</label>
-                            <input type="number" min="0.001" step="0.001" value={l.quantite}
+                            <input type="number" min="1" step="1" value={l.quantite}
                                    onChange={e => mettreAJour(i, 'quantite', parseFloat(e.target.value) || 0)}
                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
                         </div>

@@ -483,7 +483,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                                         <input
                                                             type="number"
                                                             min="0"
-                                                            step="0.001"
+                                                            step="1"
                                                             value={quantites[item.id] ?? ''}
                                                             onChange={e => setQuantites(prev => ({
                                                                 ...prev, [item.id]: e.target.value,

@@ -6,10 +6,21 @@ import { creerFactureFournisseur } from '@/actions/fournisseurs'
 import { Plus, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
 
+interface Produit {
+    id: string; nom: string; prix_achat: number; unite: string
+}
+
 interface Props {
     fournisseurs: { id: string; nom: string; public_id: string }[]
-    produits:     { id: string; nom: string; prix_achat: number; unite: string }[]
+    produits:     Produit[]
     entrepots:    { id: string; nom: string }[]
+}
+
+interface LigneForm {
+    product_id:    string   // obligatoire
+    quantite:      number   // entier uniquement
+    prix_unitaire: number
+    tva_pct:       number
 }
 
 export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produits, entrepots }: Props) {
@@ -20,12 +31,15 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
     const [referenceFourn, setReferenceFourn] = useState('')
     const [dateEcheance,   setDateEcheance]   = useState('')
     const [notes,          setNotes]          = useState('')
-    const [lignes, setLignes] = useState<LigneFactureFourn[]>([
-        { product_id: null, designation: '', quantite: 1, prix_unitaire: 0, tva_pct: 0 },
+    const [lignes, setLignes] = useState<LigneForm[]>([
+        { product_id: '', quantite: 1, prix_unitaire: 0, tva_pct: 0 },
     ])
     const [enAttente, setEnAttente] = useState(false)
     const [erreur,    setErreur]    = useState<string>()
     const [succes,    setSucces]    = useState(false)
+
+    // Produits déjà sélectionnés pour éviter les doublons
+    const produitsDejaPris = new Set(lignes.map(l => l.product_id).filter(Boolean))
 
     const montantHT  = lignes.reduce((a, l) => a + l.quantite * l.prix_unitaire, 0)
     const montantTTC = lignes.reduce((a, l) => {
@@ -34,47 +48,76 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
     }, 0)
 
     function ajouterLigne() {
-        setLignes(p => [...p, { product_id: null, designation: '', quantite: 1, prix_unitaire: 0, tva_pct: 0 }])
+        setLignes(p => [...p, { product_id: '', quantite: 1, prix_unitaire: 0, tva_pct: 0 }])
     }
 
     function supprimerLigne(i: number) {
+        if (lignes.length === 1) return
         setLignes(p => p.filter((_, idx) => idx !== i))
     }
 
-    function mettreAJour(i: number, champ: keyof LigneFactureFourn, val: any) {
-        setLignes(p => p.map((l, idx) => {
+    function choisirProduit(i: number, productId: string) {
+        const prod = produits.find(p => p.id === productId)
+        setLignes(prev => prev.map((l, idx) => {
             if (idx !== i) return l
-            const u = { ...l, [champ]: val }
-            if (champ === 'product_id' && val) {
-                const prod = produits.find(pr => pr.id === val)
-                if (prod) { u.designation = prod.nom; u.prix_unitaire = prod.prix_achat }
+            return {
+                ...l,
+                product_id:    productId,
+                prix_unitaire: prod?.prix_achat ?? 0,
             }
-            return u
         }))
     }
 
+    function mettreAJour(i: number, champ: 'quantite' | 'prix_unitaire' | 'tva_pct', val: number) {
+        setLignes(p => p.map((l, idx) => idx !== i ? l : { ...l, [champ]: val }))
+    }
+
     async function handleSoumettre() {
-        if (!supplierId)    { setErreur('Sélectionnez un fournisseur.'); return }
-        const valides = lignes.filter(l => l.designation.trim() && l.quantite > 0)
-        if (!valides.length) { setErreur('Ajoutez au moins une ligne valide.'); return }
+        if (!supplierId) { setErreur('Sélectionnez un fournisseur.'); return }
+
+        const lignesValides = lignes.filter(l => l.product_id && l.quantite > 0)
+        if (!lignesValides.length) {
+            setErreur('Chaque ligne doit avoir un produit sélectionné et une quantité > 0.')
+            return
+        }
+
+        // Vérifier pas de produit en double
+        const ids = lignesValides.map(l => l.product_id)
+        if (new Set(ids).size !== ids.length) {
+            setErreur('Un produit ne peut pas être sélectionné deux fois. Regroupez les quantités.')
+            return
+        }
 
         setEnAttente(true); setErreur(undefined)
 
+        // Construire les lignes avec designation depuis le produit
+        const lignesFinales: LigneFactureFourn[] = lignesValides.map(l => {
+            const prod = produits.find(p => p.id === l.product_id)!
+            return {
+                product_id:    l.product_id,
+                designation:   prod.nom,
+                quantite:      l.quantite,
+                prix_unitaire: l.prix_unitaire,
+                tva_pct:       l.tva_pct,
+            }
+        })
+
         const res = await creerFactureFournisseur(
             supplierId, warehouseId || null, referenceFourn,
-            dateEcheance || null, notes, valides
+            dateEcheance || null, notes, lignesFinales
         )
         setEnAttente(false)
 
         if (res?.erreur) { setErreur(res.erreur); return }
         setSucces(true)
-        setTimeout(() => router.push(`/stock/factures-fournisseurs/${res.facture_id}`), 1000)
+        setTimeout(() => router.push(`/stock/factures-fournisseurs/${(res as any).facture_id}`), 1000)
     }
 
     const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
+
             {erreur && (
                 <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />{erreur}
@@ -86,11 +129,10 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 </div>
             )}
 
-            {/* Infos générales */}
+            {/* Informations générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#1a56db]">Informations générales</h2>
 
-                {/* Fournisseur — premier champ */}
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
                         Fournisseur <span className="text-red-500">*</span>
@@ -111,7 +153,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
 
                 <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Entrepôt (pour mise à jour stock)</label>
+                        <label className="text-sm font-medium text-gray-700">Entrepôt (mise à jour stock)</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
                             <option value="">— Sans mise à jour stock —</option>
                             {entrepots.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
@@ -134,63 +176,126 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 </div>
             </div>
 
-            {/* Lignes */}
+            {/* Lignes — produits obligatoires */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-[#1a56db]">Articles / Services</h2>
+                    <div>
+                        <h2 className="text-sm font-bold text-[#1a56db]">Articles commandés</h2>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            Seuls les produits existants dans votre catalogue sont acceptés.
+                        </p>
+                    </div>
                     <button type="button" onClick={ajouterLigne}
                             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1a56db] border border-[#1a56db]/30 rounded-lg hover:bg-[#1a56db]/5">
-                        <Plus className="w-3.5 h-3.5" />Ajouter une ligne
+                        <Plus className="w-3.5 h-3.5" />Ajouter un article
                     </button>
                 </div>
 
-                {lignes.map((l, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-xl">
-                        <div className="col-span-3">
-                            <label className="text-xs text-gray-400 mb-1 block">Produit (optionnel)</label>
-                            <select value={l.product_id ?? ''} onChange={e => mettreAJour(i, 'product_id', e.target.value || null)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none">
-                                <option value="">— Libre —</option>
-                                {produits.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
-                            </select>
-                        </div>
-                        <div className="col-span-4">
-                            <label className="text-xs text-gray-400 mb-1 block">Désignation *</label>
-                            <input type="text" value={l.designation} onChange={e => mettreAJour(i, 'designation', e.target.value)}
-                                   placeholder="Description"
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
-                        </div>
-                        <div className="col-span-1">
-                            <label className="text-xs text-gray-400 mb-1 block">Qté</label>
-                            <input type="number" min="0.001" step="0.001" value={l.quantite}
-                                   onChange={e => mettreAJour(i, 'quantite', parseFloat(e.target.value) || 0)}
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
-                        </div>
-                        <div className="col-span-2">
-                            <label className="text-xs text-gray-400 mb-1 block">Prix HT</label>
-                            <input type="number" min="0" step="0.01" value={l.prix_unitaire}
-                                   onChange={e => mettreAJour(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
-                        </div>
-                        <div className="col-span-1">
-                            <label className="text-xs text-gray-400 mb-1 block">TVA%</label>
-                            <input type="number" min="0" max="100" step="0.5" value={l.tva_pct}
-                                   onChange={e => mettreAJour(i, 'tva_pct', parseFloat(e.target.value) || 0)}
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
-                        </div>
-                        <div className="col-span-1 pt-5 flex justify-center">
-                            <button type="button" onClick={() => supprimerLigne(i)} disabled={lignes.length === 1}
-                                    className="p-1.5 text-red-400 hover:text-red-600 disabled:opacity-30">
-                                <Trash2 className="w-4 h-4" />
-                            </button>
-                        </div>
-                    </div>
-                ))}
+                {lignes.map((l, i) => {
+                    const produitChoisi = produits.find(p => p.id === l.product_id)
+                    return (
+                        <div key={i} className="p-4 bg-gray-50 rounded-xl space-y-3">
 
-                <div className="flex justify-end gap-6 pt-2 border-t border-gray-100 text-sm">
+                            {/* Ligne 1 : Sélection produit */}
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-gray-600">
+                                    Produit <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={l.product_id}
+                                    onChange={e => choisirProduit(i, e.target.value)}
+                                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                >
+                                    <option value="">— Sélectionnez un produit —</option>
+                                    {produits.map(p => (
+                                        <option
+                                            key={p.id}
+                                            value={p.id}
+                                            disabled={produitsDejaPris.has(p.id) && p.id !== l.product_id}
+                                        >
+                                            {p.nom} ({p.unite}) — Prix achat : {p.prix_achat} FCFA
+                                            {produitsDejaPris.has(p.id) && p.id !== l.product_id ? ' ✓ déjà ajouté' : ''}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Ligne 2 : Quantité, Prix, TVA */}
+                            {l.product_id && (
+                                <div className="grid grid-cols-4 gap-3">
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-600">
+                                            Quantité *
+                                            <span className="text-gray-400 font-normal ml-1">
+                                                ({produitChoisi?.unite})
+                                            </span>
+                                        </label>
+                                        {/* ✅ Entier uniquement — step="1" */}
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            step="1"
+                                            value={l.quantite}
+                                            onChange={e => mettreAJour(i, 'quantite', Math.max(1, parseInt(e.target.value) || 1))}
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5 col-span-2">
+                                        <label className="text-xs font-semibold text-gray-600">
+                                            Prix unitaire HT (FCFA)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="1"
+                                            value={l.prix_unitaire}
+                                            onChange={e => mettreAJour(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                        />
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        <label className="text-xs font-semibold text-gray-600">TVA %</label>
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            max="100"
+                                            step="1"
+                                            value={l.tva_pct}
+                                            onChange={e => mettreAJour(i, 'tva_pct', parseFloat(e.target.value) || 0)}
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Sous-total ligne + bouton supprimer */}
+                            <div className="flex items-center justify-between">
+                                {l.product_id && l.quantite > 0 && l.prix_unitaire > 0 ? (
+                                    <p className="text-xs font-bold text-[#1a56db]">
+                                        Sous-total : {(l.quantite * l.prix_unitaire * (1 + l.tva_pct / 100)).toLocaleString('fr-FR')} FCFA TTC
+                                    </p>
+                                ) : (
+                                    <span />
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => supprimerLigne(i)}
+                                    disabled={lignes.length === 1}
+                                    className="flex items-center gap-1 text-xs text-red-400 hover:text-red-600 disabled:opacity-30 transition-colors"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    Retirer
+                                </button>
+                            </div>
+                        </div>
+                    )
+                })}
+
+                {/* Totaux */}
+                <div className="flex justify-end gap-6 pt-3 border-t border-gray-100">
                     <div className="text-right">
                         <p className="text-xs text-gray-400">Montant HT</p>
-                        <p className="font-bold text-gray-700">{montantHT.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-sm font-bold text-gray-700">{montantHT.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-400">Total TTC</p>
@@ -199,11 +304,15 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 </div>
             </div>
 
-            <button type="button" onClick={handleSoumettre} disabled={enAttente || succes || !supplierId}
-                    className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}>
+            <button
+                type="button"
+                onClick={handleSoumettre}
+                disabled={enAttente || succes || !supplierId}
+                className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl disabled:opacity-50 transition-all hover:shadow-lg"
+                style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}
+            >
                 {enAttente
-                    ? <><Loader2 className="w-4 h-4 animate-spin" />Création...</>
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>
                     : 'Enregistrer la facture fournisseur'
                 }
             </button>

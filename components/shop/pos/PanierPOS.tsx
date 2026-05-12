@@ -181,10 +181,10 @@ export default function PanierPOS({
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
                                                     Qté (max {ligne.stock_disponible})
                                                 </label>
-                                                <input type="number" min="0.001" step="0.001"
+                                                <input type="number" min="1" step="1"
                                                        max={ligne.stock_disponible}
                                                        value={ligne.quantite}
-                                                       onChange={e => onModifierLigne(ligne.product_id, 'quantite', parseFloat(e.target.value) || 1)}
+                                                       onChange={e => onModifierLigne(ligne.product_id, 'quantite', parseInt(e.target.value) || 1)}
                                                        className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
                                                 />
                                             </div>
@@ -194,7 +194,7 @@ export default function PanierPOS({
                                                 </label>
                                                 <input type="number" min="0" max="100" step="0.5"
                                                        value={ligne.remise_pct}
-                                                       onChange={e => onModifierLigne(ligne.product_id, 'remise_pct', parseFloat(e.target.value) || 0)}
+                                                       onChange={e => onModifierLigne(ligne.product_id, 'remise_pct', parseInt(e.target.value) || 0)}
                                                        className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
                                                 />
                                             </div>

@@ -145,8 +145,6 @@ interface DonneesRapportVentes {
 
 function fmt(n: number, d: string) {
     return formatMontantPDF(n, d)
-    minimumFractionDigits: 0,
-        maximumFractionDigits: 0,
 }
 
 export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes }) {

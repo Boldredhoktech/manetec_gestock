@@ -167,7 +167,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Quantité initiale</label>
-                        <input name="stockInitial" type="number" min="0" step="0.001"
+                        <input name="stockInitial" type="number" min="0" step="1"
                                defaultValue="0" disabled={enAttente}
                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>

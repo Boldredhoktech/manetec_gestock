@@ -89,7 +89,7 @@ export default function EditeurLignes({ lignes, onChanger, produits }: Props) {
                     <div className="grid grid-cols-4 gap-2">
                         <div>
                             <label className="text-xs text-muted-foreground">Qté</label>
-                            <input type="number" min="0.001" step="0.001"
+                            <input type="number" min="1" step="1"
                                    value={ligne.quantite}
                                    onChange={e => modifierLigne(i, 'quantite', parseFloat(e.target.value) || 1)}
                                    className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
