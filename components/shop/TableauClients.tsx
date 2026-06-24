@@ -47,6 +47,8 @@ export default function TableauClients({ clients }: Props) {
                 </div>
             ) : (
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                  <div className="overflow-x-auto">
+                   <div className="min-w-[720px]">
 
                     {/* En-tête tableau */}
                     <div
@@ -132,6 +134,8 @@ export default function TableauClients({ clients }: Props) {
                             </Link>
                         ))}
                     </div>
+                   </div>
+                  </div>
                 </div>
             )}
         </div>

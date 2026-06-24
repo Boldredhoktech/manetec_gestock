@@ -35,7 +35,7 @@ export default function FormulaireEmploye() {
                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Poste</label>
                         <input name="poste" type="text" placeholder="Ex: Caissier"
@@ -50,7 +50,7 @@ export default function FormulaireEmploye() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Salaire de base</label>
                         <input name="salaireBase" type="number" min="0" step="0.01"

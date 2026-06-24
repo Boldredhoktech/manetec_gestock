@@ -69,7 +69,7 @@ export default async function PageModifierProduit({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-3xl mx-auto w-full">
+            <main className="flex-1 p-4 sm:p-6 max-w-3xl mx-auto w-full">
                 <FormulaireModifierProduit
                     produit={produit}
                     categories={categories ?? []}

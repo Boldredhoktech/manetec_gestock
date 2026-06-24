@@ -185,7 +185,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                         <CheckCircle className="w-5 h-5 text-green-600" />
                         <h3 className="text-sm font-bold text-green-800">Inventaire validé avec succès !</h3>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {resultatVal.valeurPertes > 0 && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
                                 <p className="text-xs text-red-500 mb-1">Pertes constatées (règle C5)</p>
@@ -327,7 +327,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
                         {/* Stats temps réel */}
                         {stats && stats.comptes > 0 && (
-                            <div className="grid grid-cols-4 gap-2">
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                                 {[
                                     {
                                         label: 'Comptés',
@@ -407,6 +407,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
                     {/* Tableau des articles */}
                     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                       <div className="min-w-[640px]">
 
                         {/* En-tête tableau */}
                         <div
@@ -539,6 +541,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 })}
                             </div>
                         )}
+                       </div>
+                      </div>
                     </div>
 
                     {/* Résumé avant validation */}
@@ -551,7 +555,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 </h3>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div className="p-4 bg-gray-50 rounded-xl">
                                     <p className="text-xs text-gray-500 mb-2">Articles comptés</p>
                                     <p className="text-2xl font-black text-gray-800">{stats.comptes}</p>
@@ -582,7 +586,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                             </div>
 
                             {(stats.valPertes > 0 || stats.valGains > 0) && (
-                                <div className="grid grid-cols-2 gap-3">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div className="p-4 bg-red-50 border border-red-200 rounded-xl">
                                         <div className="flex items-center gap-2 mb-2">
                                             <TrendingDown className="w-4 h-4 text-red-500" />

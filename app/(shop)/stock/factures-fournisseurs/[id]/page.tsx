@@ -79,7 +79,7 @@ export default async function PageDetailFactureFournisseur({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full space-y-5">
+            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-5">
                 <CarteDetailFactureFournisseur facture={facture} boutique={boutique} />
             </main>
         </div>

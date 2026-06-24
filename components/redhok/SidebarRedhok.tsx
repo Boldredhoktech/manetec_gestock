@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { Shield, Store, Users, LayoutDashboard, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
+import SidebarDrawer from '@/components/shared/SidebarDrawer'
 
 const NAVIGATION = [
     { label: 'Dashboard',  href: '/redhok/dashboard', icone: LayoutDashboard },
@@ -16,7 +17,7 @@ export default function SidebarRedhok() {
     const pathname = usePathname()
 
     return (
-        <aside className="sidebar-royal w-60 shrink-0 flex flex-col min-h-screen">
+        <SidebarDrawer title="Manetec Inter BJ">
 
             {/* Logo plateforme */}
             <div className="sidebar-logo-zone px-4 py-5">
@@ -65,6 +66,6 @@ export default function SidebarRedhok() {
                 </button>
             </div>
 
-        </aside>
+        </SidebarDrawer>
     )
 }

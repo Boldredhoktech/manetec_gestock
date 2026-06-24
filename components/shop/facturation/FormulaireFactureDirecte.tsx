@@ -59,7 +59,7 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
             <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Informations générales</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Client</label>
                         <select
@@ -95,7 +95,7 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Remise globale (%)</label>
                         <input

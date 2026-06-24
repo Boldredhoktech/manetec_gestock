@@ -44,7 +44,7 @@ export default function CarteDetailFournisseur({ fournisseur }: Props) {
             </div>
 
             {(fournisseur.ifu || fournisseur.rccm) && (
-                <div className="grid grid-cols-2 gap-3 text-xs text-muted-foreground border-t border-border pt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs text-muted-foreground border-t border-border pt-3">
                     {fournisseur.ifu && <span>IFU : {fournisseur.ifu}</span>}
                     {fournisseur.rccm && <span>RCCM : {fournisseur.rccm}</span>}
                 </div>

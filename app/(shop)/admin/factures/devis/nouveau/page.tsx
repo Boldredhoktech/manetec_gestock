@@ -44,7 +44,7 @@ export default async function PageNouveauDevis({ searchParams }: PageProps) {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-6 py-4">
+            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <div className="flex items-center gap-3">
                     <Link href="/admin/factures"
                           className="text-muted-foreground hover:text-foreground">
@@ -53,7 +53,7 @@ export default async function PageNouveauDevis({ searchParams }: PageProps) {
                     <h1 className="text-xl font-bold text-foreground">Nouveau devis</h1>
                 </div>
             </header>
-            <main className="flex-1 p-6 max-w-3xl">
+            <main className="flex-1 p-4 sm:p-6 max-w-3xl">
                 <FormulaireDevis
                     clients={tousLesClients}
                     produits={produits ?? []}

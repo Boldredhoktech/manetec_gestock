@@ -97,7 +97,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-5xl mx-auto w-full space-y-5">
+            <main className="flex-1 p-4 sm:p-6 max-w-5xl mx-auto w-full space-y-5">
 
                 {/* ── Infos fournisseur ──────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
@@ -108,7 +108,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                             <Building2 className="w-5 h-5 text-[#1a56db]" />
                             <h2 className="text-sm font-bold text-gray-900">Informations</h2>
                         </div>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             {fournisseur.telephone && (
                                 <div className="flex items-center gap-2 text-gray-600">
                                     <Phone className="w-4 h-4 text-gray-400 shrink-0" />

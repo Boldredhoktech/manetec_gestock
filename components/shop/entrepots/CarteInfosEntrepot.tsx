@@ -142,7 +142,7 @@ export default function CarteInfosEntrepot({
                     </p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
                         { label: 'Produits', val: totalProduits, couleur: 'text-[#1a56db]',  bg: 'bg-blue-50'  },
                         { label: 'En alerte', val: enAlerte,     couleur: 'text-yellow-600', bg: 'bg-yellow-50' },

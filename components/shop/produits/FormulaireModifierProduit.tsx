@@ -141,7 +141,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                               className={inputClass + ' resize-none'} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Type de produit</label>
                         <select value={typeProduit} onChange={e => setTypeProduit(e.target.value)}
@@ -162,7 +162,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">SKU</label>
                         <input type="text" value={sku} onChange={e => setSku(e.target.value)}
@@ -175,7 +175,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Catégorie</label>
                         <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
@@ -203,7 +203,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#1a56db]">Grille tarifaire</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">
                             Prix d'achat <span className="text-red-500">*</span>
@@ -222,7 +222,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Prix de gros</label>
                         <input type="number" min="0" step="0.01" value={prixGros}
@@ -237,7 +237,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">TVA (%)</label>
                         <input type="number" min="0" max="100" step="0.5" value={tvaPct}
@@ -267,7 +267,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#1a56db]">Options avancées</h2>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-xl border-2 transition-all ${
                         necessiteImei ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                     }`}>

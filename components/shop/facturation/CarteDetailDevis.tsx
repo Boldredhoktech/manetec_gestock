@@ -93,7 +93,7 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
             </div>
 
             {/* Boutique ↔ Client */}
-            <div className="grid grid-cols-2 gap-6 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-1">
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">De</p>
                     <p className="font-semibold text-gray-900">{boutique?.nom}</p>
@@ -117,8 +117,8 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
             </div>
 
             {/* Lignes */}
-            <div className="border border-gray-200 rounded-xl overflow-hidden">
-                <table className="w-full text-sm">
+            <div className="border border-gray-200 rounded-xl overflow-x-auto">
+                <table className="w-full min-w-[520px] text-sm">
                     <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
                         <th className="text-left px-4 py-2.5 font-medium text-gray-500">Désignation</th>

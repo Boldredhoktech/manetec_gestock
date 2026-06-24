@@ -62,7 +62,7 @@ export default function FormulaireModifierClient({ client }: Props) {
                            className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40 disabled:opacity-50" />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {[
                         { name: 'telephone', label: 'Téléphone',  type: 'tel',   val: client.telephone,  placeholder: '+229 97 00 00 00' },
                         { name: 'email',     label: 'Email',       type: 'email', val: client.email,      placeholder: 'email@exemple.com' },
@@ -76,7 +76,7 @@ export default function FormulaireModifierClient({ client }: Props) {
                     ))}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Ville</label>
                         <input name="ville" type="text" defaultValue={client.ville ?? ''}
@@ -111,7 +111,7 @@ export default function FormulaireModifierClient({ client }: Props) {
             {/* Infos légales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
                 <h2 className="text-sm font-bold text-[#1a56db]">Informations légales</h2>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">IFU</label>
                         <input name="ifu" type="text" defaultValue={client.ifu ?? ''}

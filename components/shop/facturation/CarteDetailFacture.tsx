@@ -59,7 +59,7 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
             </div>
 
             {/* Boutique ↔ Client */}
-            <div className="grid grid-cols-2 gap-6 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-1">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">De</p>
                     <p className="font-semibold text-foreground">{boutique?.nom}</p>
@@ -97,8 +97,8 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
             </div>
 
             {/* Lignes */}
-            <div className="border border-border rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
+            <div className="border border-border rounded-lg overflow-x-auto">
+                <table className="w-full min-w-[520px] text-sm">
                     <thead>
                     <tr className="bg-muted/40 border-b border-border">
                         <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Désignation</th>

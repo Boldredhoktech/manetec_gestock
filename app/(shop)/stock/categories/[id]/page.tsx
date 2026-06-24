@@ -78,7 +78,7 @@ export default async function PageDetailCategorie({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
 
                     <div className="flex items-center gap-2 p-5 border-b border-gray-100">

@@ -39,7 +39,7 @@ export default async function PageParametres() {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
                 <ParametresBoutique boutique={boutique} />
             </main>
         </div>

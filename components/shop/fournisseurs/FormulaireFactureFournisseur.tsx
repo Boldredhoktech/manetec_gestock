@@ -87,7 +87,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
             {/* Infos générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#1a56db]">Informations générales</h2>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Entrepôt (pour mise à jour stock)</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
@@ -122,6 +122,8 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                     </button>
                 </div>
 
+                <div className="overflow-x-auto">
+                 <div className="min-w-[640px] space-y-3">
                 {lignes.map((l, i) => (
                     <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-xl">
                         <div className="col-span-3">
@@ -163,6 +165,8 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                         </div>
                     </div>
                 ))}
+                 </div>
+                </div>
 
                 <div className="flex justify-end gap-6 pt-2 border-t border-gray-100 text-sm">
                     <div className="text-right">

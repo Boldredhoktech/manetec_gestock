@@ -69,7 +69,7 @@ export default async function PageDashboardAdmin() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-6 py-4">
+            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <h1 className="text-xl font-bold text-foreground">
                     Bonjour, {meta.nom_complet} 👋
                 </h1>
@@ -78,7 +78,7 @@ export default async function PageDashboardAdmin() {
                 </p>
             </header>
 
-            <main className="flex-1 p-6 space-y-6">
+            <main className="flex-1 p-4 sm:p-6 space-y-6">
 
                 {/* Alerte expiration plan */}
                 {expireBientot && (

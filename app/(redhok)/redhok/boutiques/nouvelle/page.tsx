@@ -17,7 +17,7 @@ export default async function PageNouvelleBoutique() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-6 py-4">
+            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <div className="flex items-center gap-3">
                     <Link
                         href="/redhok/boutiques"
@@ -35,7 +35,7 @@ export default async function PageNouvelleBoutique() {
                     </div>
                 </div>
             </header>
-            <main className="flex-1 p-6 max-w-2xl">
+            <main className="flex-1 p-4 sm:p-6 max-w-2xl">
                 <FormulaireBoutique />
             </main>
         </div>

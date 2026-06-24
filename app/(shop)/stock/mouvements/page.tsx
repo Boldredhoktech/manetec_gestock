@@ -41,13 +41,13 @@ export default async function PageMouvements() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-6 py-4">
+            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <h1 className="text-xl font-bold text-foreground">Mouvements de stock</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     100 derniers mouvements
                 </p>
             </header>
-            <main className="flex-1 p-6">
+            <main className="flex-1 p-4 sm:p-6">
                 <div className="bg-card border border-border rounded-xl overflow-hidden">
                     <div className="overflow-x-auto">
                         <table className="w-full text-sm">

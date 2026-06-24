@@ -78,10 +78,10 @@ export default async function PageDetailReception({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full space-y-5">
+            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-5">
 
                 {/* Infos générales */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-2">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Fournisseur</p>
                         <p className="text-sm font-bold text-gray-800">{fourn?.nom ?? '—'}</p>
@@ -124,7 +124,8 @@ export default async function PageDetailReception({ params }: Props) {
                             <p className="text-sm">Aucun article enregistré.</p>
                         </div>
                     ) : (
-                        <>
+                        <div className="overflow-x-auto">
+                          <div className="min-w-[640px]">
                             <div
                                 className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
                                 style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
@@ -179,7 +180,8 @@ export default async function PageDetailReception({ params }: Props) {
                                     </span>
                                 </div>
                             </div>
-                        </>
+                          </div>
+                        </div>
                     )}
                 </div>
 

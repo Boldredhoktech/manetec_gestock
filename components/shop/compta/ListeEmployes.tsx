@@ -151,7 +151,7 @@ export default function ListeEmployes({ employes }: Props) {
                                 <form onSubmit={e => handlePayer(e, emp.id)} className="space-y-2">
                                     <input type="hidden" name="employeeId" value={emp.id} />
 
-                                    <div className="grid grid-cols-3 gap-1.5">
+                                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-1.5">
                                         <div>
                                             <label className="text-xs text-muted-foreground">Base</label>
                                             <input name="salaireBase" type="number"

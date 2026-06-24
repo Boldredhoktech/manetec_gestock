@@ -176,7 +176,7 @@ export default function PanierPOS({
                                 {/* Détails expandables */}
                                 {ligneOuverte === ligne.product_id && (
                                     <div className="mt-2 pt-2 border-t border-dashed border-gray-200 space-y-2">
-                                        <div className="grid grid-cols-2 gap-2">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
                                                     Qté (max {ligne.stock_disponible})

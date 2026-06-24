@@ -151,7 +151,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                     )}
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Entrepôt (mise à jour stock)</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
@@ -222,7 +222,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
 
                             {/* Ligne 2 : Quantité, Prix, TVA */}
                             {l.product_id && (
-                                <div className="grid grid-cols-4 gap-3">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-gray-600">
                                             Quantité *

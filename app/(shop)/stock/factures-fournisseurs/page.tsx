@@ -78,7 +78,7 @@ export default async function PageFacturesFournisseurs() {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full space-y-4">
+            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-4">
 
                 {nbImpayees > 0 && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
@@ -112,6 +112,8 @@ export default async function PageFacturesFournisseurs() {
                             <p className="text-sm font-bold text-gray-700">10 dernières factures</p>
                         </div>
 
+                      <div className="overflow-x-auto">
+                       <div className="min-w-[760px]">
                         <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
                              style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}>
                             <div className="col-span-2">Référence</div>
@@ -173,6 +175,8 @@ export default async function PageFacturesFournisseurs() {
                                 )
                             })}
                         </div>
+                       </div>
+                      </div>
                     </div>
                 )}
 

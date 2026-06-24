@@ -74,7 +74,7 @@ export default function CartePrixProduit({ produit }: Props) {
                 </div>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
                     { label: 'Prix d\'achat',   val: prixAchat,   set: setPrixAchat   },
                     { label: 'Prix de vente',   val: prixVente,   set: setPrixVente   },

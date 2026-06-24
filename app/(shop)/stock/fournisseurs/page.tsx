@@ -23,7 +23,7 @@ export default async function PageFournisseurs() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-6 py-4">
+            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-xl font-bold text-foreground">Fournisseurs</h1>
@@ -39,7 +39,7 @@ export default async function PageFournisseurs() {
                     </Button>
                 </div>
             </header>
-            <main className="flex-1 p-6">
+            <main className="flex-1 p-4 sm:p-6">
                 <TableauFournisseurs fournisseurs={fournisseurs ?? []} />
             </main>
         </div>

@@ -52,7 +52,7 @@ export default function CartePaiementFacture({ facture }: Props) {
             <form action={action} className="space-y-3">
                 <input type="hidden" name="factureId" value={facture.id} />
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-foreground">Montant</label>
                         <input name="montant" type="number" min="0.01" step="0.01"
@@ -71,7 +71,7 @@ export default function CartePaiementFacture({ facture }: Props) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input name="reference" type="text" placeholder="Référence (optionnel)"
                            disabled={enAttente}
                            className="px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />

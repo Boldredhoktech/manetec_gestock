@@ -119,7 +119,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                     <h2 className="text-sm font-bold text-gray-900">Ma boutique</h2>
                 </div>
 
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="p-3 bg-gray-50 rounded-xl">
                         <p className="text-xs text-gray-400 mb-1">Boutique</p>
                         <p className="text-sm font-bold text-gray-800 truncate">{boutique.nom}</p>
@@ -182,7 +182,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                     </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="col-span-2 space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Nom complet</label>
                         <div className="flex gap-2">

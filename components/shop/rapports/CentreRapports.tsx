@@ -186,7 +186,7 @@ export default function CentreRapports() {
                             </div>
 
                             {rapport.params && rapport.params.length > 0 && (
-                                <div className="grid grid-cols-2 gap-2">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     {rapport.params.map(param => (
                                         <div key={param.key} className="space-y-1">
                                             <label className="text-xs font-medium text-foreground">

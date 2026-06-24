@@ -58,7 +58,7 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
             <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
 
                 {/* Boutique ↔ Fournisseur */}
-                <div className="grid grid-cols-2 gap-6 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                     <div className="space-y-1">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Notre boutique</p>
                         <p className="font-bold text-gray-900">{boutique?.nom}</p>
@@ -76,7 +76,7 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
                 </div>
 
                 {/* Dates et infos */}
-                <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     {[
                         { label: 'Date facture',       val: formatDate(facture.date_facture)              },
                         { label: 'Date échéance',       val: facture.date_echeance ? formatDate(facture.date_echeance) : '—' },
@@ -90,8 +90,8 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
                 </div>
 
                 {/* Lignes */}
-                <div className="border border-gray-200 rounded-xl overflow-hidden">
-                    <table className="w-full text-sm">
+                <div className="border border-gray-200 rounded-xl overflow-x-auto">
+                    <table className="w-full min-w-[520px] text-sm">
                         <thead>
                         <tr className="bg-gray-50 border-b border-gray-200">
                             <th className="text-left px-4 py-2.5 font-medium text-gray-500">Désignation</th>
@@ -182,7 +182,7 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
                         </div>
                     )}
 
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-gray-700">Montant *</label>
                             <input type="number" min="0" step="0.01"

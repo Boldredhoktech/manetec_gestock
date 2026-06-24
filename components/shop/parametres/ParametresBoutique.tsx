@@ -160,7 +160,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                                    className={inputClass} />
                         </Champ>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Champ label="Téléphone principal" requis>
                                 <div className="relative">
                                     <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -181,7 +181,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                             </Champ>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Champ label="Email">
                                 <div className="relative">
                                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -212,7 +212,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                             </div>
                         </Champ>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Champ label="Ville">
                                 <input type="text" value={ville}
                                        onChange={e => setVille(e.target.value)}
@@ -234,7 +234,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                         icone={Building2}
                         description="IFU et RCCM — apparaissent sur les factures entreprise"
                     >
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Champ label="Numéro IFU">
                                 <input type="text" value={ifu}
                                        onChange={e => setIfu(e.target.value)}

@@ -267,11 +267,11 @@ export default function InterfacePOS({
 
             {/* ── CONTENU SELON ÉTAPE ──────────────────────────── */}
             {etape === 'caisse' && (
-                <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                     {/* GAUCHE — Recherche produits */}
                     <div
-                        className="flex-1 flex flex-col overflow-hidden"
+                        className="lg:flex-1 flex flex-col min-h-[55vh] lg:min-h-0 overflow-hidden"
                         style={{ background: '#f0f4ff' }}
                     >
                         <RechercheProduitPOS
@@ -282,7 +282,7 @@ export default function InterfacePOS({
                     </div>
 
                     {/* DROITE — Panier */}
-                    <div className="w-96 flex flex-col bg-white shadow-xl overflow-hidden border-l border-gray-200">
+                    <div className="w-full lg:w-96 flex flex-col bg-white shadow-xl overflow-hidden border-t lg:border-t-0 lg:border-l border-gray-200">
                         <PanierPOS
                             panier={panier}
                             clients={clients}

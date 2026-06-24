@@ -38,7 +38,7 @@ export default function CarteSoldesClient({ client }: Props) {
             </h2>
 
             {/* Soldes actuels */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                     <p className="text-xs text-muted-foreground mb-1">Crédit dû</p>
                     <p className={`text-sm font-bold ${client.credit_balance > 0 ? 'text-destructive' : 'text-foreground'}`}>
@@ -77,7 +77,7 @@ export default function CarteSoldesClient({ client }: Props) {
             <form action={action} className="space-y-3">
                 <input type="hidden" name="clientId" value={client.id} />
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-foreground">
                             Type d'opération

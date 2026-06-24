@@ -66,7 +66,7 @@ export default function CarteAvoir({ factureId, avoirs }: Props) {
             <form action={action} className="space-y-3">
                 <input type="hidden" name="factureId" value={factureId} />
 
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-foreground">Montant</label>
                         <input name="montant" type="number" min="0.01" step="0.01"

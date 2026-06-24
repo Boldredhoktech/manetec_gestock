@@ -118,7 +118,7 @@ export default function FormulaireReception({ fournisseurId, produits, entrepots
             <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Configuration</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Entrepôt</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)}
@@ -171,7 +171,7 @@ export default function FormulaireReception({ fournisseurId, produits, entrepots
                                 <Trash2 className="w-3.5 h-3.5" />
                             </button>
                         </div>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                             <div>
                                 <label className="text-xs text-muted-foreground">Désignation</label>
                                 <input type="text" value={ligne.designation}

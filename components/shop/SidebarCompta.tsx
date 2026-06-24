@@ -9,6 +9,7 @@ import {
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
 import { useSessionBoutique } from '@/hooks/useSession'
+import SidebarDrawer from '@/components/shared/SidebarDrawer'
 
 const NAVIGATION = [
     { label: 'Dashboard admin', href: '/admin/dashboard',  icone: LayoutDashboard },
@@ -25,7 +26,7 @@ export default function SidebarCompta() {
     const { session } = useSessionBoutique()
 
     return (
-        <aside className="sidebar-royal w-60 shrink-0 flex flex-col min-h-screen">
+        <SidebarDrawer title={session?.shop_nom ?? 'Boutique'}>
 
             <div className="sidebar-logo-zone px-4 py-5">
                 <div className="flex items-center gap-2.5">
@@ -83,6 +84,6 @@ export default function SidebarCompta() {
                 </button>
             </div>
 
-        </aside>
+        </SidebarDrawer>
     )
 }

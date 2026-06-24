@@ -60,7 +60,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                     />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Type</label>
                         <select name="typeProduit" disabled={enAttente}
@@ -79,7 +79,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Catégorie</label>
                         <select name="categoryId" disabled={enAttente}
@@ -98,7 +98,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">SKU</label>
                         <input name="sku" type="text" placeholder="Code interne"
@@ -118,7 +118,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
             <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Prix</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Prix d'achat</label>
                         <input name="prixAchat" type="number" min="0" step="0.01"
@@ -152,7 +152,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
             <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Stock initial</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Entrepôt</label>
                         <select name="warehouseId" disabled={enAttente}
@@ -188,7 +188,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
             <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Options avancées</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <label className="flex items-center gap-2.5 cursor-pointer p-3 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
                         <input type="checkbox" name="necessite_imei" value="true"
                                disabled={enAttente} className="rounded" />

@@ -27,7 +27,7 @@ export default function CarteInfosProduit({ produit }: Props) {
             </div>
 
             {/* Infos */}
-            <div className="grid grid-cols-2 gap-4 text-sm">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <InfoLine label="Catégorie"    val={(produit.categories as any)?.nom ?? '—'} />
                 <InfoLine label="Marque"       val={(produit.brands as any)?.nom ?? '—'} />
                 <InfoLine label="Unité"        val={produit.unite} />
@@ -44,7 +44,7 @@ export default function CarteInfosProduit({ produit }: Props) {
             )}
 
             {/* Options spéciales */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {produit.necessite_imei && (
                     <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl">
                         <Smartphone className="w-4 h-4 text-blue-600 shrink-0" />

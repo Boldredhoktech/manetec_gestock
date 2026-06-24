@@ -49,7 +49,7 @@ export default function FormulaireFournisseur() {
                            className={inputClass} />
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Nom du contact</label>
                         <input name="nomContact" type="text"
@@ -74,7 +74,7 @@ export default function FormulaireFournisseur() {
                     Coordonnées
                 </h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Téléphone</label>
                         <div className="relative">
@@ -108,7 +108,7 @@ export default function FormulaireFournisseur() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Ville</label>
                         <input name="ville" type="text"
@@ -135,7 +135,7 @@ export default function FormulaireFournisseur() {
                     Informations légales
                 </h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">IFU</label>
                         <input name="ifu" type="text"

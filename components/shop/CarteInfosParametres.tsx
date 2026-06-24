@@ -84,7 +84,7 @@ export default function CarteInfosParametres({ boutique }: Props) {
                         <FileText className="w-4 h-4" />
                         Informations légales
                     </h2>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
                         {boutique.ifu && (
                             <div>
                                 <p className="text-xs text-muted-foreground mb-0.5">IFU</p>

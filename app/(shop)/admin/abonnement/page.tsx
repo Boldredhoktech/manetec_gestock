@@ -95,7 +95,7 @@ export default async function PageAbonnement() {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-3xl mx-auto w-full space-y-5">
+            <main className="flex-1 p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-5">
 
                 {/* Alerte expiration */}
                 {(estExpire || alerteExpiration) && (
@@ -165,7 +165,7 @@ export default async function PageAbonnement() {
                         <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
                             Fonctionnalités incluses dans votre plan
                         </p>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {planConfig.fonctionnalites.map((f, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                     <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
@@ -218,7 +218,7 @@ export default async function PageAbonnement() {
                                 : 'Accédez aux fonctionnalités illimitées et aux emails promotionnels pour vos clients.'
                             }
                         </p>
-                        <div className="grid grid-cols-2 gap-2">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {PLAN_CONFIG[planSuivant].fonctionnalites.map((f, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                     <ChevronRight className="w-3.5 h-3.5 text-[#1a56db] shrink-0" />

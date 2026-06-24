@@ -138,7 +138,7 @@ export default function FormulaireBonCommande({
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#1a56db]">Informations générales</h2>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">
                             Entrepôt de destination <span className="text-red-500">*</span>
@@ -191,7 +191,8 @@ export default function FormulaireBonCommande({
                     </button>
                 </div>
 
-                <div className="space-y-3">
+                <div className="overflow-x-auto">
+                 <div className="space-y-3 min-w-[640px]">
                     {lignes.map((ligne, i) => (
                         <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-xl">
 
@@ -261,6 +262,7 @@ export default function FormulaireBonCommande({
                             </div>
                         </div>
                     ))}
+                 </div>
                 </div>
 
                 {/* Total */}

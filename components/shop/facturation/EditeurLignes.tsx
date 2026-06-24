@@ -86,7 +86,7 @@ export default function EditeurLignes({ lignes, onChanger, produits }: Props) {
                             <Trash2 className="w-3.5 h-3.5" />
                         </button>
                     </div>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div>
                             <label className="text-xs text-muted-foreground">Qté</label>
                             <input type="number" min="1" step="1"

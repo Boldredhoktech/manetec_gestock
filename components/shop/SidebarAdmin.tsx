@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
 import { useSessionBoutique } from '@/hooks/useSession'
+import SidebarDrawer from '@/components/shared/SidebarDrawer'
 
 const NAVIGATION_SUPER_ADMIN = [
     {
@@ -128,7 +129,7 @@ export default function SidebarAdmin({ planReel }: Props) {
     const estSuperAdmin = session?.role === 'super_admin_boutique'
 
     return (
-        <aside className="sidebar-royal w-60 shrink-0 flex flex-col min-h-screen">
+        <SidebarDrawer title={session?.shop_nom ?? 'Boutique'}>
 
             {/* Logo boutique */}
             <div className="sidebar-logo-zone px-4 py-5">
@@ -235,6 +236,6 @@ export default function SidebarAdmin({ planReel }: Props) {
                 </button>
             </div>
 
-        </aside>
+        </SidebarDrawer>
     )
 }

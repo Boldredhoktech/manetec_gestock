@@ -77,7 +77,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
 
                 {/* Résumé */}
                 {nbImpayees > 0 && (
@@ -102,6 +102,8 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                     </div>
                 ) : (
                     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                      <div className="overflow-x-auto">
+                       <div className="min-w-[760px]">
                         <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
                              style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}>
                             <div className="col-span-2">Référence</div>
@@ -155,6 +157,8 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                                 )
                             })}
                         </div>
+                       </div>
+                      </div>
                     </div>
                 )}
             </main>

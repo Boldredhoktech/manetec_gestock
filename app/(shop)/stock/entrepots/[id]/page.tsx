@@ -152,7 +152,7 @@ export default async function PageFicheEntrepot({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-6">
+            <main className="flex-1 p-4 sm:p-6">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                     {/* Colonne gauche — large */}

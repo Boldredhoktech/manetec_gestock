@@ -66,7 +66,7 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
             {/* Formulaire ajout */}
             {ajout && (
                 <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-3">
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
                             <label className="text-xs font-medium text-gray-600 mb-1 block">Nom</label>
                             <input type="text" value={nom} onChange={e => setNom(e.target.value)}

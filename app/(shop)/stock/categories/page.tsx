@@ -22,10 +22,10 @@ export default async function PageCategories() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-6 py-4">
+            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <h1 className="text-xl font-bold text-foreground">Catégories</h1>
             </header>
-            <main className="flex-1 p-6 max-w-2xl">
+            <main className="flex-1 p-4 sm:p-6 max-w-2xl">
                 <GestionCategories categories={categories ?? []} />
             </main>
         </div>
