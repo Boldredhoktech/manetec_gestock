@@ -13,8 +13,8 @@ export default function TableauEntrepots({ entrepots }: Props) {
     if (entrepots.length === 0) {
         return (
             <div className="text-center py-16 space-y-3">
-                <div className="w-16 h-16 bg-[#1a56db]/10 rounded-2xl flex items-center justify-center mx-auto">
-                    <Warehouse className="w-8 h-8 text-[#1a56db]/50" />
+                <div className="w-16 h-16 bg-[#15335a]/10 rounded-2xl flex items-center justify-center mx-auto">
+                    <Warehouse className="w-8 h-8 text-[#15335a]/50" />
                 </div>
                 <p className="text-sm text-gray-400">Aucun entrepôt. Créez-en un pour commencer.</p>
             </div>
@@ -27,16 +27,16 @@ export default function TableauEntrepots({ entrepots }: Props) {
                 <Link
                     key={e.id}
                     href={`/stock/entrepots/${e.id}`}
-                    className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-[#1a56db]/40 hover:shadow-lg hover:shadow-[#1a56db]/8 transition-all duration-200 space-y-4 block"
+                    className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-[#15335a]/40 hover:shadow-lg hover:shadow-[#15335a]/8 transition-all duration-200 space-y-4 block"
                 >
                     {/* En-tête carte */}
                     <div className="flex items-start justify-between">
                         <div className={`p-2.5 rounded-xl transition-colors ${
                             e.est_actif
-                                ? 'bg-[#1a56db]/10 group-hover:bg-[#1a56db]/20'
+                                ? 'bg-[#15335a]/10 group-hover:bg-[#15335a]/20'
                                 : 'bg-gray-100'
                         }`}>
-                            <Warehouse className={`w-6 h-6 ${e.est_actif ? 'text-[#1a56db]' : 'text-gray-400'}`} />
+                            <Warehouse className={`w-6 h-6 ${e.est_actif ? 'text-[#15335a]' : 'text-gray-400'}`} />
                         </div>
                         <div className="flex items-center gap-1.5">
                             {e.est_defaut && (
@@ -58,7 +58,7 @@ export default function TableauEntrepots({ entrepots }: Props) {
 
                     {/* Nom et ID */}
                     <div>
-                        <p className="font-bold text-gray-900 group-hover:text-[#1a56db] transition-colors">
+                        <p className="font-bold text-gray-900 group-hover:text-[#15335a] transition-colors">
                             {e.nom}
                         </p>
                         <p className="text-xs font-mono text-gray-400 mt-0.5">{e.public_id}</p>
@@ -79,7 +79,7 @@ export default function TableauEntrepots({ entrepots }: Props) {
                     {/* Footer carte */}
                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                         <span className="text-xs text-gray-400">Voir les détails</span>
-                        <ChevronRight className="w-4 h-4 text-[#1a56db] group-hover:translate-x-1 transition-transform" />
+                        <ChevronRight className="w-4 h-4 text-[#15335a] group-hover:translate-x-1 transition-transform" />
                     </div>
                 </Link>
             ))}

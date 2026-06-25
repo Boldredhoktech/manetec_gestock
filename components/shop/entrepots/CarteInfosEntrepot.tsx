@@ -57,14 +57,14 @@ export default function CarteInfosEntrepot({
 
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                            <Warehouse className="w-5 h-5 text-[#1a56db]" />
+                        <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                            <Warehouse className="w-5 h-5 text-[#15335a]" />
                         </div>
                         <h2 className="text-sm font-bold text-gray-900">Informations</h2>
                     </div>
                     <button
                         onClick={() => setEditable(!editable)}
-                        className="text-xs text-[#1a56db] font-bold hover:underline"
+                        className="text-xs text-[#15335a] font-bold hover:underline"
                     >
                         {editable ? 'Annuler' : 'Modifier'}
                     </button>
@@ -83,23 +83,23 @@ export default function CarteInfosEntrepot({
                             <div>
                                 <label className="text-xs font-medium text-gray-500 mb-1 block">Nom</label>
                                 <input type="text" value={nom} onChange={e => setNom(e.target.value)}
-                                       className="w-full px-3 py-2 text-sm border border-[#1a56db]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 bg-white" />
+                                       className="w-full px-3 py-2 text-sm border border-[#15335a]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 bg-white" />
                             </div>
                             <div>
                                 <label className="text-xs font-medium text-gray-500 mb-1 block">Description</label>
                                 <textarea value={description} onChange={e => setDesc(e.target.value)}
                                           rows={2}
-                                          className="w-full px-3 py-2 text-sm border border-[#1a56db]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 bg-white resize-none" />
+                                          className="w-full px-3 py-2 text-sm border border-[#15335a]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 bg-white resize-none" />
                             </div>
                             <div>
                                 <label className="text-xs font-medium text-gray-500 mb-1 block">Adresse</label>
                                 <input type="text" value={adresse} onChange={e => setAdresse(e.target.value)}
-                                       className="w-full px-3 py-2 text-sm border border-[#1a56db]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 bg-white" />
+                                       className="w-full px-3 py-2 text-sm border border-[#15335a]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 bg-white" />
                             </div>
                             <button
                                 onClick={handleSauvegarder}
                                 disabled={enAttente || !nom.trim()}
-                                className="w-full py-2 bg-[#1a56db] text-white text-sm font-bold rounded-lg hover:bg-[#1648c0] disabled:opacity-50 transition-colors"
+                                className="w-full py-2 bg-[#15335a] text-white text-sm font-bold rounded-lg hover:bg-[#0f2742] disabled:opacity-50 transition-colors"
                             >
                                 {enAttente ? 'Sauvegarde...' : 'Enregistrer'}
                             </button>
@@ -135,16 +135,16 @@ export default function CarteInfosEntrepot({
                     <h2 className="text-sm font-bold text-gray-900">Valeur du stock</h2>
                 </div>
 
-                <div className="p-4 bg-gradient-to-br from-[#1a56db]/5 to-[#1a56db]/10 rounded-xl border border-[#1a56db]/20">
-                    <p className="text-xs text-[#1a56db]/70 mb-1">Valeur totale (prix achat)</p>
-                    <p className="text-2xl font-black text-[#1a56db]">
+                <div className="p-4 bg-gradient-to-br from-[#15335a]/5 to-[#15335a]/10 rounded-xl border border-[#15335a]/20">
+                    <p className="text-xs text-[#15335a]/70 mb-1">Valeur totale (prix achat)</p>
+                    <p className="text-2xl font-black text-[#15335a]">
                         {formatMontant(valeurStock)}
                     </p>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                     {[
-                        { label: 'Produits', val: totalProduits, couleur: 'text-[#1a56db]',  bg: 'bg-blue-50'  },
+                        { label: 'Produits', val: totalProduits, couleur: 'text-[#15335a]',  bg: 'bg-blue-50'  },
                         { label: 'En alerte', val: enAlerte,     couleur: 'text-yellow-600', bg: 'bg-yellow-50' },
                         { label: 'Rupture',   val: enRupture,    couleur: 'text-red-600',    bg: 'bg-red-50'   },
                     ].map(stat => (

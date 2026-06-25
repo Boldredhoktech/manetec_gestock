@@ -46,7 +46,7 @@ export default async function PageInventaire() {
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <h1 className="text-xl font-bold text-white">Inventaire physique</h1>

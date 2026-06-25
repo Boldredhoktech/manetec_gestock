@@ -59,8 +59,8 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
             {/* En-tête */}
             <div className="p-5 border-b border-gray-100">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                        <Package className="w-5 h-5 text-[#1a56db]" />
+                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                        <Package className="w-5 h-5 text-[#15335a]" />
                     </div>
                     <h2 className="text-sm font-bold text-gray-900">
                         Produits dans cet entrepôt
@@ -78,7 +78,7 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
                             onClick={() => setFiltre(b.key as any)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                 filtre === b.key
-                                    ? 'bg-[#1a56db] text-white shadow-md shadow-[#1a56db]/30'
+                                    ? 'bg-[#15335a] text-white shadow-md shadow-[#15335a]/30'
                                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                             }`}
                         >
@@ -100,7 +100,7 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
                         placeholder="Rechercher un produit, SKU, ID..."
                         value={recherche}
                         onChange={e => setRecherche(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40"
+                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40"
                     />
                 </div>
             </div>
@@ -172,7 +172,7 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
 
                                 {/* Lien fiche produit */}
                                 <Link href={`/stock/produits/${p.id}`}
-                                      className="shrink-0 p-1.5 rounded-lg hover:bg-[#1a56db]/10 text-[#1a56db] transition-colors">
+                                      className="shrink-0 p-1.5 rounded-lg hover:bg-[#15335a]/10 text-[#15335a] transition-colors">
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>

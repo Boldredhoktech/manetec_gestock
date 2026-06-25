@@ -221,8 +221,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
             {!inventaireEnCours && (
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center gap-2">
-                        <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                            <ClipboardCheck className="w-5 h-5 text-[#1a56db]" />
+                        <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                            <ClipboardCheck className="w-5 h-5 text-[#15335a]" />
                         </div>
                         <h2 className="text-sm font-bold text-gray-900">Démarrer un inventaire</h2>
                     </div>
@@ -237,7 +237,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         setWarehouseId(e.target.value)
                                         setNomPerso('') // reset nom perso quand entrepôt change
                                     }}
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30">
+                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30">
                                 {entrepots.map(e => (
                                     <option key={e.id} value={e.id}>
                                         {e.nom}{e.est_defaut ? ' (défaut)' : ''}
@@ -255,7 +255,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 value={nomPerso}
                                 onChange={e => setNomPerso(e.target.value)}
                                 placeholder={nomAuto}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                             />
                             <p className="text-xs text-gray-400 mt-1.5">
                                 Si vide, le nom automatique sera utilisé : <em>{nomAuto}</em>
@@ -266,7 +266,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                     <button
                         onClick={handleCreer}
                         disabled={enAttente || !warehouseId}
-                        className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#1a56db] text-white font-bold rounded-xl hover:bg-[#1648c0] disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#1a56db]/30"
+                        className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#15335a] text-white font-bold rounded-xl hover:bg-[#0f2742] disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#15335a]/30"
                     >
                         {enAttente
                             ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>
@@ -305,7 +305,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-xs">
                                     <span className="font-medium text-gray-600">Progression du comptage</span>
-                                    <span className="font-black text-[#1a56db]">
+                                    <span className="font-black text-[#15335a]">
                     {stats.comptes}/{stats.total} articles
                   </span>
                                 </div>
@@ -314,7 +314,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         className="h-full rounded-full transition-all duration-500"
                                         style={{
                                             width:      `${stats.total > 0 ? (stats.comptes / stats.total) * 100 : 0}%`,
-                                            background: 'linear-gradient(90deg, #1a56db 0%, #1648c0 100%)',
+                                            background: 'linear-gradient(90deg, #15335a 0%, #0f2742 100%)',
                                             boxShadow:  '0 0 8px rgba(26,86,219,0.4)',
                                         }}
                                     />
@@ -332,7 +332,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     {
                                         label: 'Comptés',
                                         val:   stats.comptes,
-                                        couleur: 'text-[#1a56db]',
+                                        couleur: 'text-[#15335a]',
                                         bg:    'bg-blue-50',
                                         icone: CheckCircle,
                                     },
@@ -384,7 +384,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         onClick={() => setFiltre(f.key as any)}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                             filtre === f.key
-                                                ? 'bg-[#1a56db] text-white shadow-md shadow-[#1a56db]/30'
+                                                ? 'bg-[#15335a] text-white shadow-md shadow-[#15335a]/30'
                                                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                                         }`}>
                                     {f.label}
@@ -401,7 +401,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                             <input type="text" placeholder="Rechercher un produit ou catégorie..."
                                    value={recherche} onChange={e => setRecherche(e.target.value)}
-                                   className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" />
+                                   className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                         </div>
                     </div>
 
@@ -413,7 +413,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                         {/* En-tête tableau */}
                         <div
                             className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                            style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                         >
                             <div className="col-span-4">Produit</div>
                             <div className="col-span-2">Catégorie</div>
@@ -477,7 +477,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                             {/* Réel — saisie ou valeur */}
                                             <div className="col-span-2 text-center">
                                                 {estCompte ? (
-                                                    <p className="text-sm font-bold text-[#1a56db]">
+                                                    <p className="text-sm font-bold text-[#15335a]">
                                                         {item.quantite_reelle} <span className="text-xs font-normal">{p.unite}</span>
                                                     </p>
                                                 ) : (
@@ -499,10 +499,10 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                                                 if (e.key === 'Enter') handleSaisir(item.id)
                                                             }}
                                                             placeholder="0"
-                                                            className="w-16 px-2 py-1.5 text-center bg-white border-2 border-[#1a56db]/30 rounded-lg text-xs font-bold focus:outline-none focus:border-[#1a56db] focus:ring-2 focus:ring-[#1a56db]/20"
+                                                            className="w-16 px-2 py-1.5 text-center bg-white border-2 border-[#15335a]/30 rounded-lg text-xs font-bold focus:outline-none focus:border-[#15335a] focus:ring-2 focus:ring-[#15335a]/20"
                                                         />
                                                         {saisieEnCours === item.id && (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#1a56db] shrink-0" />
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#15335a] shrink-0" />
                                                         )}
                                                     </div>
                                                 )}
@@ -547,10 +547,10 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
                     {/* Résumé avant validation */}
                     {stats && stats.comptes === stats.total && (
-                        <div className="bg-white border-2 border-[#1a56db]/30 rounded-2xl p-5 shadow-sm space-y-4">
+                        <div className="bg-white border-2 border-[#15335a]/30 rounded-2xl p-5 shadow-sm space-y-4">
                             <div className="flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5 text-[#1a56db]" />
-                                <h3 className="text-sm font-bold text-[#1a56db]">
+                                <BarChart3 className="w-5 h-5 text-[#15335a]" />
+                                <h3 className="text-sm font-bold text-[#15335a]">
                                     Résumé avant validation
                                 </h3>
                             </div>

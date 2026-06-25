@@ -45,7 +45,7 @@ export default function CarteActionsClient({ clientId, clientNom, estActif }: Pr
                 {/* Créer une facture */}
                 <Link
                     href={`/admin/factures/nouvelle?clientId=${clientId}`}
-                    className="flex items-center gap-3 w-full p-3.5 bg-[#1a56db] hover:bg-[#1648c0] text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-[#1a56db]/30 group"
+                    className="flex items-center gap-3 w-full p-3.5 bg-[#15335a] hover:bg-[#0f2742] text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-[#15335a]/30 group"
                 >
                     <div className="bg-white/20 p-2 rounded-lg group-hover:bg-white/30 transition-colors">
                         <FileText className="w-4 h-4 text-white" />

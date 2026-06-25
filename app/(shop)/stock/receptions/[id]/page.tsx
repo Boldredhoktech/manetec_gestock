@@ -51,7 +51,7 @@ export default async function PageDetailReception({ params }: Props) {
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <div className="flex items-center gap-4">
@@ -91,7 +91,7 @@ export default async function PageDetailReception({ params }: Props) {
                     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-2">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Entrepôt</p>
                         <div className="flex items-center gap-2">
-                            <Warehouse className="w-4 h-4 text-[#1a56db]" />
+                            <Warehouse className="w-4 h-4 text-[#15335a]" />
                             <p className="text-sm font-bold text-gray-800">{entrepot?.nom ?? '—'}</p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export default async function PageDetailReception({ params }: Props) {
                     </div>
                     <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-2">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Montant total</p>
-                        <p className="text-2xl font-black text-[#1a56db]">
+                        <p className="text-2xl font-black text-[#15335a]">
                             {formatMontant(reception.montant_total, devise)}
                         </p>
                         {reception.notes && (
@@ -113,7 +113,7 @@ export default async function PageDetailReception({ params }: Props) {
                 {/* Articles reçus */}
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <div className="flex items-center gap-2 p-5 border-b border-gray-100">
-                        <Package className="w-5 h-5 text-[#1a56db]" />
+                        <Package className="w-5 h-5 text-[#15335a]" />
                         <h2 className="text-sm font-bold text-gray-900">
                             Articles réceptionnés ({items.length})
                         </h2>
@@ -128,7 +128,7 @@ export default async function PageDetailReception({ params }: Props) {
                           <div className="min-w-[640px]">
                             <div
                                 className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                             >
                                 <div className="col-span-5">Désignation</div>
                                 <div className="col-span-2 text-center">Qté reçue</div>
@@ -175,7 +175,7 @@ export default async function PageDetailReception({ params }: Props) {
                             <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex justify-end">
                                 <div className="flex items-center gap-4">
                                     <span className="text-sm font-bold text-gray-700">Total réception</span>
-                                    <span className="text-xl font-black text-[#1a56db]">
+                                    <span className="text-xl font-black text-[#15335a]">
                                         {formatMontant(reception.montant_total, devise)}
                                     </span>
                                 </div>

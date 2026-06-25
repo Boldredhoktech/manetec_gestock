@@ -115,7 +115,7 @@ export default function FormulaireBonCommande({
         }, 1000)
     }
 
-    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40 transition-colors'
+    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
@@ -136,7 +136,7 @@ export default function FormulaireBonCommande({
 
             {/* Informations générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db]">Informations générales</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -180,11 +180,11 @@ export default function FormulaireBonCommande({
             {/* Lignes de commande */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-[#1a56db]">Articles commandés</h2>
+                    <h2 className="text-sm font-bold text-[#15335a]">Articles commandés</h2>
                     <button
                         type="button"
                         onClick={ajouterLigne}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1a56db] border border-[#1a56db]/30 rounded-lg hover:bg-[#1a56db]/5 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         Ajouter une ligne
@@ -202,7 +202,7 @@ export default function FormulaireBonCommande({
                                 <select
                                     value={ligne.product_id}
                                     onChange={e => mettreAJourLigne(i, 'product_id', e.target.value)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 >
                                     <option value="">— Libre —</option>
                                     {produits.map(p => (
@@ -219,7 +219,7 @@ export default function FormulaireBonCommande({
                                     value={ligne.designation}
                                     onChange={e => mettreAJourLigne(i, 'designation', e.target.value)}
                                     placeholder="Description de l'article"
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 />
                             </div>
 
@@ -232,7 +232,7 @@ export default function FormulaireBonCommande({
                                     step="1"
                                     value={ligne.quantite}
                                     onChange={e => mettreAJourLigne(i, 'quantite', parseFloat(e.target.value) || 0)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 />
                             </div>
 
@@ -245,7 +245,7 @@ export default function FormulaireBonCommande({
                                     step="0.01"
                                     value={ligne.prix_unitaire}
                                     onChange={e => mettreAJourLigne(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 />
                             </div>
 
@@ -269,7 +269,7 @@ export default function FormulaireBonCommande({
                 <div className="flex justify-end pt-2 border-t border-gray-100">
                     <div className="flex items-center gap-3">
                         <span className="text-sm font-medium text-gray-500">Total estimé</span>
-                        <span className="text-xl font-black text-[#1a56db]">
+                        <span className="text-xl font-black text-[#15335a]">
                             {montantTotal.toLocaleString('fr-FR')} FCFA
                         </span>
                     </div>
@@ -281,7 +281,7 @@ export default function FormulaireBonCommande({
                 onClick={handleSoumettre}
                 disabled={enAttente || succes}
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl transition-all disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>

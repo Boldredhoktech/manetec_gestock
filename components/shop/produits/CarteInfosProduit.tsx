@@ -17,8 +17,8 @@ export default function CarteInfosProduit({ produit }: Props) {
 
             {/* En-tête */}
             <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                    <Package className="w-5 h-5 text-[#1a56db]" />
+                <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                    <Package className="w-5 h-5 text-[#15335a]" />
                 </div>
                 <h2 className="text-sm font-bold text-gray-900">Informations générales</h2>
                 <span className={`ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold ${typeConfig.couleur}`}>

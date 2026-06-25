@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import InterfacePOS from '@/components/shop/pos/InterfacePOS'
+import { AlertTriangle } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Caisse — POS' }
 
@@ -41,8 +42,9 @@ export default async function PagePOS() {
     if (!entrepots || entrepots.length === 0) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6">
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-6 text-sm max-w-md text-center">
-                    ⚠️ Aucun entrepôt actif. Créez un entrepôt avant d'utiliser la caisse.
+                <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-6 text-sm max-w-md text-center space-y-2">
+                    <AlertTriangle className="w-8 h-8 mx-auto" />
+                    <p>Aucun entrepôt actif. Créez un entrepôt avant d'utiliser la caisse.</p>
                 </div>
             </div>
         )

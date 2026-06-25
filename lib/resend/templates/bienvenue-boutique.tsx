@@ -37,7 +37,7 @@ export function EmailBienvenueBoutions({
                         {/* HEADER BLEU ROI */}
                         <tr>
                             <td style={{
-                                background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)',
+                                background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)',
                                 padding: '36px 40px',
                                 textAlign: 'center',
                             }}>
@@ -70,7 +70,7 @@ export function EmailBienvenueBoutions({
                                     Bonjour <strong>{nomProprietaire}</strong>,
                                 </p>
                                 <p style={{ color: '#475569', fontSize: '14px', lineHeight: '1.6', margin: '0 0 28px' }}>
-                                    Votre boutique <strong style={{ color: '#1a56db' }}>{nomBoutique}</strong> a été
+                                    Votre boutique <strong style={{ color: '#15335a' }}>{nomBoutique}</strong> a été
                                     créée avec succès sur la plateforme Manetec Gestock. Vous trouverez ci-dessous
                                     vos identifiants de connexion. Conservez-les précieusement.
                                 </p>
@@ -85,7 +85,7 @@ export function EmailBienvenueBoutions({
                                     <tr>
                                         <td style={{ padding: '24px 28px' }}>
                                             <p style={{
-                                                color: '#1a56db', fontSize: '11px', fontWeight: 700,
+                                                color: '#15335a', fontSize: '11px', fontWeight: 700,
                                                 textTransform: 'uppercase', letterSpacing: '0.08em',
                                                 margin: '0 0 16px',
                                             }}>
@@ -129,7 +129,7 @@ export function EmailBienvenueBoutions({
                                         <td align="center">
                                             <a href={urlApp} style={{
                                                 display: 'inline-block',
-                                                backgroundColor: '#1a56db',
+                                                backgroundColor: '#15335a',
                                                 color: '#ffffff',
                                                 fontWeight: 700,
                                                 fontSize: '15px',

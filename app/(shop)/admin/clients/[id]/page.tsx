@@ -78,7 +78,7 @@ export default async function PageDetailClient({ params }: Props) {
 
             {/* HEADER BLEU ROI */}
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <div className="flex items-center justify-between">
@@ -172,12 +172,12 @@ function CarteProfilClient({
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                    <UserSquare className="w-5 h-5 text-[#1a56db]" />
+                <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                    <UserSquare className="w-5 h-5 text-[#15335a]" />
                 </div>
                 <h2 className="text-sm font-bold text-gray-900">Profil client</h2>
                 <Link href={`/admin/clients/${client.id}/modifier`}
-                      className="ml-auto text-xs text-[#1a56db] font-bold hover:underline">
+                      className="ml-auto text-xs text-[#15335a] font-bold hover:underline">
                     Modifier
                 </Link>
             </div>
@@ -192,7 +192,7 @@ function CarteProfilClient({
                         const Icone = info.icone
                         return (
                             <div key={i} className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
-                                <Icone className="w-4 h-4 text-[#1a56db] shrink-0" />
+                                <Icone className="w-4 h-4 text-[#15335a] shrink-0" />
                                 <div className="min-w-0">
                                     <p className="text-xs text-gray-400">{info.label}</p>
                                     <p className="text-sm font-medium text-gray-800 truncate">{info.val}</p>

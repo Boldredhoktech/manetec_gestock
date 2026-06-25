@@ -2,6 +2,7 @@
 
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import FormulaireInscription from '@/components/auth/FormulaireInscription'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 
@@ -32,18 +33,15 @@ export default function PageInscription() {
                 <Link href="/" style={{
                     display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none',
                 }}>
-                    <div style={{
-                        width: 36, height: 36,
-                        background: 'linear-gradient(135deg, #1a56db, #1648c0)',
-                        borderRadius: 9, display: 'flex', alignItems: 'center',
-                        justifyContent: 'center', fontWeight: 900, fontSize: 13, color: '#fff',
-                    }}>MG</div>
+                    <Image src="/logo/app_logo.png" alt={ENTREPRISE.produit}
+                           width={36} height={36}
+                           style={{ borderRadius: 9, objectFit: 'contain', background: '#fff', padding: 3 }} />
                     <span style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>
                         {ENTREPRISE.produit}
                     </span>
                 </Link>
                 <Link href="/login" style={{
-                    fontSize: 14, fontWeight: 600, color: '#1a56db', textDecoration: 'none',
+                    fontSize: 14, fontWeight: 600, color: '#15335a', textDecoration: 'none',
                 }}>
                     J'ai déjà un compte →
                 </Link>
@@ -67,7 +65,7 @@ export default function PageInscription() {
                         padding: '4px 12px', background: '#dbeafe',
                         borderRadius: 100, marginBottom: 20,
                     }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: '#1a56db', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: '#15335a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
                             30 jours gratuits
                         </span>
                     </div>
@@ -110,7 +108,7 @@ export default function PageInscription() {
 
                     {/* En-tête formulaire */}
                     <div style={{
-                        background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)',
+                        background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)',
                         padding: '28px 32px',
                     }}>
                         <h2 style={{

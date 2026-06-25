@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import FormulairePromo from '@/components/shop/FormulairePromo'
 import { ROLES } from '@/lib/constants/permissions'
+import { Lock } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Communications clients' }
 
@@ -24,7 +25,7 @@ export default async function PageCommunications() {
                 </header>
                 <main className="flex-1 flex items-center justify-center p-6">
                     <div className="text-center space-y-3 max-w-sm">
-                        <div className="text-4xl">🔒</div>
+                        <Lock className="w-10 h-10 mx-auto text-muted-foreground" />
                         <h2 className="text-lg font-semibold text-foreground">Fonctionnalité Enterprise</h2>
                         <p className="text-sm text-muted-foreground">
                             L'envoi d'emails promotionnels à vos clients est réservé au plan Enterprise.

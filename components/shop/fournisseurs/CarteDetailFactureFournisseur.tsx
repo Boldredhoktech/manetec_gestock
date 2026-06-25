@@ -49,7 +49,7 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
         router.refresh()
     }
 
-    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 transition-colors'
+    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 transition-colors'
 
     return (
         <div className="space-y-5">
@@ -167,7 +167,7 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
             {['non_payee','partiellement_payee'].includes(facture.statut) && (
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center gap-2">
-                        <CreditCard className="w-5 h-5 text-[#1a56db]" />
+                        <CreditCard className="w-5 h-5 text-[#15335a]" />
                         <h2 className="text-sm font-bold text-gray-900">Enregistrer un paiement</h2>
                     </div>
 

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { creerBoutiquePublic } from '@/actions/inscription'
-import { Loader2, AlertCircle, CheckCircle, Store, User, Phone, Mail, Globe } from 'lucide-react'
+import { Loader2, AlertCircle, AlertTriangle, CheckCircle, Store, User, Phone, Mail, Globe, PartyPopper } from 'lucide-react'
 
 const PAYS = [
     'Bénin', 'Togo', 'Côte d\'Ivoire', 'Sénégal', 'Mali',
@@ -106,7 +106,7 @@ export default function FormulaireInscription() {
                         {/* ID Boutique — mis en évidence, obligatoire à la connexion */}
                         <div
                             className="flex items-center justify-between p-3.5 rounded-xl"
-                            style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}
+                            style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
                         >
                             <div>
                                 <p className="text-xs font-bold text-white/80 uppercase tracking-wider">
@@ -141,9 +141,10 @@ export default function FormulaireInscription() {
                 </div>
 
                 {/* Avertissement */}
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0 text-amber-700" />
                     <p className="text-xs text-amber-700">
-                        ⚠️ Ces informations ne seront plus affichées après cette page.
+                        Ces informations ne seront plus affichées après cette page.
                         Notez-les ou faites une capture d'écran avant de continuer.
                         Changez votre mot de passe dès votre première connexion.
                     </p>
@@ -153,7 +154,7 @@ export default function FormulaireInscription() {
                 <button
                     onClick={() => router.push('/login')}
                     className="w-full py-3.5 font-bold text-white rounded-xl text-sm transition-all"
-                    style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}
+                    style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
                 >
                     Me connecter maintenant →
                 </button>
@@ -273,7 +274,7 @@ export default function FormulaireInscription() {
                             setEtape(2)
                         }}
                         className="w-full py-3.5 font-bold text-white rounded-xl text-sm transition-all"
-                        style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}
+                        style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
                     >
                         Continuer →
                     </button>
@@ -306,8 +307,8 @@ export default function FormulaireInscription() {
                     </div>
 
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
-                        <p className="text-xs text-amber-700 font-bold">
-                            🎉 Plan Starter — 30 jours gratuits
+                        <p className="text-xs text-amber-700 font-bold flex items-center gap-1.5">
+                            <PartyPopper className="w-3.5 h-3.5" /> Plan Starter — 30 jours gratuits
                         </p>
                         <p className="text-xs text-amber-600">
                             Votre boutique démarrera sur le plan Starter. Après 30 jours,

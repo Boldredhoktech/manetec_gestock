@@ -143,7 +143,7 @@ export function EmailAlerteStock({ nomBoutique, produits, urlApp }: Props) {
                                         <td align="center">
                                             <a href={`${urlApp}/stock/produits`} style={{
                                                 display: 'inline-block',
-                                                backgroundColor: '#1a56db',
+                                                backgroundColor: '#15335a',
                                                 color: '#ffffff',
                                                 fontWeight: 700,
                                                 fontSize: '14px',

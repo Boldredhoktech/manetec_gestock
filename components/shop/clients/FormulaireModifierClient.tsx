@@ -51,7 +51,7 @@ export default function FormulaireModifierClient({ client }: Props) {
 
             {/* Infos personnelles */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
-                <h2 className="text-sm font-bold text-[#1a56db]">Informations personnelles</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Informations personnelles</h2>
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
@@ -59,7 +59,7 @@ export default function FormulaireModifierClient({ client }: Props) {
                     </label>
                     <input name="nom" type="text" required
                            defaultValue={client.nom} disabled={enAttente}
-                           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40 disabled:opacity-50" />
+                           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 disabled:opacity-50" />
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -71,7 +71,7 @@ export default function FormulaireModifierClient({ client }: Props) {
                             <label className="text-sm font-medium text-gray-700">{f.label}</label>
                             <input name={f.name} type={f.type} defaultValue={f.val ?? ''}
                                    placeholder={f.placeholder} disabled={enAttente}
-                                   className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50" />
+                                   className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50" />
                         </div>
                     ))}
                 </div>
@@ -81,12 +81,12 @@ export default function FormulaireModifierClient({ client }: Props) {
                         <label className="text-sm font-medium text-gray-700">Ville</label>
                         <input name="ville" type="text" defaultValue={client.ville ?? ''}
                                placeholder="Cotonou" disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50" />
+                               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50" />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Pays</label>
                         <select name="pays" defaultValue={client.pays ?? ''} disabled={enAttente}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50">
+                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50">
                             <option value="">— Sélectionner —</option>
                             {PAYS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
@@ -97,47 +97,47 @@ export default function FormulaireModifierClient({ client }: Props) {
                     <label className="text-sm font-medium text-gray-700">Adresse</label>
                     <input name="adresse" type="text" defaultValue={client.adresse ?? ''}
                            placeholder="Adresse complète" disabled={enAttente}
-                           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50" />
+                           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50" />
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Site web</label>
                     <input name="site_web" type="url" defaultValue={client.site_web ?? ''}
                            placeholder="https://..." disabled={enAttente}
-                           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50" />
+                           className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50" />
                 </div>
             </div>
 
             {/* Infos légales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-4 shadow-sm">
-                <h2 className="text-sm font-bold text-[#1a56db]">Informations légales</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Informations légales</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">IFU</label>
                         <input name="ifu" type="text" defaultValue={client.ifu ?? ''}
                                placeholder="Numéro IFU" disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50" />
+                               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50" />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">RCCM</label>
                         <input name="rccm" type="text" defaultValue={client.rccm ?? ''}
                                placeholder="Numéro RCCM" disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50" />
+                               className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50" />
                     </div>
                 </div>
             </div>
 
             {/* Notes */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3 shadow-sm">
-                <h2 className="text-sm font-bold text-[#1a56db]">Notes internes</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Notes internes</h2>
                 <textarea name="notes" rows={3} defaultValue={client.notes ?? ''}
                           placeholder="Notes non visibles par le client..."
                           disabled={enAttente}
-                          className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50 resize-none" />
+                          className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50 resize-none" />
             </div>
 
             <Button type="submit" disabled={enAttente}
-                    className="w-full bg-[#1a56db] hover:bg-[#1648c0] text-white font-bold py-3 rounded-xl shadow-lg shadow-[#1a56db]/20 hover:shadow-[#1a56db]/40 transition-all">
+                    className="w-full bg-[#15335a] hover:bg-[#0f2742] text-white font-bold py-3 rounded-xl shadow-lg shadow-[#15335a]/20 hover:shadow-[#15335a]/40 transition-all">
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Modification...</>
                     : 'Enregistrer les modifications'

@@ -86,7 +86,7 @@ export default function PaiementPOS({
 
                 {/* Retour */}
                 <button type="button" onClick={onRetour}
-                        className="flex items-center gap-2 text-sm font-medium text-[#1a56db] hover:text-[#1648c0] transition-colors">
+                        className="flex items-center gap-2 text-sm font-medium text-[#15335a] hover:text-[#0f2742] transition-colors">
                     <ArrowLeft className="w-4 h-4" />
                     Retour au panier
                 </button>
@@ -94,7 +94,7 @@ export default function PaiementPOS({
                 {/* Carte total */}
                 <div
                     className="rounded-2xl p-5 text-white shadow-xl"
-                    style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                    style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 >
                     <p className="text-sm font-medium text-white/75 mb-1">Total à régler</p>
                     <p className="text-4xl font-black tracking-tight">
@@ -108,7 +108,7 @@ export default function PaiementPOS({
                 {/* Modes de paiement */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-3">
                     <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-[#1a56db]" />
+                        <CreditCard className="w-4 h-4 text-[#15335a]" />
                         Modes de paiement
                     </h3>
 
@@ -118,7 +118,7 @@ export default function PaiementPOS({
                                 <select
                                     value={p.moyen_paiement}
                                     onChange={e => modifierPaiement(i, 'moyen_paiement', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 >
                                     {MOYENS_PAIEMENT.map(m => (
                                         <option key={m.code} value={m.code}>{m.label}</option>
@@ -128,7 +128,7 @@ export default function PaiementPOS({
                                     <input type="text" placeholder="Référence de transaction *"
                                            value={p.reference}
                                            onChange={e => modifierPaiement(i, 'reference', e.target.value)}
-                                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 font-mono"
+                                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 font-mono"
                                     />
                                 )}
                             </div>
@@ -136,7 +136,7 @@ export default function PaiementPOS({
                                 <input type="number" min="0" step="0.01"
                                        value={p.montant}
                                        onChange={e => modifierPaiement(i, 'montant', parseFloat(e.target.value) || 0)}
-                                       className="w-28 px-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                       className="w-28 px-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 />
                                 {paiements.length > 1 && (
                                     <button type="button" onClick={() => setPaiements(prev => prev.filter((_, idx) => idx !== i))}
@@ -149,7 +149,7 @@ export default function PaiementPOS({
                     ))}
 
                     <button type="button" onClick={ajouterPaiement}
-                            className="flex items-center gap-2 text-xs font-bold text-[#1a56db] hover:text-[#1648c0] transition-colors">
+                            className="flex items-center gap-2 text-xs font-bold text-[#15335a] hover:text-[#0f2742] transition-colors">
                         <Plus className="w-3.5 h-3.5" />
                         Ajouter un mode de paiement
                     </button>
@@ -252,7 +252,7 @@ export default function PaiementPOS({
                         <label className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
                             <input type="checkbox" checked={garderMonnaie}
                                    onChange={e => setGarderMonnaie(e.target.checked)}
-                                   className="rounded accent-[#1a56db] w-4 h-4" />
+                                   className="rounded accent-[#15335a] w-4 h-4" />
                             <span className="text-xs font-medium text-gray-600">
                 Conserver {formatMontant(montantRendu, devise)} en attente pour {client.nom}
               </span>

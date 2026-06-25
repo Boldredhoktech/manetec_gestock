@@ -7,8 +7,9 @@ import { redirect } from 'next/navigation'
 import { ROLES } from '@/lib/constants/permissions'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 import {
-    CheckCircle, Clock, AlertTriangle, Crown,
+    CheckCircle, Clock, AlertTriangle, Crown, Rocket, Star,
     Phone, MessageSquare, Mail, ChevronRight,
+    type LucideIcon,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
@@ -19,7 +20,7 @@ const PLAN_CONFIG: Record<string, {
     couleur:      string
     bg:           string
     bgHeader:     string
-    icone:        string
+    icone:        LucideIcon
     fonctionnalites: string[]
 }> = {
     starter: {
@@ -27,15 +28,15 @@ const PLAN_CONFIG: Record<string, {
         couleur:  'text-gray-700',
         bg:       'bg-gray-100',
         bgHeader: 'from-gray-600 to-gray-700',
-        icone:    '🚀',
+        icone:    Rocket,
         fonctionnalites: ['50 produits', '2 utilisateurs', '100 clients', 'Caisse POS', 'Stock de base', 'Reçus thermiques'],
     },
     pro: {
         label:    'Pro',
         couleur:  'text-blue-700',
         bg:       'bg-blue-100',
-        bgHeader: 'from-[#1a56db] to-[#1648c0]',
-        icone:    '⭐',
+        bgHeader: 'from-[#15335a] to-[#0f2742]',
+        icone:    Star,
         fonctionnalites: ['500 produits', '10 utilisateurs', '1 000 clients', 'Factures A4 + Devis', 'Multi-entrepôts', 'Rapports avancés', 'Alertes email'],
     },
     enterprise: {
@@ -43,7 +44,7 @@ const PLAN_CONFIG: Record<string, {
         couleur:  'text-green-700',
         bg:       'bg-green-100',
         bgHeader: 'from-emerald-600 to-emerald-700',
-        icone:    '👑',
+        icone:    Crown,
         fonctionnalites: ['Produits illimités', 'Utilisateurs illimités', 'Clients illimités', 'Tout du plan Pro', 'Emails promotionnels', 'Support prioritaire', 'Formation incluse'],
     },
 }
@@ -64,6 +65,7 @@ export default async function PageAbonnement() {
 
     const plan          = boutique?.plan ?? 'starter'
     const planConfig    = PLAN_CONFIG[plan] ?? PLAN_CONFIG.starter
+    const PlanIcone     = planConfig.icone
     const expiration    = boutique?.plan_expire_le ? new Date(boutique.plan_expire_le) : null
     const joursRestants = expiration
         ? Math.max(0, Math.ceil((expiration.getTime() - Date.now()) / 86400000))
@@ -82,7 +84,7 @@ export default async function PageAbonnement() {
                 className={`px-6 py-5 shadow-lg bg-gradient-to-r ${planConfig.bgHeader}`}
             >
                 <div className="flex items-center gap-4">
-                    <div className="text-4xl">{planConfig.icone}</div>
+                    <PlanIcone className="w-9 h-9 text-white shrink-0" />
                     <div>
                         <h1 className="text-xl font-bold text-white">Mon abonnement</h1>
                         <p className="text-sm text-white/70 mt-0.5">{boutique?.nom}</p>
@@ -130,8 +132,8 @@ export default async function PageAbonnement() {
                                 <p className="text-xs text-white/70 uppercase tracking-wider font-bold">
                                     Plan actuel
                                 </p>
-                                <p className="text-2xl font-black text-white mt-1">
-                                    {planConfig.icone} {planConfig.label}
+                                <p className="text-2xl font-black text-white mt-1 flex items-center gap-2">
+                                    <PlanIcone className="w-6 h-6" /> {planConfig.label}
                                 </p>
                             </div>
                             <div className="text-right">
@@ -179,7 +181,7 @@ export default async function PageAbonnement() {
                 {/* Historique / dates */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
                     <div className="flex items-center gap-2 mb-1">
-                        <Clock className="w-4 h-4 text-[#1a56db]" />
+                        <Clock className="w-4 h-4 text-[#15335a]" />
                         <h2 className="text-sm font-bold text-gray-900">Historique</h2>
                     </div>
                     {[
@@ -205,7 +207,7 @@ export default async function PageAbonnement() {
 
                 {/* Passer au plan supérieur */}
                 {planSuivant && (
-                    <div className="bg-gradient-to-br from-[#1a56db]/5 to-purple-50 border-2 border-[#1a56db]/20 rounded-2xl p-5 space-y-4">
+                    <div className="bg-gradient-to-br from-[#15335a]/5 to-purple-50 border-2 border-[#15335a]/20 rounded-2xl p-5 space-y-4">
                         <div className="flex items-center gap-2">
                             <Crown className="w-5 h-5 text-[#f59e0b]" />
                             <h2 className="text-sm font-bold text-gray-900">
@@ -221,7 +223,7 @@ export default async function PageAbonnement() {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {PLAN_CONFIG[planSuivant].fonctionnalites.map((f, i) => (
                                 <div key={i} className="flex items-center gap-2">
-                                    <ChevronRight className="w-3.5 h-3.5 text-[#1a56db] shrink-0" />
+                                    <ChevronRight className="w-3.5 h-3.5 text-[#15335a] shrink-0" />
                                     <span className="text-xs text-gray-600">{f}</span>
                                 </div>
                             ))}
@@ -260,7 +262,7 @@ export default async function PageAbonnement() {
                             href={`tel:${ENTREPRISE.telephone_1}`}
                             className="flex items-center gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors"
                         >
-                            <div className="w-9 h-9 bg-[#1a56db] rounded-xl flex items-center justify-center shrink-0">
+                            <div className="w-9 h-9 bg-[#15335a] rounded-xl flex items-center justify-center shrink-0">
                                 <Phone className="w-4 h-4 text-white" />
                             </div>
                             <div className="flex-1">

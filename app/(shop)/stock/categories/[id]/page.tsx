@@ -48,7 +48,7 @@ export default async function PageDetailCategorie({ params }: Props) {
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <div className="flex items-center gap-4">
@@ -82,7 +82,7 @@ export default async function PageDetailCategorie({ params }: Props) {
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
 
                     <div className="flex items-center gap-2 p-5 border-b border-gray-100">
-                        <Package className="w-5 h-5 text-[#1a56db]" />
+                        <Package className="w-5 h-5 text-[#15335a]" />
                         <h2 className="text-sm font-bold text-gray-900">
                             Articles dans cette catégorie ({produits?.length ?? 0})
                         </h2>
@@ -93,7 +93,7 @@ export default async function PageDetailCategorie({ params }: Props) {
                             <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
                             <p className="text-sm">Aucun article dans cette catégorie.</p>
                             <Link href="/stock/produits/nouveau"
-                                  className="mt-3 inline-block text-xs text-[#1a56db] font-bold hover:underline">
+                                  className="mt-3 inline-block text-xs text-[#15335a] font-bold hover:underline">
                                 Créer un produit dans cette catégorie →
                             </Link>
                         </div>
@@ -103,13 +103,13 @@ export default async function PageDetailCategorie({ params }: Props) {
                                 const stock = (p.stock_levels as any[])?.[0]?.quantite ?? 0
                                 return (
                                     <Link key={p.id} href={`/stock/produits/${p.id}`}
-                                          className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group">
-                                        <div className="shrink-0 bg-[#1a56db]/10 p-2 rounded-xl group-hover:bg-[#1a56db]/20 transition-colors">
-                                            <Package className="w-4 h-4 text-[#1a56db]" />
+                                          className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group">
+                                        <div className="shrink-0 bg-[#15335a]/10 p-2 rounded-xl group-hover:bg-[#15335a]/20 transition-colors">
+                                            <Package className="w-4 h-4 text-[#15335a]" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-semibold text-gray-900 group-hover:text-[#1a56db] transition-colors truncate">
+                                                <p className="text-sm font-semibold text-gray-900 group-hover:text-[#15335a] transition-colors truncate">
                                                     {p.nom}
                                                 </p>
                                                 {!p.est_actif && (
@@ -128,7 +128,7 @@ export default async function PageDetailCategorie({ params }: Props) {
                                             </p>
                                             <p className="text-xs text-gray-400">{formatMontant(p.prix_vente)}</p>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-[#1a56db] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-[#15335a] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                                     </Link>
                                 )
                             })}

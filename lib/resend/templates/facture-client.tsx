@@ -39,7 +39,7 @@ export function EmailFactureClient({
                         {/* HEADER */}
                         <tr>
                             <td style={{
-                                background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)',
+                                background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)',
                                 padding: '32px 40px',
                                 textAlign: 'center',
                             }}>
@@ -85,7 +85,7 @@ export function EmailFactureClient({
                                                             {item.label}
                                                         </td>
                                                         <td style={{
-                                                            color: item.gras ? '#1a56db' : '#0f172a',
+                                                            color: item.gras ? '#15335a' : '#0f172a',
                                                             fontSize: item.gras ? '18px' : '14px',
                                                             fontWeight: item.gras ? 800 : 600,
                                                         }}>
@@ -103,7 +103,7 @@ export function EmailFactureClient({
                                         <tr>
                                             <td style={{
                                                 backgroundColor: '#f8fafc',
-                                                borderLeft: '3px solid #1a56db',
+                                                borderLeft: '3px solid #15335a',
                                                 padding: '14px 18px',
                                                 borderRadius: '0 8px 8px 0',
                                             }}>
@@ -121,7 +121,7 @@ export function EmailFactureClient({
                                         <td align="center">
                                             <a href={urlFacture} style={{
                                                 display: 'inline-block',
-                                                backgroundColor: '#1a56db',
+                                                backgroundColor: '#15335a',
                                                 color: '#ffffff',
                                                 fontWeight: 700,
                                                 fontSize: '14px',

@@ -38,7 +38,7 @@ export default async function PageReceptions() {
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <div className="flex items-center gap-3">
@@ -63,7 +63,7 @@ export default async function PageReceptions() {
                             Aucune réception. Les réceptions se créent depuis la fiche d'un fournisseur.
                         </p>
                         <Link href="/stock/fournisseurs"
-                              className="inline-block text-sm text-[#1a56db] font-bold hover:underline">
+                              className="inline-block text-sm text-[#15335a] font-bold hover:underline">
                             Aller aux fournisseurs →
                         </Link>
                     </div>
@@ -73,7 +73,7 @@ export default async function PageReceptions() {
                        <div className="min-w-[720px]">
                         <div
                             className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                            style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                         >
                             <div className="col-span-2">Référence</div>
                             <div className="col-span-2">Date</div>
@@ -90,10 +90,10 @@ export default async function PageReceptions() {
                                     <Link
                                         key={r.id}
                                         href={`/stock/receptions/${r.id}`}
-                                        className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}
+                                        className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}
                                     >
                                         <div className="col-span-2">
-                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#1a56db]">
+                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
                                                 {r.public_id}
                                             </p>
                                         </div>
@@ -116,7 +116,7 @@ export default async function PageReceptions() {
                                             </p>
                                         </div>
                                         <div className="col-span-1 text-center">
-                                            <span className="text-xs font-bold text-[#1a56db]">{nbItems}</span>
+                                            <span className="text-xs font-bold text-[#15335a]">{nbItems}</span>
                                         </div>
                                     </Link>
                                 )

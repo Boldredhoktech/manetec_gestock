@@ -104,7 +104,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
         setTimeout(() => router.push(`/stock/produits/${produit.id}`), 1200)
     }
 
-    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40 transition-colors'
+    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
@@ -124,7 +124,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
             {/* Informations générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db]">Informations générales</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
@@ -201,7 +201,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
             {/* Grille tarifaire */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db]">Grille tarifaire</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Grille tarifaire</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
@@ -254,9 +254,9 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                 {/* Marge indicative */}
                 {prixAchat > 0 && prixVente > 0 && (
-                    <div className="p-3 bg-[#1a56db]/5 border border-[#1a56db]/20 rounded-xl flex justify-between items-center">
-                        <span className="text-xs font-bold text-[#1a56db]">Marge brute estimée</span>
-                        <span className="text-sm font-black text-[#1a56db]">
+                    <div className="p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl flex justify-between items-center">
+                        <span className="text-xs font-bold text-[#15335a]">Marge brute estimée</span>
+                        <span className="text-sm font-black text-[#15335a]">
                             {(((prixVente - prixAchat) / prixAchat) * 100).toFixed(1)}%
                         </span>
                     </div>
@@ -265,7 +265,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
             {/* Options avancées */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db]">Options avancées</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Options avancées</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-xl border-2 transition-all ${
@@ -273,7 +273,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     }`}>
                         <input type="checkbox" checked={necessiteImei}
                                onChange={e => setNecessiteImei(e.target.checked)}
-                               className="rounded accent-[#1a56db]" />
+                               className="rounded accent-[#15335a]" />
                         <div>
                             <p className="text-sm font-bold text-blue-700">IMEI requis</p>
                             <p className="text-xs text-blue-500">Téléphones, tablettes</p>
@@ -318,7 +318,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                 onClick={handleSoumettre}
                 disabled={enAttente}
                 className="w-full py-3 font-bold text-base rounded-xl"
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement...</>

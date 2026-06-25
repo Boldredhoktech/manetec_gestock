@@ -41,14 +41,14 @@ export default function CartePrixProduit({ produit }: Props) {
 
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                        <TrendingUp className="w-5 h-5 text-[#1a56db]" />
+                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                        <TrendingUp className="w-5 h-5 text-[#15335a]" />
                     </div>
                     <h2 className="text-sm font-bold text-gray-900">Grille tarifaire</h2>
                 </div>
                 {!editable ? (
                     <button onClick={() => setEditable(true)}
-                            className="flex items-center gap-1.5 text-xs text-[#1a56db] font-bold hover:underline">
+                            className="flex items-center gap-1.5 text-xs text-[#15335a] font-bold hover:underline">
                         <Edit2 className="w-3.5 h-3.5" />
                         Modifier
                     </button>
@@ -87,7 +87,7 @@ export default function CartePrixProduit({ produit }: Props) {
                             <input type="number" min="0" step="0.01"
                                    value={item.val}
                                    onChange={e => item.set(parseFloat(e.target.value) || 0)}
-                                   className="w-full text-sm font-bold text-gray-800 bg-white border border-[#1a56db]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30" />
+                                   className="w-full text-sm font-bold text-gray-800 bg-white border border-[#15335a]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                         ) : (
                             <p className="text-sm font-bold text-gray-800">
                                 {item.val ? formatMontant(Number(item.val)) : '—'}
@@ -98,9 +98,9 @@ export default function CartePrixProduit({ produit }: Props) {
             </div>
 
             {/* Marge */}
-            <div className="flex items-center justify-between p-3 bg-[#1a56db]/5 border border-[#1a56db]/20 rounded-xl">
-                <span className="text-xs font-bold text-[#1a56db]">Marge brute estimée</span>
-                <span className="text-sm font-black text-[#1a56db]">{marge}%</span>
+            <div className="flex items-center justify-between p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl">
+                <span className="text-xs font-bold text-[#15335a]">Marge brute estimée</span>
+                <span className="text-sm font-black text-[#15335a]">{marge}%</span>
             </div>
         </div>
     )

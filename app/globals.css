@@ -48,16 +48,21 @@
 }
 
 :root {
-    /* ── Bleu Roi — couleur principale ── */
-    --color-primary:            #1a56db;
+    /* ── Bleu marine Manetec — couleur principale (logo) ── */
+    --color-primary:            #15335a;
     --color-primary-foreground: #ffffff;
-    --color-primary-hover:      #1648c0;
-    --color-primary-light:      #e8f0fe;
-    --color-primary-border:     #93b4f7;
+    --color-primary-hover:      #0f2742;
+    --color-primary-light:      #e8eef6;
+    --color-primary-border:     #b8c6dc;
 
-    /* ── Jaune accent ── */
-    --color-accent-gold:        #f59e0b;
-    --color-accent-gold-light:  #fef3c7;
+    /* ── Orange Manetec — accent (logo) ── */
+    --color-accent-orange:        #ef5e22;
+    --color-accent-orange-hover:  #d94e16;
+    --color-accent-orange-light:  #fde9df;
+
+    /* ── Jaune accent (statuts plan) ── */
+    --color-accent-gold:        #ef5e22;
+    --color-accent-gold-light:  #fde9df;
 
     /* ── Fond et surfaces ── */
     --background:               #f8fafc;
@@ -66,7 +71,7 @@
     --card-foreground:          #0f172a;
     --border:                   #e2e8f0;
     --input:                    #e2e8f0;
-    --ring:                     #1a56db;
+    --ring:                     #15335a;
 
     /* ── Textes ── */
     --muted:                    #f1f5f9;
@@ -79,23 +84,23 @@
     --warning:                  #d97706;
 
     /* ── Sidebar ── */
-    --sidebar:                  #1a56db;
-    --sidebar-bg:               #1a56db;
+    --sidebar:                  #15335a;
+    --sidebar-bg:               #15335a;
     --sidebar-fg:               #ffffff;
     --sidebar-foreground:       #ffffff;
     --sidebar-primary:          #ffffff;
-    --sidebar-primary-foreground: #1a56db;
-    --sidebar-accent:           rgba(255,255,255,0.15);
+    --sidebar-primary-foreground: #15335a;
+    --sidebar-accent:           rgba(255,255,255,0.10);
     --sidebar-accent-foreground: #ffffff;
-    --sidebar-item-active-bg:   #ffffff;
-    --sidebar-item-active-fg:   #1a56db;
-    --sidebar-item-hover-bg:    rgba(255,255,255,0.15);
-    --sidebar-border:           rgba(255,255,255,0.15);
-    --sidebar-muted:            rgba(255,255,255,0.65);
-    --sidebar-ring:             #1a56db;
+    --sidebar-item-active-bg:   #ef5e22;
+    --sidebar-item-active-fg:   #ffffff;
+    --sidebar-item-hover-bg:    rgba(255,255,255,0.10);
+    --sidebar-border:           rgba(255,255,255,0.12);
+    --sidebar-muted:            rgba(255,255,255,0.60);
+    --sidebar-ring:             #15335a;
 
     /* ── shadcn mappings ── */
-    --primary:                  #1a56db;
+    --primary:                  #15335a;
     --primary-foreground:       #ffffff;
     --secondary:                #f1f5f9;
     --secondary-foreground:     #0f172a;
@@ -161,9 +166,9 @@
     }
 }
 
-/* ── Sidebar Bleu Roi ── */
+/* ── Sidebar Manetec (marine) ── */
 .sidebar-royal {
-    background-color: var(--sidebar-bg);
+    background: linear-gradient(180deg, #1a3d68 0%, #15335a 55%, #102a4c 100%);
     color: var(--sidebar-fg);
 }
 
@@ -183,7 +188,12 @@
     background-color: var(--sidebar-item-active-bg);
     color: var(--sidebar-item-active-fg);
     font-weight: 700;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    box-shadow: 0 4px 12px rgba(239,94,34,0.35);
+}
+
+.sidebar-royal .sidebar-item.active:hover {
+    background-color: var(--color-accent-orange-hover);
+    color: #ffffff;
 }
 
 .sidebar-royal .sidebar-group-label {
@@ -218,7 +228,20 @@
 
 .btn-primary:hover {
     background-color: var(--color-primary-hover);
-    box-shadow: 0 4px 12px rgba(26,86,219,0.3);
+    box-shadow: 0 4px 12px rgba(21,51,90,0.3);
+}
+
+/* ── Bouton accent orange ── */
+.btn-accent {
+    background-color: var(--color-accent-orange);
+    color: #ffffff;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-accent:hover {
+    background-color: var(--color-accent-orange-hover);
+    box-shadow: 0 4px 12px rgba(239,94,34,0.3);
 }
 
 /* ── Cards ── */
@@ -230,7 +253,7 @@
 }
 
 .card-stat:hover {
-    box-shadow: 0 4px 16px rgba(26,86,219,0.08);
+    box-shadow: 0 4px 16px rgba(21,51,90,0.08);
     transform: translateY(-1px);
 }
 
@@ -241,7 +264,7 @@
 
 /* ── Tableaux ── */
 .table-header-royal {
-    background: linear-gradient(135deg, #1a56db 0%, #1648c0 100%);
+    background: linear-gradient(135deg, #15335a 0%, #0f2742 100%);
     color: #ffffff;
 }
 

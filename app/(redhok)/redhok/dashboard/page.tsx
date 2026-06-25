@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import CarteStatsRedhok from '@/components/redhok/CarteStatsRedhok'
 import AccesRapidesRedhok from '@/components/redhok/AccesRapidesRedhok'
 import TableauDerniersBoutiques from '@/components/redhok/TableauDerniersBoutiques'
+import { AlertTriangle } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Dashboard Plateforme' }
 
@@ -51,7 +52,7 @@ export default async function PageDashboardRedhok() {
         <div className="flex flex-col min-h-screen">
             <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <h1 className="text-xl font-bold text-foreground">
-                    Bonjour, {admin.nom_complet} 👋
+                    Bonjour, {admin.nom_complet}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     Manetec Inter BJ · Vue d'ensemble de la plateforme
@@ -62,12 +63,15 @@ export default async function PageDashboardRedhok() {
 
                 {/* Alerte boutiques expirant */}
                 {(boutiquesExpirantBientot ?? 0) > 0 && (
-                    <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
-                        ⚠️ <strong>{boutiquesExpirantBientot}</strong> boutique(s) ont leur abonnement
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>
+                        <strong>{boutiquesExpirantBientot}</strong> boutique(s) ont leur abonnement
                         qui expire dans moins de 7 jours.{' '}
                         <a href="/redhok/boutiques" className="underline font-medium">
                             Voir les boutiques →
                         </a>
+                        </span>
                     </div>
                 )}
 

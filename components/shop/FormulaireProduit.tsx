@@ -28,8 +28,9 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
 
     if (entrepots.length === 0) {
         return (
-            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-5 text-sm">
-                ⚠️ Vous devez d'abord créer au moins un entrepôt avant d'ajouter des produits.
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl p-5 text-sm flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>Vous devez d'abord créer au moins un entrepôt avant d'ajouter des produits.</span>
             </div>
         )
     }

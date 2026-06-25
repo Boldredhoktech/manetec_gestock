@@ -75,13 +75,13 @@ export default function TableauUtilisateurs({ utilisateurs }: Props) {
                                 <td className="px-4 py-3">
                                     <Link href={`/admin/utilisateurs/${u.id}`}
                                           className="group flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-                                        <div className="w-8 h-8 bg-[#1a56db]/10 rounded-full flex items-center justify-center group-hover:bg-[#1a56db]/20 transition-colors shrink-0">
-                                            <span className="text-xs font-black text-[#1a56db]">
+                                        <div className="w-8 h-8 bg-[#15335a]/10 rounded-full flex items-center justify-center group-hover:bg-[#15335a]/20 transition-colors shrink-0">
+                                            <span className="text-xs font-black text-[#15335a]">
                                                 {u.nom_complet.charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                         <div>
-                                            <p className="text-sm font-semibold text-gray-900 group-hover:text-[#1a56db] transition-colors">
+                                            <p className="text-sm font-semibold text-gray-900 group-hover:text-[#15335a] transition-colors">
                                                 {u.nom_complet}
                                             </p>
                                             <p className="text-xs font-mono text-gray-400">{u.public_id}</p>

@@ -1,6 +1,7 @@
 // app/(auth)/login/page.tsx
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import FormulaireConnexionBoutique from '@/components/shared/FormulaireConnexionBoutique'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 
@@ -26,7 +27,9 @@ export default function PageLoginBoutique() {
 
                     {/* Logo */}
                     <Link href="/" className="login-logo-link">
-                        <div className="login-logo-icon">MG</div>
+                        <Image src="/logo/app_logo.png" alt={ENTREPRISE.produit}
+                               width={44} height={44}
+                               style={{ borderRadius: 9, objectFit: 'contain', background: '#fff', padding: 4 }} />
                         <div>
                             <p className="login-logo-produit">{ENTREPRISE.produit}</p>
                             <p className="login-logo-par">par {ENTREPRISE.nom}</p>
@@ -154,7 +157,7 @@ export default function PageLoginBoutique() {
                 .login-left {
                     display: none;
                     flex: 1;
-                    background: linear-gradient(155deg, #1a56db 0%, #1e3a8a 50%, #0f172a 100%);
+                    background: linear-gradient(155deg, #15335a 0%, #1e3a8a 50%, #0f172a 100%);
                     position: relative;
                     z-index: 1;
                     padding: 48px;
@@ -349,13 +352,13 @@ export default function PageLoginBoutique() {
                 .login-inscription-link {
                     font-size: 14px;
                     font-weight: 700;
-                    color: #1a56db;
+                    color: #15335a;
                     text-decoration: none;
                     transition: color 0.15s;
                 }
 
                 .login-inscription-link:hover {
-                    color: #1648c0;
+                    color: #0f2742;
                     text-decoration: underline;
                 }
             `}</style>

@@ -26,7 +26,7 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
     const [ajout, setAjout]       = useState(false)
     const [nom, setNom]           = useState('')
     const [type, setType]         = useState('color')
-    const [couleur, setCouleur]   = useState('#1a56db')
+    const [couleur, setCouleur]   = useState('#15335a')
     const [enAttente, setEnAttente] = useState(false)
 
     async function handleAjouter() {
@@ -57,7 +57,7 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
                     </h2>
                 </div>
                 <button onClick={() => setAjout(!ajout)}
-                        className="flex items-center gap-1.5 text-xs text-[#1a56db] font-bold hover:underline">
+                        className="flex items-center gap-1.5 text-xs text-[#15335a] font-bold hover:underline">
                     <Plus className="w-3.5 h-3.5" />
                     Ajouter
                 </button>

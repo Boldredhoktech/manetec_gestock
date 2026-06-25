@@ -8,6 +8,11 @@
 //   - Textes de la landing page
 // ═══════════════════════════════════════════════════════════════
 
+import {
+    ShoppingCart, Package, FileText, BarChart3,
+    Users, Truck, Wallet, Lock,
+} from 'lucide-react'
+
 export const ENTREPRISE = {
 
     // ── Identité ────────────────────────────────────────────────
@@ -89,7 +94,7 @@ export const ENTREPRISE = {
             prix_mensuel:  15000,
             devise_prix:   'FCFA',
             duree:         'par mois',
-            couleur:       '#1a56db',
+            couleur:       '#15335a',
             description:   'Pour les PME en croissance',
             cta:           'Nous contacter',
             populaire:     true,
@@ -129,42 +134,42 @@ export const ENTREPRISE = {
     // ── Fonctionnalités clés (section landing page) ───────────────
     fonctionnalites_cles: [
         {
-            icone:       '🏪',
+            icone:       ShoppingCart,
             titre:       'Caisse POS moderne',
             description: 'Interface rapide et intuitive pour enregistrer vos ventes, gérer les paiements mixtes et imprimer les reçus.',
         },
         {
-            icone:       '📦',
+            icone:       Package,
             titre:       'Gestion de stock',
             description: 'Suivez vos produits en temps réel, gérez plusieurs entrepôts et recevez des alertes de rupture.',
         },
         {
-            icone:       '🧾',
+            icone:       FileText,
             titre:       'Facturation A4',
             description: 'Créez des factures professionnelles, des devis et des avoirs. Envoyez-les par email en un clic.',
         },
         {
-            icone:       '📊',
+            icone:       BarChart3,
             titre:       'Rapports & Analyses',
             description: 'Tableaux de bord en temps réel, rapports ventes, stocks et fournisseurs exportables en PDF.',
         },
         {
-            icone:       '👥',
+            icone:       Users,
             titre:       'Gestion des clients',
             description: 'Fidélisez vos clients avec un suivi complet, gestion des crédits et historique des achats.',
         },
         {
-            icone:       '🚚',
+            icone:       Truck,
             titre:       'Fournisseurs',
             description: 'Gérez vos fournisseurs, bons de commande, réceptions et paiements depuis une interface unifiée.',
         },
         {
-            icone:       '💰',
+            icone:       Wallet,
             titre:       'Comptabilité',
             description: 'Suivez vos dépenses, salaires et faites vos inventaires physiques avec ajustements automatiques.',
         },
         {
-            icone:       '🔒',
+            icone:       Lock,
             titre:       'Multi-utilisateurs',
             description: 'Créez des comptes vendeurs, gestionnaires et comptables avec des permissions personnalisées.',
         },

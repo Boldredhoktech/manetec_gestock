@@ -113,8 +113,8 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
             {/* ── Infos boutique ──────────────────────────────── */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                        <Building2 className="w-5 h-5 text-[#1a56db]" />
+                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                        <Building2 className="w-5 h-5 text-[#15335a]" />
                     </div>
                     <h2 className="text-sm font-bold text-gray-900">Ma boutique</h2>
                 </div>
@@ -162,8 +162,8 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
             {/* ── Informations personnelles ───────────────────── */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                        <User className="w-5 h-5 text-[#1a56db]" />
+                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                        <User className="w-5 h-5 text-[#15335a]" />
                     </div>
                     <h2 className="text-sm font-bold text-gray-900">Informations personnelles</h2>
                 </div>
@@ -191,12 +191,12 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                 value={nom}
                                 onChange={e => setNom(e.target.value)}
                                 disabled={nomEnCours}
-                                className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40 disabled:opacity-50"
+                                className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 disabled:opacity-50"
                             />
                             <button
                                 onClick={handleSauvegarderNom}
                                 disabled={nomEnCours || !nom.trim() || nom === utilisateur.nom_complet}
-                                className="px-4 py-2.5 bg-[#1a56db] text-white text-sm font-bold rounded-xl hover:bg-[#1648c0] disabled:opacity-40 transition-all shrink-0"
+                                className="px-4 py-2.5 bg-[#15335a] text-white text-sm font-bold rounded-xl hover:bg-[#0f2742] disabled:opacity-40 transition-all shrink-0"
                             >
                                 {nomEnCours
                                     ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -217,7 +217,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Rôle</label>
                         <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-xl">
-                            <Shield className="w-4 h-4 text-[#1a56db]" />
+                            <Shield className="w-4 h-4 text-[#15335a]" />
                             <span className="text-sm text-gray-600 font-medium capitalize">
                                 {utilisateur.role.replace(/_/g, ' ')}
                             </span>
@@ -280,7 +280,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                 onChange={e => setActuel(e.target.value)}
                                 disabled={mdpEnCours}
                                 placeholder="Votre mot de passe actuel"
-                                className="w-full px-3 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50"
+                                className="w-full px-3 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50"
                             />
                             <button type="button"
                                     onClick={() => setVoirActuel(!voirActuel)}
@@ -305,7 +305,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                 onChange={e => setNouveau(e.target.value)}
                                 disabled={mdpEnCours}
                                 placeholder="Au moins 6 caractères"
-                                className="w-full px-3 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 disabled:opacity-50"
+                                className="w-full px-3 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50"
                             />
                             <button type="button"
                                     onClick={() => setVoirNouveau(!voirNouveau)}
@@ -361,7 +361,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                         ? confirmation === nouveau
                                             ? 'border-green-300 focus:ring-green-400/30'
                                             : 'border-red-300 focus:ring-red-400/30'
-                                        : 'border-gray-200 focus:ring-[#1a56db]/30'
+                                        : 'border-gray-200 focus:ring-[#15335a]/30'
                                 }`}
                             />
                             <button type="button"

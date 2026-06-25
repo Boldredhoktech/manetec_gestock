@@ -34,7 +34,7 @@ export default function FormulaireFournisseur() {
 
             {/* Infos générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db] flex items-center gap-2">
+                <h2 className="text-sm font-bold text-[#15335a] flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
                     Informations générales
                 </h2>
@@ -69,7 +69,7 @@ export default function FormulaireFournisseur() {
 
             {/* Coordonnées */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db] flex items-center gap-2">
+                <h2 className="text-sm font-bold text-[#15335a] flex items-center gap-2">
                     <Phone className="w-4 h-4" />
                     Coordonnées
                 </h2>
@@ -130,7 +130,7 @@ export default function FormulaireFournisseur() {
 
             {/* Infos légales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db] flex items-center gap-2">
+                <h2 className="text-sm font-bold text-[#15335a] flex items-center gap-2">
                     <Globe className="w-4 h-4" />
                     Informations légales
                 </h2>
@@ -163,7 +163,7 @@ export default function FormulaireFournisseur() {
 
             <Button type="submit" disabled={enAttente}
                     className="w-full py-3 font-bold text-base rounded-xl"
-                    style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}>
+                    style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}>
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
                     : 'Créer le fournisseur'
@@ -175,6 +175,6 @@ export default function FormulaireFournisseur() {
 
 const inputClass = `
   w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-  focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40
+  focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40
   transition-colors disabled:opacity-50
 `

@@ -3,6 +3,7 @@
 import './landing.css'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Phone, MessageSquare, Mail, MapPin, Star } from 'lucide-react'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 
 function LogoEntreprise({ className }: { className?: string }) {
@@ -122,7 +123,7 @@ export default function LandingPage() {
                                 <div className="landing-mockup-header">Tableau de bord · Aujourd'hui</div>
                                 <div className="landing-mockup-stats">
                                     {[
-                                        { label: 'Ventes',   val: '347 000', unit: 'FCFA',      color: '#1a56db' },
+                                        { label: 'Ventes',   val: '347 000', unit: 'FCFA',      color: '#15335a' },
                                         { label: 'Clients',  val: '28',      unit: 'ce jour',   color: '#059669' },
                                         { label: 'En stock', val: '1 204',   unit: 'articles',  color: '#d97706' },
                                         { label: 'Factures', val: '12',      unit: 'en attente', color: '#7c3aed' },
@@ -169,13 +170,16 @@ export default function LandingPage() {
                         </p>
                     </div>
                     <div className="landing-features-grid">
-                        {ENTREPRISE.fonctionnalites_cles.map((f, i) => (
+                        {ENTREPRISE.fonctionnalites_cles.map((f, i) => {
+                            const Icone = f.icone
+                            return (
                             <div key={i} className="landing-feature-card">
-                                <div className="landing-feature-icon">{f.icone}</div>
+                                <div className="landing-feature-icon"><Icone size={26} strokeWidth={2} /></div>
                                 <h3 className="landing-feature-title">{f.titre}</h3>
                                 <p className="landing-feature-desc">{f.description}</p>
                             </div>
-                        ))}
+                            )
+                        })}
                     </div>
                 </div>
             </section>
@@ -197,7 +201,9 @@ export default function LandingPage() {
                             <div key={plan.id}
                                  className={`landing-plan-card ${(plan as any).populaire ? 'popular' : ''}`}>
                                 {(plan as any).populaire && (
-                                    <div className="landing-plan-badge">⭐ Plus populaire</div>
+                                    <div className="landing-plan-badge">
+                                        <Star size={14} fill="currentColor" style={{ verticalAlign: '-2px' }} /> Plus populaire
+                                    </div>
                                 )}
                                 <div className="landing-plan-header" style={{ borderTopColor: plan.couleur }}>
                                     <h3 className="landing-plan-nom">{plan.nom}</h3>
@@ -257,7 +263,11 @@ export default function LandingPage() {
                     <div className="landing-testimonials-grid">
                         {ENTREPRISE.temoignages.map((t, i) => (
                             <div key={i} className="landing-testimonial-card">
-                                <div className="landing-testimonial-stars">{'★'.repeat(t.note)}</div>
+                                <div className="landing-testimonial-stars">
+                                    {Array.from({ length: t.note }).map((_, s) => (
+                                        <Star key={s} size={15} fill="currentColor" strokeWidth={0} />
+                                    ))}
+                                </div>
                                 <p className="landing-testimonial-texte">"{t.texte}"</p>
                                 <div className="landing-testimonial-auteur">
                                     <div className="landing-testimonial-avatar">{t.nom.charAt(0)}</div>
@@ -318,7 +328,7 @@ export default function LandingPage() {
                             </p>
                             <div className="landing-contact-items">
                                 <a href={`tel:${ENTREPRISE.telephone_1}`} className="landing-contact-item">
-                                    <div className="landing-contact-item-icon">📞</div>
+                                    <div className="landing-contact-item-icon"><Phone size={18} /></div>
                                     <div>
                                         <p className="landing-contact-item-label">Téléphone</p>
                                         <p className="landing-contact-item-val">{ENTREPRISE.telephone_1}</p>
@@ -330,21 +340,21 @@ export default function LandingPage() {
                                 <a href={`https://wa.me/${ENTREPRISE.whatsapp.replace(/\s/g,'')}`}
                                    target="_blank" rel="noopener noreferrer"
                                    className="landing-contact-item">
-                                    <div className="landing-contact-item-icon">💬</div>
+                                    <div className="landing-contact-item-icon"><MessageSquare size={18} /></div>
                                     <div>
                                         <p className="landing-contact-item-label">WhatsApp</p>
                                         <p className="landing-contact-item-val">{ENTREPRISE.whatsapp}</p>
                                     </div>
                                 </a>
                                 <a href={`mailto:${ENTREPRISE.email_contact}`} className="landing-contact-item">
-                                    <div className="landing-contact-item-icon">✉️</div>
+                                    <div className="landing-contact-item-icon"><Mail size={18} /></div>
                                     <div>
                                         <p className="landing-contact-item-label">Email</p>
                                         <p className="landing-contact-item-val">{ENTREPRISE.email_contact}</p>
                                     </div>
                                 </a>
                                 <div className="landing-contact-item">
-                                    <div className="landing-contact-item-icon">📍</div>
+                                    <div className="landing-contact-item-icon"><MapPin size={18} /></div>
                                     <div>
                                         <p className="landing-contact-item-label">Adresse</p>
                                         <p className="landing-contact-item-val">

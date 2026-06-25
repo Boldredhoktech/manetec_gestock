@@ -113,7 +113,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
         setTimeout(() => router.push(`/stock/factures-fournisseurs/${(res as any).facture_id}`), 1000)
     }
 
-    const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 transition-colors'
+    const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
@@ -131,7 +131,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
 
             {/* Informations générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#1a56db]">Informations générales</h2>
+                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">
@@ -180,13 +180,13 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-sm font-bold text-[#1a56db]">Articles commandés</h2>
+                        <h2 className="text-sm font-bold text-[#15335a]">Articles commandés</h2>
                         <p className="text-xs text-gray-400 mt-0.5">
                             Seuls les produits existants dans votre catalogue sont acceptés.
                         </p>
                     </div>
                     <button type="button" onClick={ajouterLigne}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#1a56db] border border-[#1a56db]/30 rounded-lg hover:bg-[#1a56db]/5">
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5">
                         <Plus className="w-3.5 h-3.5" />Ajouter un article
                     </button>
                 </div>
@@ -204,7 +204,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                                 <select
                                     value={l.product_id}
                                     onChange={e => choisirProduit(i, e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 >
                                     <option value="">— Sélectionnez un produit —</option>
                                     {produits.map(p => (
@@ -237,7 +237,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                                             step="1"
                                             value={l.quantite}
                                             onChange={e => mettreAJour(i, 'quantite', Math.max(1, parseInt(e.target.value) || 1))}
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                         />
                                     </div>
                                     <div className="space-y-1.5 col-span-2">
@@ -250,7 +250,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                                             step="1"
                                             value={l.prix_unitaire}
                                             onChange={e => mettreAJour(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                         />
                                     </div>
                                     <div className="space-y-1.5">
@@ -262,7 +262,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                                             step="1"
                                             value={l.tva_pct}
                                             onChange={e => mettreAJour(i, 'tva_pct', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                         />
                                     </div>
                                 </div>
@@ -271,7 +271,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                             {/* Sous-total ligne + bouton supprimer */}
                             <div className="flex items-center justify-between">
                                 {l.product_id && l.quantite > 0 && l.prix_unitaire > 0 ? (
-                                    <p className="text-xs font-bold text-[#1a56db]">
+                                    <p className="text-xs font-bold text-[#15335a]">
                                         Sous-total : {(l.quantite * l.prix_unitaire * (1 + l.tva_pct / 100)).toLocaleString('fr-FR')} FCFA TTC
                                     </p>
                                 ) : (
@@ -299,7 +299,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                     </div>
                     <div className="text-right">
                         <p className="text-xs text-gray-400">Total TTC</p>
-                        <p className="text-xl font-black text-[#1a56db]">{montantTTC.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-xl font-black text-[#15335a]">{montantTTC.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                 </div>
             </div>
@@ -309,7 +309,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 onClick={handleSoumettre}
                 disabled={enAttente || succes || !supplierId}
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl disabled:opacity-50 transition-all hover:shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #1a56db, #1648c0)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>

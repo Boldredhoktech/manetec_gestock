@@ -66,7 +66,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
 
             {/* ── Header ─────────────────────────────────── */}
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <div className="flex items-center justify-between">
@@ -89,7 +89,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                             Réception
                         </Link>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                              className="flex items-center gap-2 px-4 py-2 bg-white text-[#1a56db] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm">
+                              className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm">
                             <FileInput className="w-4 h-4" />
                             Facture fourn.
                         </Link>
@@ -105,7 +105,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                     {/* Carte contact */}
                     <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                         <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                            <Building2 className="w-5 h-5 text-[#1a56db]" />
+                            <Building2 className="w-5 h-5 text-[#15335a]" />
                             <h2 className="text-sm font-bold text-gray-900">Informations</h2>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
@@ -160,7 +160,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                         </p>
                         {soldeDu > 0 && (
                             <Link href={`/stock/fournisseurs/${id}/factures`}
-                                  className="text-xs text-[#1a56db] font-bold hover:underline">
+                                  className="text-xs text-[#15335a] font-bold hover:underline">
                                 Voir les factures →
                             </Link>
                         )}
@@ -171,13 +171,13 @@ export default async function PageDetailFournisseur({ params }: Props) {
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                         <div className="flex items-center gap-2">
-                            <FileInput className="w-4 h-4 text-[#1a56db]" />
+                            <FileInput className="w-4 h-4 text-[#15335a]" />
                             <h2 className="text-sm font-bold text-gray-900">
                                 Dernières factures fournisseur
                             </h2>
                         </div>
                         <Link href={`/stock/fournisseurs/${id}/factures`}
-                              className="text-xs text-[#1a56db] font-bold hover:underline">
+                              className="text-xs text-[#15335a] font-bold hover:underline">
                             Voir tout →
                         </Link>
                     </div>
@@ -186,7 +186,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                         <div className="text-center py-8 text-gray-400">
                             <p className="text-sm">Aucune facture.</p>
                             <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                                  className="text-xs text-[#1a56db] font-bold hover:underline mt-1 inline-block">
+                                  className="text-xs text-[#15335a] font-bold hover:underline mt-1 inline-block">
                                 Créer une facture →
                             </Link>
                         </div>
@@ -197,9 +197,9 @@ export default async function PageDetailFournisseur({ params }: Props) {
                                 return (
                                     <Link key={f.id}
                                           href={`/stock/factures-fournisseurs/${f.id}`}
-                                          className={`flex items-center gap-4 px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                          className={`flex items-center gap-4 px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold font-mono text-gray-800 group-hover:text-[#1a56db]">
+                                            <p className="text-sm font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
                                                 {f.public_id}
                                             </p>
                                             <p className="text-xs text-gray-400">{formatDate(f.date_facture)}</p>
@@ -226,13 +226,13 @@ export default async function PageDetailFournisseur({ params }: Props) {
                 <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
                     <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                         <div className="flex items-center gap-2">
-                            <PackageCheck className="w-4 h-4 text-[#1a56db]" />
+                            <PackageCheck className="w-4 h-4 text-[#15335a]" />
                             <h2 className="text-sm font-bold text-gray-900">
                                 Dernières réceptions
                             </h2>
                         </div>
                         <Link href="/stock/receptions"
-                              className="text-xs text-[#1a56db] font-bold hover:underline">
+                              className="text-xs text-[#15335a] font-bold hover:underline">
                             Voir tout →
                         </Link>
                     </div>
@@ -241,7 +241,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
                         <div className="text-center py-8 text-gray-400">
                             <p className="text-sm">Aucune réception.</p>
                             <Link href={`/stock/fournisseurs/${id}/reception`}
-                                  className="text-xs text-[#1a56db] font-bold hover:underline mt-1 inline-block">
+                                  className="text-xs text-[#15335a] font-bold hover:underline mt-1 inline-block">
                                 Enregistrer une réception →
                             </Link>
                         </div>
@@ -250,9 +250,9 @@ export default async function PageDetailFournisseur({ params }: Props) {
                             {receptions.map((r, i) => (
                                 <Link key={r.id}
                                       href={`/stock/receptions/${r.id}`}
-                                      className={`flex items-center justify-between px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                      className={`flex items-center justify-between px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                                     <div>
-                                        <p className="text-sm font-bold font-mono text-gray-800 group-hover:text-[#1a56db]">
+                                        <p className="text-sm font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
                                             {r.public_id}
                                         </p>
                                         <p className="text-xs text-gray-400">{formatDate(r.date_reception)}</p>

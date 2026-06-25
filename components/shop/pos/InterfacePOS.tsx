@@ -188,7 +188,7 @@ export default function InterfacePOS({
 
             {/* ── TOPBAR BLEU ROI ───────────────────────────────── */}
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="flex items-center justify-between px-4 py-3 shadow-lg shrink-0"
             >
                 {/* Gauche : retour + infos */}
@@ -224,13 +224,13 @@ export default function InterfacePOS({
                                 )}
                                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                     actif
-                                        ? 'bg-white text-[#1a56db] shadow-md'
+                                        ? 'bg-white text-[#15335a] shadow-md'
                                         : passe
                                             ? 'bg-white/25 text-white'
                                             : 'bg-white/10 text-white/40'
                                 }`}>
                   <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
-                      actif ? 'bg-[#1a56db] text-white' : passe ? 'bg-white/50' : 'bg-white/20'
+                      actif ? 'bg-[#15335a] text-white' : passe ? 'bg-white/50' : 'bg-white/20'
                   }`}>
                     {i + 1}
                   </span>

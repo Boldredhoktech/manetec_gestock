@@ -50,7 +50,7 @@ export default async function PageFacturesFournisseurs() {
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
             <header
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                 className="px-6 py-5 shadow-lg"
             >
                 <div className="flex items-center justify-between">
@@ -70,7 +70,7 @@ export default async function PageFacturesFournisseurs() {
                     </div>
                     <Link
                         href="/stock/factures-fournisseurs/nouvelle"
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-[#1a56db] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
                         Nouvelle facture
@@ -100,7 +100,7 @@ export default async function PageFacturesFournisseurs() {
                             </p>
                         </div>
                         <Link href="/stock/factures-fournisseurs/nouvelle"
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1a56db] text-white font-bold text-sm rounded-xl hover:bg-[#1648c0] transition-colors">
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#15335a] text-white font-bold text-sm rounded-xl hover:bg-[#0f2742] transition-colors">
                             <Plus className="w-4 h-4" />
                             Créer une facture fournisseur
                         </Link>
@@ -115,7 +115,7 @@ export default async function PageFacturesFournisseurs() {
                       <div className="overflow-x-auto">
                        <div className="min-w-[760px]">
                         <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                             style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}>
+                             style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}>
                             <div className="col-span-2">Référence</div>
                             <div className="col-span-2">Date</div>
                             <div className="col-span-3">Fournisseur</div>
@@ -133,9 +133,9 @@ export default async function PageFacturesFournisseurs() {
                                 return (
                                     <Link key={f.id}
                                           href={`/stock/factures-fournisseurs/${f.id}`}
-                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                                         <div className="col-span-2">
-                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#1a56db]">
+                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
                                                 {f.public_id}
                                             </p>
                                             {f.reference_fourn && (

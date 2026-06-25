@@ -110,7 +110,7 @@ export function EmailStatutBoutique({
                                             <td align="center">
                                                 <a href={urlApp} style={{
                                                     display: 'inline-block',
-                                                    backgroundColor: '#1a56db',
+                                                    backgroundColor: '#15335a',
                                                     color: '#ffffff',
                                                     fontWeight: 700,
                                                     fontSize: '14px',

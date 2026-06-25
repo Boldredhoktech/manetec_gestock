@@ -1,10 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
     LayoutDashboard, Users, Settings, LogOut,
-    Store, ShoppingCart, Package, UserSquare,
+    ShoppingCart, Package, UserSquare,
     FileText, Warehouse, Tags, Award, BarChart3,
     Receipt, ClipboardCheck, Send, Truck,
     User, CreditCard, PackageCheck, FileInput,
@@ -134,8 +135,9 @@ export default function SidebarAdmin({ planReel }: Props) {
             {/* Logo boutique */}
             <div className="sidebar-logo-zone px-4 py-5">
                 <div className="flex items-center gap-2.5">
-                    <div className="bg-white/20 p-2 rounded-lg shrink-0">
-                        <Store className="w-5 h-5 text-white" />
+                    <div className="bg-white p-1 rounded-lg shrink-0">
+                        <Image src="/logo/app_logo.png" alt="Manetec Gestock" width={32} height={32}
+                               className="object-contain w-8 h-8" />
                     </div>
                     <div className="min-w-0">
                         <p className="text-sm font-bold text-white leading-none truncate">

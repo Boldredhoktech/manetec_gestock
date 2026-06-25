@@ -133,7 +133,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                                     onClick={() => setOnglet(o.key)}
                                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                         actif
-                                            ? 'bg-[#1a56db] text-white shadow-md shadow-[#1a56db]/30'
+                                            ? 'bg-[#15335a] text-white shadow-md shadow-[#15335a]/30'
                                             : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                                     }`}>
                                 <Icone className="w-4 h-4" />
@@ -286,8 +286,8 @@ export default function ParametresBoutique({ boutique }: Props) {
                                 <input type="range" min="0" max="50" step="0.5"
                                        value={remiseMax}
                                        onChange={e => setRemiseMax(parseFloat(e.target.value))}
-                                       className="flex-1 accent-[#1a56db]" />
-                                <div className="w-20 px-3 py-2 bg-[#1a56db] text-white text-center font-black rounded-xl text-sm shrink-0">
+                                       className="flex-1 accent-[#15335a]" />
+                                <div className="w-20 px-3 py-2 bg-[#15335a] text-white text-center font-black rounded-xl text-sm shrink-0">
                                     {remiseMax}%
                                 </div>
                             </div>
@@ -307,10 +307,10 @@ export default function ParametresBoutique({ boutique }: Props) {
                                 remiseMax <= 10 ? 'text-green-700' : remiseMax <= 20 ? 'text-yellow-700' : 'text-red-700'
                             }`}>
                                 {remiseMax <= 10
-                                    ? '✅ Politique conservative — forte protection de la marge'
+                                    ? 'Politique conservative — forte protection de la marge'
                                     : remiseMax <= 20
-                                        ? '⚠️ Politique modérée — marge correctement protégée'
-                                        : '🔴 Politique libérale — attention à la marge brute'
+                                        ? 'Politique modérée — marge correctement protégée'
+                                        : 'Politique libérale — attention à la marge brute'
                                 }
                             </p>
                             <p className={`text-xs mt-1 ${
@@ -357,7 +357,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                                 *** REÇU ***
                             </p>
                             <p className="text-gray-400">... articles ...</p>
-                            <p className="border-t border-dashed border-gray-300 pt-1 mt-1 text-[#1a56db] font-bold">
+                            <p className="border-t border-dashed border-gray-300 pt-1 mt-1 text-[#15335a] font-bold">
                                 {msgRecu || 'Merci pour votre achat !'}
                             </p>
                             <p className="text-gray-400">*** Conservez ce reçu ***</p>
@@ -400,7 +400,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                             <div className="border-t border-gray-200 my-2" />
                             <p className="text-gray-300 text-center">... lignes de facture ...</p>
                             <div className="border-t border-gray-200 my-2" />
-                            <p className="text-[#1a56db] italic text-center">
+                            <p className="text-[#15335a] italic text-center">
                                 {msgFacture || 'Aucun message pied de page configuré.'}
                             </p>
                         </div>
@@ -420,7 +420,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                     <div className="flex items-start gap-5">
                         <div className="shrink-0">
                             {logoUrl ? (
-                                <div className="w-32 h-32 rounded-2xl border-2 border-[#1a56db]/30 overflow-hidden bg-gray-50 flex items-center justify-center">
+                                <div className="w-32 h-32 rounded-2xl border-2 border-[#15335a]/30 overflow-hidden bg-gray-50 flex items-center justify-center">
                                     <img
                                         src={logoUrl}
                                         alt="Logo boutique"
@@ -473,7 +473,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                                 type="button"
                                 onClick={() => inputLogoRef.current?.click()}
                                 disabled={uploadEnCours}
-                                className="flex items-center gap-2.5 px-5 py-3 bg-[#1a56db] text-white font-bold text-sm rounded-xl hover:bg-[#1648c0] transition-all hover:shadow-lg hover:shadow-[#1a56db]/30 disabled:opacity-50"
+                                className="flex items-center gap-2.5 px-5 py-3 bg-[#15335a] text-white font-bold text-sm rounded-xl hover:bg-[#0f2742] transition-all hover:shadow-lg hover:shadow-[#15335a]/30 disabled:opacity-50"
                             >
                                 {uploadEnCours
                                     ? <><Loader2 className="w-4 h-4 animate-spin" />Upload en cours...</>
@@ -514,7 +514,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                         type="button"
                         onClick={handleSauvegarder}
                         disabled={enAttente}
-                        className="w-full flex items-center justify-center gap-2.5 py-4 bg-[#1a56db] text-white font-bold text-base rounded-2xl hover:bg-[#1648c0] transition-all hover:shadow-lg hover:shadow-[#1a56db]/30 disabled:opacity-60"
+                        className="w-full flex items-center justify-center gap-2.5 py-4 bg-[#15335a] text-white font-bold text-base rounded-2xl hover:bg-[#0f2742] transition-all hover:shadow-lg hover:shadow-[#15335a]/30 disabled:opacity-60"
                     >
                         {enAttente
                             ? <><Loader2 className="w-5 h-5 animate-spin" />Enregistrement...</>
@@ -531,7 +531,7 @@ export default function ParametresBoutique({ boutique }: Props) {
 // ── Composants utilitaires ─────────────────────────────────────
 const inputClass = `
   w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-  focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 focus:border-[#1a56db]/40
+  focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40
   transition-colors
 `
 
@@ -547,8 +547,8 @@ function Section({
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
             <div className="pb-3 border-b border-gray-100">
                 <div className="flex items-center gap-2.5 mb-1">
-                    <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                        <Icone className="w-5 h-5 text-[#1a56db]" />
+                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                        <Icone className="w-5 h-5 text-[#15335a]" />
                     </div>
                     <h2 className="text-sm font-bold text-gray-900">{titre}</h2>
                 </div>

@@ -48,7 +48,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
 
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
-            <header style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+            <header style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                     className="px-6 py-5 shadow-lg">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -69,7 +69,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                             </p>
                         </div>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                              className="flex items-center gap-2 px-4 py-2 bg-white text-[#1a56db] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors">
+                              className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors">
                             <Plus className="w-4 h-4" />
                             Nouvelle facture
                         </Link>
@@ -95,7 +95,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                         <FileText className="w-10 h-10 mx-auto text-gray-300" />
                         <p className="text-sm text-gray-500">Aucune facture fournisseur.</p>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#1a56db] text-white font-bold text-sm rounded-xl hover:bg-[#1648c0] transition-colors">
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#15335a] text-white font-bold text-sm rounded-xl hover:bg-[#0f2742] transition-colors">
                             <Plus className="w-4 h-4" />
                             Créer une facture
                         </Link>
@@ -105,7 +105,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                       <div className="overflow-x-auto">
                        <div className="min-w-[760px]">
                         <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                             style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}>
+                             style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}>
                             <div className="col-span-2">Référence</div>
                             <div className="col-span-2">Date</div>
                             <div className="col-span-2">Réf. fourn.</div>
@@ -122,9 +122,9 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                                 return (
                                     <Link key={f.id}
                                           href={`/stock/fournisseurs/${id}/factures/${f.id}`}
-                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#1a56db]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                                         <div className="col-span-2">
-                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#1a56db]">
+                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
                                                 {f.public_id}
                                             </p>
                                         </div>

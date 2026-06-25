@@ -106,8 +106,8 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
             {/* Carte infos utilisateur */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
                 <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 bg-[#1a56db]/10 rounded-2xl flex items-center justify-center shrink-0">
-            <span className="text-2xl font-black text-[#1a56db]">
+                    <div className="w-14 h-14 bg-[#15335a]/10 rounded-2xl flex items-center justify-center shrink-0">
+            <span className="text-2xl font-black text-[#15335a]">
               {utilisateur.nom_complet.charAt(0).toUpperCase()}
             </span>
                     </div>
@@ -116,7 +116,7 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
                         <div className="flex items-center gap-3 mt-0.5">
                             <span className="text-sm text-gray-500 font-mono">{utilisateur.identifiant}</span>
                             <span className="text-gray-300">·</span>
-                            <span className="text-sm text-[#1a56db] font-semibold">
+                            <span className="text-sm text-[#15335a] font-semibold">
                 {ROLES_LABELS[utilisateur.role] ?? utilisateur.role}
               </span>
                         </div>
@@ -147,8 +147,8 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
 
                 <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                        <Shield className="w-5 h-5 text-[#1a56db]" />
+                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                        <Shield className="w-5 h-5 text-[#15335a]" />
                     </div>
                     <div>
                         <h2 className="text-sm font-bold text-gray-900">Permissions étendues</h2>
@@ -195,19 +195,19 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
                                     <label key={perm.code}
                                            className={`flex items-center gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all ${
                                                active
-                                                   ? 'bg-[#1a56db]/5 border-[#1a56db]/40'
+                                                   ? 'bg-[#15335a]/5 border-[#15335a]/40'
                                                    : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                                            }`}
                                     >
                                         <div className={`shrink-0 w-6 h-6 rounded-lg flex items-center justify-center border-2 transition-all ${
                                             active
-                                                ? 'bg-[#1a56db] border-[#1a56db]'
+                                                ? 'bg-[#15335a] border-[#15335a]'
                                                 : 'bg-white border-gray-300'
                                         }`}>
                                             {active && <Check className="w-3.5 h-3.5 text-white" />}
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <p className={`text-sm font-bold ${active ? 'text-[#1a56db]' : 'text-gray-800'}`}>
+                                            <p className={`text-sm font-bold ${active ? 'text-[#15335a]' : 'text-gray-800'}`}>
                                                 {perm.label}
                                             </p>
                                             <p className="text-xs text-gray-400 mt-0.5">{perm.description}</p>
@@ -223,7 +223,7 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
                         <button
                             onClick={handleSauvegarder}
                             disabled={enAttente}
-                            className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#1a56db] text-white font-bold rounded-xl hover:bg-[#1648c0] disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#1a56db]/30"
+                            className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#15335a] text-white font-bold rounded-xl hover:bg-[#0f2742] disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#15335a]/30"
                         >
                             {enAttente
                                 ? <><Loader2 className="w-4 h-4 animate-spin" />Sauvegarde...</>

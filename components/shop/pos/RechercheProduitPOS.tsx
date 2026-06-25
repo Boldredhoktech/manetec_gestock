@@ -58,7 +58,7 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
             {/* Barre de recherche */}
             <div className="p-4 bg-white border-b border-gray-200 shadow-sm">
                 <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#1a56db]" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#15335a]" />
                     <input
                         ref={inputRef}
                         type="text"
@@ -66,7 +66,7 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
                         onChange={e => setTerme(e.target.value)}
                         placeholder="Rechercher un produit (nom, SKU, code-barres)..."
                         autoFocus
-                        className="w-full pl-11 pr-4 py-3 bg-[#f0f4ff] border-2 border-[#1a56db]/20 rounded-xl text-sm font-medium focus:outline-none focus:border-[#1a56db]/60 focus:bg-white transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-[#f0f4ff] border-2 border-[#15335a]/20 rounded-xl text-sm font-medium focus:outline-none focus:border-[#15335a]/60 focus:bg-white transition-all"
                     />
                     {terme && (
                         <button
@@ -84,14 +84,14 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
 
                 {chargement ? (
                     <div className="flex items-center justify-center py-16 gap-3">
-                        <div className="w-6 h-6 border-2 border-[#1a56db] border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm text-[#1a56db] font-medium">Recherche...</span>
+                        <div className="w-6 h-6 border-2 border-[#15335a] border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm text-[#15335a] font-medium">Recherche...</span>
                     </div>
 
                 ) : terme.length < 2 ? (
                     <div className="flex flex-col items-center justify-center py-16 space-y-4">
                         <div className="w-20 h-20 bg-white rounded-2xl shadow-md flex items-center justify-center">
-                            <Search className="w-9 h-9 text-[#1a56db]/30" />
+                            <Search className="w-9 h-9 text-[#15335a]/30" />
                         </div>
                         <div className="text-center">
                             <p className="text-sm font-semibold text-gray-500">Rechercher un produit</p>
@@ -144,7 +144,7 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
                                             ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
                                             : vientAjout
                                                 ? 'bg-green-50 border-green-400 scale-95'
-                                                : 'bg-white border-gray-200 hover:border-[#1a56db] hover:shadow-lg hover:shadow-[#1a56db]/10 hover:scale-[1.02]'
+                                                : 'bg-white border-gray-200 hover:border-[#15335a] hover:shadow-lg hover:shadow-[#15335a]/10 hover:scale-[1.02]'
                                     }`}
                                 >
                                     {/* Badge stock */}
@@ -171,17 +171,17 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
                                             ? 'bg-gray-100'
                                             : vientAjout
                                                 ? 'bg-green-500'
-                                                : 'bg-[#1a56db]/10 group-hover:bg-[#1a56db]/20'
+                                                : 'bg-[#15335a]/10 group-hover:bg-[#15335a]/20'
                                     }`}>
                                         {vientAjout
                                             ? <Plus className="w-5 h-5 text-white" />
-                                            : <Package className={`w-5 h-5 ${rupture ? 'text-gray-400' : 'text-[#1a56db]'}`} />
+                                            : <Package className={`w-5 h-5 ${rupture ? 'text-gray-400' : 'text-[#15335a]'}`} />
                                         }
                                     </div>
 
                                     {/* Nom */}
                                     <p className={`text-sm font-bold leading-tight mb-1 line-clamp-2 ${
-                                        rupture ? 'text-gray-400' : 'text-gray-800 group-hover:text-[#1a56db]'
+                                        rupture ? 'text-gray-400' : 'text-gray-800 group-hover:text-[#15335a]'
                                     } transition-colors`}>
                                         {p.nom}
                                     </p>
@@ -194,7 +194,7 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
                                     {/* Prix */}
                                     <div className="flex items-center justify-between mt-auto">
                                         <p className={`text-base font-black ${
-                                            rupture ? 'text-gray-400' : 'text-[#1a56db]'
+                                            rupture ? 'text-gray-400' : 'text-[#15335a]'
                                         }`}>
                                             {formatMontant(p.prix_vente)}
                                         </p>

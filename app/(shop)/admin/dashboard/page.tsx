@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import CartesStatsBoutique from '@/components/shop/dashboard/CartesStatsBoutique'
 import AccesRapidesBoutique from '@/components/shop/dashboard/AccesRapidesBoutique'
 import AlertesStock from '@/components/shop/dashboard/AlertesStock'
+import { AlertTriangle } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Dashboard' }
 
@@ -71,7 +72,7 @@ export default async function PageDashboardAdmin() {
         <div className="flex flex-col min-h-screen">
             <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <h1 className="text-xl font-bold text-foreground">
-                    Bonjour, {meta.nom_complet} 👋
+                    Bonjour, {meta.nom_complet}
                 </h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     {boutique?.nom} · Tableau de bord
@@ -82,12 +83,15 @@ export default async function PageDashboardAdmin() {
 
                 {/* Alerte expiration plan */}
                 {expireBientot && (
-                    <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm">
-                        ⚠️ Votre abonnement <strong>{boutique?.plan}</strong> expire le{' '}
-                        <strong>
-                            {new Date(boutique!.plan_expire_le!).toLocaleDateString('fr-FR')}
-                        </strong>.
-                        Contactez Bold Redhok Tech pour le renouveler.
+                    <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>
+                            Votre abonnement <strong>{boutique?.plan}</strong> expire le{' '}
+                            <strong>
+                                {new Date(boutique!.plan_expire_le!).toLocaleDateString('fr-FR')}
+                            </strong>.
+                            Contactez Bold Redhok Tech pour le renouveler.
+                        </span>
                     </div>
                 )}
 

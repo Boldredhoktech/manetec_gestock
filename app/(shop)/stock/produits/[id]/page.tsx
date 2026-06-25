@@ -75,7 +75,7 @@ export default async function PageFicheProduit({ params }: Props) {
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
             {/* HEADER BLEU ROI */}
-            <header style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+            <header style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
                     className="px-6 py-5 shadow-lg">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -118,7 +118,7 @@ export default async function PageFicheProduit({ params }: Props) {
                             {stockTotal <= 0 ? 'RUPTURE' : `${stockTotal} ${produit.unite}`}
                         </div>
                         <Link href={`/stock/produits/${id}/modifier`}>
-                            <Button size="sm" className="bg-white text-[#1a56db] hover:bg-white/90 font-bold">
+                            <Button size="sm" className="bg-white text-[#15335a] hover:bg-white/90 font-bold">
                                 <Edit className="w-4 h-4 mr-1.5" />
                                 Modifier
                             </Button>
@@ -155,7 +155,7 @@ export default async function PageFicheProduit({ params }: Props) {
 
                         {/* Actions rapides */}
                         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
-                            <h3 className="text-sm font-bold text-[#1a56db]">Actions</h3>
+                            <h3 className="text-sm font-bold text-[#15335a]">Actions</h3>
                             <form action={async () => {
                                 'use server'
                                 await toggleActivationProduit(id, !produit.est_actif)

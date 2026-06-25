@@ -29,8 +29,8 @@ export default function CarteMouvementsProduit({ mouvements }: Props) {
         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2">
-                <div className="bg-[#1a56db]/10 p-2 rounded-lg">
-                    <History className="w-5 h-5 text-[#1a56db]" />
+                <div className="bg-[#15335a]/10 p-2 rounded-lg">
+                    <History className="w-5 h-5 text-[#15335a]" />
                 </div>
                 <h2 className="text-sm font-bold text-gray-900">5 derniers mouvements</h2>
             </div>

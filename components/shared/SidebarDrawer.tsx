@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
+import Image from 'next/image'
 import { Menu, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -43,6 +44,10 @@ export default function SidebarDrawer({ title, children }: Props) {
                 >
                     <Menu className="w-5 h-5" />
                 </button>
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shrink-0">
+                    <Image src="/logo/app_logo.png" alt="Manetec Gestock" width={28} height={28}
+                           className="object-contain" />
+                </span>
                 <span className="text-sm font-bold text-white truncate">{title}</span>
             </div>
 

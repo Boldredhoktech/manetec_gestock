@@ -50,7 +50,7 @@ export default function PanierPOS({
             {/* ── EN-TÊTE PANIER ────────────────────────────── */}
             <div
                 className="flex items-center justify-between px-4 py-3 shrink-0"
-                style={{ background: 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)' }}
+                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
             >
                 <div className="flex items-center gap-2">
                     <ShoppingCart className="w-4 h-4 text-white" />
@@ -74,8 +74,8 @@ export default function PanierPOS({
             {/* ── SÉLECTION CLIENT ──────────────────────────── */}
             <div className="px-3 py-2.5 bg-[#f0f4ff] border-b border-gray-200 shrink-0">
                 <div className="flex items-center gap-1.5 mb-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#1a56db]" />
-                    <span className="text-xs font-bold text-[#1a56db]">Client</span>
+                    <Users className="w-3.5 h-3.5 text-[#15335a]" />
+                    <span className="text-xs font-bold text-[#15335a]">Client</span>
                 </div>
                 <select
                     value={clientSelectionne?.id ?? ''}
@@ -83,7 +83,7 @@ export default function PanierPOS({
                         const c = clients.find(c => c.id === e.target.value)
                         onClientChange(c ?? null)
                     }}
-                    className="w-full px-2.5 py-2 bg-white border border-[#1a56db]/20 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30 text-gray-700"
+                    className="w-full px-2.5 py-2 bg-white border border-[#15335a]/20 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 text-gray-700"
                 >
                     <option value="">Client anonyme</option>
                     {clients.map(c => (
@@ -148,7 +148,7 @@ export default function PanierPOS({
                                     </div>
 
                                     <div className="flex items-center gap-1 shrink-0">
-                    <span className="text-sm font-black text-[#1a56db]">
+                    <span className="text-sm font-black text-[#15335a]">
                       {formatMontant(ligne.montant_ligne, devise)}
                     </span>
                                         <button
@@ -156,7 +156,7 @@ export default function PanierPOS({
                                             onClick={() => setLigneOuverte(
                                                 ligneOuverte === ligne.product_id ? null : ligne.product_id
                                             )}
-                                            className="p-1 text-gray-400 hover:text-[#1a56db] transition-colors"
+                                            className="p-1 text-gray-400 hover:text-[#15335a] transition-colors"
                                         >
                                             {ligneOuverte === ligne.product_id
                                                 ? <ChevronUp className="w-3.5 h-3.5" />
@@ -185,7 +185,7 @@ export default function PanierPOS({
                                                        max={ligne.stock_disponible}
                                                        value={ligne.quantite}
                                                        onChange={e => onModifierLigne(ligne.product_id, 'quantite', parseInt(e.target.value) || 1)}
-                                                       className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                                       className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                                 />
                                             </div>
                                             <div>
@@ -195,7 +195,7 @@ export default function PanierPOS({
                                                 <input type="number" min="0" max="100" step="0.5"
                                                        value={ligne.remise_pct}
                                                        onChange={e => onModifierLigne(ligne.product_id, 'remise_pct', parseInt(e.target.value) || 0)}
-                                                       className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#1a56db]/30"
+                                                       className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                                 />
                                             </div>
                                         </div>
@@ -239,15 +239,15 @@ export default function PanierPOS({
             {/* ── REMISE GLOBALE ────────────────────────────── */}
             <div className="px-3 py-2 bg-[#f0f4ff] border-t border-gray-200 shrink-0">
                 <div className="flex items-center gap-2 mb-2">
-                    <Tag className="w-3.5 h-3.5 text-[#1a56db]" />
-                    <span className="text-xs font-bold text-[#1a56db]">Remise globale</span>
+                    <Tag className="w-3.5 h-3.5 text-[#15335a]" />
+                    <span className="text-xs font-bold text-[#15335a]">Remise globale</span>
                     <span className="text-xs text-gray-400">(max {remiseMax}%)</span>
                     <div className="flex-1 flex items-center gap-2">
                         <input type="range" min="0" max={remiseMax} step="0.5"
                                value={remiseGlobalePct}
                                onChange={e => onRemiseChange(Math.min(parseFloat(e.target.value), remiseMax))}
-                               className="flex-1 accent-[#1a56db] h-1.5" />
-                        <span className="text-xs font-black text-[#1a56db] w-8 text-right">
+                               className="flex-1 accent-[#15335a] h-1.5" />
+                        <span className="text-xs font-black text-[#15335a] w-8 text-right">
               {remiseGlobalePct}%
             </span>
                     </div>
@@ -256,7 +256,7 @@ export default function PanierPOS({
                     <FileText className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
                     <input type="text" placeholder="Note (optionnelle)"
                            value={noteVente} onChange={e => onNoteChange(e.target.value)}
-                           className="w-full pl-7 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#1a56db]/20"
+                           className="w-full pl-7 pr-3 py-1.5 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/20"
                     />
                 </div>
             </div>
@@ -283,7 +283,7 @@ export default function PanierPOS({
                 )}
                 <div className="flex justify-between items-center pt-1.5 border-t border-gray-100">
                     <span className="text-sm font-bold text-gray-700">TOTAL</span>
-                    <span className="text-xl font-black text-[#1a56db]">
+                    <span className="text-xl font-black text-[#15335a]">
             {formatMontant(montantTotal, devise)}
           </span>
                 </div>
@@ -305,7 +305,7 @@ export default function PanierPOS({
                     className="w-full py-4 font-black text-base rounded-xl text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                         background: panier.length > 0
-                            ? 'linear-gradient(135deg, #1a56db 0%, #1648c0 100%)'
+                            ? 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)'
                             : '#d1d5db',
                         boxShadow: panier.length > 0
                             ? '0 4px 16px rgba(26,86,219,0.35)'
