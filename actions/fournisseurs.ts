@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -12,6 +14,7 @@ export async function creerFournisseur(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    if (!aPermission(user, PERMISSIONS.FOURNISSEURS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -79,6 +82,7 @@ export async function creerBonCommande(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.BONS_COMMANDE_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -187,6 +191,7 @@ export async function enregistrerReception(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.RECEPTION_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
 
@@ -224,6 +229,7 @@ export async function payerFournisseur(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient  = createAdminClient()
     const supplierId   = formData.get('supplierId') as string
@@ -260,6 +266,7 @@ export async function creerTransfert(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.STOCK_TRANSFERT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -378,6 +385,7 @@ export async function creerAjustement(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -476,6 +484,7 @@ export async function creerFactureFournisseur(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -627,6 +636,7 @@ export async function payerFactureFournisseur(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

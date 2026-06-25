@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 
 export interface LigneVente {
@@ -59,6 +61,7 @@ export async function enregistrerVente(donnees: DonneesVente) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    if (!aPermission(user, PERMISSIONS.VENTES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     // Validations règles métier côté serveur
     const shopId = user.user_metadata.shop_id as string

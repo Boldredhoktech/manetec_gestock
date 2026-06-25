@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import { getPlanLimites } from '@/lib/constants/plans'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -21,6 +23,7 @@ export async function creerClientEntreprise(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.CLIENTS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -66,6 +69,7 @@ export async function creerDevis(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -155,6 +159,7 @@ export async function convertirDevisEnFacture(devisId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -244,6 +249,7 @@ export async function creerFactureDirecte(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -332,6 +338,7 @@ export async function payerFacture(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FACTURES_PAIEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
     const factureId   = formData.get('factureId') as string
@@ -365,6 +372,7 @@ export async function creerAvoir(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.AVOIRS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -401,6 +409,7 @@ export async function modifierStatutDevis(devisId: string, statut: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
     await adminClient.from('devis').update({ statut })

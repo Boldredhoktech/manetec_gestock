@@ -2,6 +2,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -10,6 +12,7 @@ export async function creerCategorieDepense(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -32,6 +35,7 @@ export async function creerDepense(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -75,6 +79,7 @@ export async function creerEmploye(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -108,6 +113,7 @@ export async function payerSalaire(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -159,6 +165,7 @@ export async function creerInventaire(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -241,6 +248,7 @@ export async function saisirQuantiteReelle(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
 
@@ -266,6 +274,7 @@ export async function validerInventaire(inventoryId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_VALIDER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
