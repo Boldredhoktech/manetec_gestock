@@ -2,9 +2,9 @@ import { StyleSheet, Font } from '@react-pdf/renderer'
 
 // Styles de base réutilisables dans tous les PDFs
 export const couleurs = {
-    primaire:    '#1a1a2e',
-    secondaire:  '#16213e',
-    accent:      '#0f3460',
+    primaire:    '#15335a',
+    secondaire:  '#0f2742',
+    accent:      '#ef5e22',
     texte:       '#1a1a1a',
     texteFaible: '#6b7280',
     bordure:     '#e5e7eb',
