@@ -73,7 +73,7 @@ function _deuxChiffres(n: number): string {
     const d = Math.floor(n / 10), u = n % 10
     if (d === 7) return u === 1 ? 'soixante et onze' : 'soixante-' + _UNITES[10 + u]
     if (d === 9) return 'quatre-vingt-' + _UNITES[10 + u]
-    let mot = _DIZAINES[d]
+    const mot = _DIZAINES[d]
     if (u === 0) return d === 8 ? 'quatre-vingts' : mot
     if (u === 1 && d !== 8) return mot + ' et un'
     return mot + '-' + _UNITES[u]
