@@ -1,15 +1,48 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { connexionBoutique } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Store, User, Lock, Hash, Loader2, AlertCircle } from 'lucide-react'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
+// Clés de stockage local (jamais le mot de passe — géré par le navigateur)
+const CLE_SHOP  = 'manetec.shopId'
+const CLE_USER  = 'manetec.identifiant'
+const CLE_GARDE = 'manetec.souvenir'
+
 export default function FormulaireConnexionBoutique() {
+    const [shopId, setShopId]           = useState('')
+    const [identifiant, setIdentifiant] = useState('')
+    const [souvenir, setSouvenir]       = useState(false)
+
+    // Pré-remplissage depuis le navigateur (après montage → pas de mismatch SSR)
+    useEffect(() => {
+        try {
+            if (localStorage.getItem(CLE_GARDE) === '1') {
+                setShopId(localStorage.getItem(CLE_SHOP) ?? '')
+                setIdentifiant(localStorage.getItem(CLE_USER) ?? '')
+                setSouvenir(true)
+            }
+        } catch { /* localStorage indisponible */ }
+    }, [])
+
     const [etat, action, enAttente] = useActionState(
         async (_etatPrecedent: typeof etatInitial, formData: FormData) => {
+            // Persister (ou effacer) les identifiants selon le choix — depuis l'état React
+            try {
+                if (souvenir) {
+                    localStorage.setItem(CLE_GARDE, '1')
+                    localStorage.setItem(CLE_SHOP, shopId.trim().toUpperCase())
+                    localStorage.setItem(CLE_USER, identifiant.trim())
+                } else {
+                    localStorage.removeItem(CLE_GARDE)
+                    localStorage.removeItem(CLE_SHOP)
+                    localStorage.removeItem(CLE_USER)
+                }
+            } catch { /* ignore */ }
+
             const resultat = await connexionBoutique(formData)
             return resultat ?? etatInitial
         },
@@ -63,6 +96,8 @@ export default function FormulaireConnexionBoutique() {
                             autoComplete="off"
                             placeholder="SHOP-00001"
                             disabled={enAttente}
+                            value={shopId}
+                            onChange={e => setShopId(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed uppercase transition"
                         />
                     </div>
@@ -89,6 +124,8 @@ export default function FormulaireConnexionBoutique() {
                             autoComplete="username"
                             placeholder="votre.identifiant"
                             disabled={enAttente}
+                            value={identifiant}
+                            onChange={e => setIdentifiant(e.target.value)}
                             className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                         />
                     </div>
@@ -116,6 +153,24 @@ export default function FormulaireConnexionBoutique() {
                         />
                     </div>
                 </div>
+
+                {/* Se souvenir de moi */}
+                <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                    <input
+                        type="checkbox"
+                        name="souvenir"
+                        checked={souvenir}
+                        onChange={e => setSouvenir(e.target.checked)}
+                        disabled={enAttente}
+                        className="mt-0.5 h-4 w-4 rounded border-input accent-primary cursor-pointer"
+                    />
+                    <span className="text-sm text-muted-foreground leading-snug">
+                        Se souvenir de mon identifiant boutique sur cet appareil
+                        <span className="block text-xs text-muted-foreground/70 mt-0.5">
+                            Le mot de passe n'est jamais enregistré par l'application. À éviter sur un appareil partagé.
+                        </span>
+                    </span>
+                </label>
 
                 {/* Bouton */}
                 <Button
