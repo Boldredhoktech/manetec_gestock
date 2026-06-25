@@ -25,6 +25,21 @@ export async function creerEntrepot(formData: FormData) {
 
     if (!nom) return { erreur: 'Le nom est obligatoire.' }
 
+    // Multi-entrepôts selon le plan : un plan sans multi_entrepots est limité à 1 entrepôt
+    const { getPlanLimites } = await import('@/lib/constants/plans')
+    const { data: boutiquePlan } = await adminClient
+        .from('shops').select('plan').eq('id', shopId).single()
+    const limitesPlan = getPlanLimites(boutiquePlan?.plan ?? 'starter')
+    if (!limitesPlan.multi_entrepots) {
+        const { count: nbEntrepots } = await adminClient
+            .from('warehouses')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', shopId)
+        if ((nbEntrepots ?? 0) >= 1) {
+            return { erreur: `Votre plan ${limitesPlan.label} ne permet qu'un seul entrepôt. Passez au plan Pro ou Enterprise pour gérer plusieurs entrepôts.` }
+        }
+    }
+
     const { data: publicId } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'WH' })
 

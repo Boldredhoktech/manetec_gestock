@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { envoyerEmailPromo }         from '@/lib/resend/notifications'
 import { createClient }              from '@/lib/supabase/server'
+import { getPlanBoutique }           from '@/lib/supabase/getPlanBoutique'
 
 export async function POST(request: NextRequest) {
     const supabase = await createClient()
@@ -8,6 +9,15 @@ export async function POST(request: NextRequest) {
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
+    }
+
+    // Communications promotionnelles : réservé au plan Enterprise (lu en base)
+    const { limites } = await getPlanBoutique(user.user_metadata.shop_id)
+    if (!limites.communications) {
+        return NextResponse.json(
+            { erreur: 'Les communications promotionnelles sont réservées au plan Enterprise.' },
+            { status: 403 },
+        )
     }
 
     const body = await request.json()

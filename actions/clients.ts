@@ -17,6 +17,19 @@ export async function creerClient(formData: FormData) {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
+    // Limite clients selon le plan (lu en base, jamais le JWT)
+    const { getPlanLimites } = await import('@/lib/constants/plans')
+    const { data: boutiquePlan } = await adminClient
+        .from('shops').select('plan').eq('id', shopId).single()
+    const limites = getPlanLimites(boutiquePlan?.plan ?? 'starter')
+    const { count: nbClients } = await adminClient
+        .from('clients')
+        .select('*', { count: 'exact', head: true })
+        .eq('shop_id', shopId).eq('est_anonyme', false)
+    if ((nbClients ?? 0) >= limites.max_clients) {
+        return { erreur: `Votre plan ${limites.label} est limité à ${limites.max_clients} clients. Passez au plan supérieur.` }
+    }
+
     const nom      = (formData.get('nom') as string)?.trim()
     const telephone = (formData.get('telephone') as string)?.trim() || null
     const email    = (formData.get('email') as string)?.trim() || null

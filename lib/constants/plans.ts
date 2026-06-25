@@ -53,4 +53,14 @@ export function getPlanLimites(plan: string): PlanLimites {
     return PLANS[(plan as PlanId)] ?? PLANS.starter
 }
 
+// Valeur conventionnelle "illimité" (les plans n'utilisent jamais -1)
+export const ILLIMITE = 999999
+
+/** Renvoie true si le plan permet d'ajouter encore une entité (quota non atteint). */
+export function peutAjouter(plan: string, max: keyof Pick<PlanLimites,
+    'max_produits' | 'max_clients' | 'max_utilisateurs'>, nbActuel: number): boolean {
+    const limite = getPlanLimites(plan)[max]
+    return limite >= ILLIMITE || nbActuel < limite
+}
+
 export { PLANS }

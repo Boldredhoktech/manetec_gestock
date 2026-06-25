@@ -14,6 +14,13 @@ import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
 import { useSessionBoutique } from '@/hooks/useSession'
 import SidebarDrawer from '@/components/shared/SidebarDrawer'
+import { getPlanLimites } from '@/lib/constants/plans'
+
+// Liens réservés à certaines fonctionnalités du plan (masqués sinon)
+const FEATURE_PAR_HREF: Record<string, 'rapports' | 'communications'> = {
+    '/admin/rapports':       'rapports',
+    '/admin/communications': 'communications',
+}
 
 const NAVIGATION_SUPER_ADMIN = [
     {
@@ -125,9 +132,21 @@ interface Props { planReel?: string }
 export default function SidebarAdmin({ planReel }: Props) {
     const pathname    = usePathname()
     const { session } = useSessionBoutique()
-    const navigation  = NAVIGATIONS_PAR_ROLE[session?.role ?? 'vendeur'] ?? NAVIGATION_VENDEUR
+    const navigationBrute = NAVIGATIONS_PAR_ROLE[session?.role ?? 'vendeur'] ?? NAVIGATION_VENDEUR
     const plan        = planReel ?? session?.shop_plan ?? 'starter'
     const estSuperAdmin = session?.role === 'super_admin_boutique'
+
+    // Masquer les liens dont la fonctionnalité n'est pas incluse dans le plan
+    const limites = getPlanLimites(plan)
+    const navigation = navigationBrute
+        .map(groupe => ({
+            ...groupe,
+            items: groupe.items.filter(item => {
+                const feature = FEATURE_PAR_HREF[item.href]
+                return !feature || limites[feature]
+            }),
+        }))
+        .filter(groupe => groupe.items.length > 0)
 
     return (
         <SidebarDrawer title={session?.shop_nom ?? 'Boutique'}>

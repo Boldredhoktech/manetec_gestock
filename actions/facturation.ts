@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { getPlanLimites } from '@/lib/constants/plans'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -13,14 +14,6 @@ export interface LigneFacture {
     prix_unitaire: number
     remise_pct:    number
     tva_pct:       number
-}
-
-// ── Limites par plan ───────────────────────────────────────────
-function getPlanLimites(plan: string) {
-    return {
-        factures_a4: plan === 'pro' || plan === 'enterprise',
-        devis:       plan === 'pro' || plan === 'enterprise',
-    }
 }
 
 // ── Clients entreprise ─────────────────────────────────────────

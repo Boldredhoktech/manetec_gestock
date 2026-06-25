@@ -5,6 +5,7 @@ import { renderToBuffer } from '@react-pdf/renderer'
 import { RapportStockPDF } from '@/lib/pdf/rapport-stock'
 import { getDonneesRapportStock } from '@/actions/rapports'
 import { createClient } from '@/lib/supabase/server'
+import { getPlanBoutique } from '@/lib/supabase/getPlanBoutique'
 import React from 'react'
 
 export async function GET(request: NextRequest) {
@@ -12,6 +13,11 @@ export async function GET(request: NextRequest) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
+    }
+
+    const { limites } = await getPlanBoutique(user.user_metadata.shop_id)
+    if (!limites.rapports) {
+        return new NextResponse('Rapports réservés aux plans Pro et Enterprise.', { status: 403 })
     }
 
     const { searchParams } = request.nextUrl
