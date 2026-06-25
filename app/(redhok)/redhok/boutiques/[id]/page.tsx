@@ -9,6 +9,7 @@ import CarteAbonnement from '@/components/redhok/CarteAbonnement'
 import CarteActivationBoutique from '@/components/redhok/CarteActivationBoutique'
 import CarteUsageBoutique from '@/components/redhok/CarteUsageBoutique'
 import CarteUtilisateursBoutique from '@/components/redhok/CarteUtilisateursBoutique'
+import CarteAuditBoutique from '@/components/redhok/CarteAuditBoutique'
 
 export const metadata: Metadata = { title: 'Détail boutique' }
 
@@ -26,6 +27,7 @@ export default async function PageDetailBoutique({ params }: Props) {
         redirect('/redhok/login')
     }
 
+    const estSuperAdminPlateforme = user.user_metadata?.role === 'super_platform_admin'
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
@@ -41,6 +43,7 @@ export default async function PageDetailBoutique({ params }: Props) {
         { count: nbProduits },
         { count: nbClients },
         { count: nbVentes },
+        { data: logsAudit },
     ] = await Promise.all([
         adminClient
             .from('shop_users')
@@ -56,6 +59,11 @@ export default async function PageDetailBoutique({ params }: Props) {
         adminClient.from('sales')
             .select('*', { count: 'exact', head: true })
             .eq('shop_id', id).eq('statut', 'completee'),
+        adminClient.from('audit_logs')
+            .select('id, event_type, type_acteur, user_nom, user_public_id, reference_type, reference_public_id, details_json, created_at')
+            .eq('shop_id', id)
+            .order('created_at', { ascending: false })
+            .limit(500),
     ])
 
     const nbUtilisateurs = utilisateurs?.length ?? 0
@@ -97,8 +105,10 @@ export default async function PageDetailBoutique({ params }: Props) {
                 <CarteUtilisateursBoutique
                     shopId={id}
                     utilisateurs={(utilisateurs ?? []) as any[]}
+                    peutGererIdentifiants={estSuperAdminPlateforme}
                 />
                 <CarteActivationBoutique boutique={boutique} />
+                <CarteAuditBoutique logs={(logsAudit ?? []) as any[]} />
             </main>
         </div>
     )

@@ -382,6 +382,10 @@ export async function modifierIdentifiantUserBoutique(
 ) {
     const user = await gardePlateforme()
     if (!user) return { erreur: 'Non autorisé.' }
+    // Action sensible (change de credentials) — réservée au Super Admin Plateforme
+    if (user.user_metadata?.role !== 'super_platform_admin') {
+        return { erreur: 'Réservé au Super Admin Plateforme.' }
+    }
 
     const identifiant = (nouvelIdentifiant ?? '').trim().toLowerCase()
     if (!identifiant) return { erreur: 'L\'identifiant est requis.' }
@@ -427,6 +431,10 @@ export async function modifierIdentifiantUserBoutique(
 export async function reinitialiserMdpUserBoutique(shopId: string, userId: string) {
     const user = await gardePlateforme()
     if (!user) return { erreur: 'Non autorisé.' }
+    // Action sensible (change de credentials) — réservée au Super Admin Plateforme
+    if (user.user_metadata?.role !== 'super_platform_admin') {
+        return { erreur: 'Réservé au Super Admin Plateforme.' }
+    }
 
     const adminClient = createAdminClient()
 
@@ -510,6 +518,16 @@ export async function debloquerUserBoutique(shopId: string, userId: string) {
         .eq('shop_id', shopId)
 
     if (error) return { erreur: 'Erreur lors du déblocage.' }
+
+    await adminClient.from('audit_logs').insert({
+        shop_id:        shopId,
+        user_id:        user.user_metadata.admin_id,
+        user_nom:       user.user_metadata.nom_complet ?? 'Admin Plateforme',
+        type_acteur:    'platform',
+        event_type:     'SHOP_USER_UNBLOCKED',
+        reference_type: 'shop_user',
+        reference_id:   userId,
+    })
 
     revalidatePath(`/redhok/boutiques/${shopId}`)
     return { succes: true }

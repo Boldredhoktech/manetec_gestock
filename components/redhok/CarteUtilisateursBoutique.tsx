@@ -30,7 +30,7 @@ const ROLE_LABELS: Record<string, string> = {
     comptable:            'Comptable',
 }
 
-function LigneUtilisateur({ u, shopId }: { u: Utilisateur; shopId: string }) {
+function LigneUtilisateur({ u, shopId, peutGerer }: { u: Utilisateur; shopId: string; peutGerer: boolean }) {
     const router = useRouter()
     const [identifiant, setIdentifiant] = useState(u.identifiant)
     const [enAttente, setEnAttente]     = useState<string | null>(null)
@@ -88,32 +88,40 @@ function LigneUtilisateur({ u, shopId }: { u: Utilisateur; shopId: string }) {
                 </div>
             </div>
 
-            {/* Identifiant éditable */}
+            {/* Identifiant — éditable seulement pour le Super Admin Plateforme */}
             <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground w-20 shrink-0">Identifiant</span>
-                <input
-                    value={identifiant}
-                    onChange={e => setIdentifiant(e.target.value)}
-                    className="flex-1 min-w-0 px-2.5 py-1.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <button
-                    type="button"
-                    onClick={sauverIdentifiant}
-                    disabled={!identModifie || enAttente === 'ident'}
-                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-[#15335a] text-white disabled:opacity-40 hover:bg-[#0f2742] transition-colors"
-                >
-                    {enAttente === 'ident' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                    Enregistrer
-                </button>
+                {peutGerer ? (
+                    <>
+                        <input
+                            value={identifiant}
+                            onChange={e => setIdentifiant(e.target.value)}
+                            className="flex-1 min-w-0 px-2.5 py-1.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                        />
+                        <button
+                            type="button"
+                            onClick={sauverIdentifiant}
+                            disabled={!identModifie || enAttente === 'ident'}
+                            className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold rounded-lg bg-[#15335a] text-white disabled:opacity-40 hover:bg-[#0f2742] transition-colors"
+                        >
+                            {enAttente === 'ident' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                            Enregistrer
+                        </button>
+                    </>
+                ) : (
+                    <span className="text-sm font-mono text-foreground">{u.identifiant}</span>
+                )}
             </div>
 
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
-                <button type="button" onClick={resetMdp} disabled={enAttente === 'mdp'}
-                        className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-input hover:bg-muted transition-colors disabled:opacity-50">
-                    {enAttente === 'mdp' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
-                    Réinitialiser le mot de passe
-                </button>
+                {peutGerer && (
+                    <button type="button" onClick={resetMdp} disabled={enAttente === 'mdp'}
+                            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border border-input hover:bg-muted transition-colors disabled:opacity-50">
+                        {enAttente === 'mdp' ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <KeyRound className="w-3.5 h-3.5" />}
+                        Réinitialiser le mot de passe
+                    </button>
+                )}
                 <button type="button" onClick={toggleActif} disabled={enAttente === 'actif'}
                         className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium rounded-lg border transition-colors disabled:opacity-50 ${
                             u.est_actif ? 'border-destructive/30 text-destructive hover:bg-destructive/10' : 'border-green-300 text-green-700 hover:bg-green-50'
@@ -156,21 +164,26 @@ function LigneUtilisateur({ u, shopId }: { u: Utilisateur; shopId: string }) {
 }
 
 export default function CarteUtilisateursBoutique({
-    shopId, utilisateurs,
-}: { shopId: string; utilisateurs: Utilisateur[] }) {
+    shopId, utilisateurs, peutGererIdentifiants,
+}: { shopId: string; utilisateurs: Utilisateur[]; peutGererIdentifiants: boolean }) {
     return (
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <Users className="w-4 h-4" />
                 Utilisateurs de la boutique ({utilisateurs.length})
             </h2>
+            {!peutGererIdentifiants && (
+                <p className="text-xs text-muted-foreground">
+                    La modification des identifiants et des mots de passe est réservée au Super Admin Plateforme.
+                </p>
+            )}
 
             {utilisateurs.length === 0 ? (
                 <p className="text-sm text-muted-foreground">Aucun utilisateur.</p>
             ) : (
                 <div className="space-y-3">
                     {utilisateurs.map(u => (
-                        <LigneUtilisateur key={u.id} u={u} shopId={shopId} />
+                        <LigneUtilisateur key={u.id} u={u} shopId={shopId} peutGerer={peutGererIdentifiants} />
                     ))}
                 </div>
             )}
