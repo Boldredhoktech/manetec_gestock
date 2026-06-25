@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { uploadImageCloudinary } from '@/lib/cloudinary'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(request: NextRequest) {
@@ -49,33 +50,21 @@ export async function POST(request: NextRequest) {
 
     const adminClient = createAdminClient()
 
-    // Convertir le File en ArrayBuffer pour Supabase Storage
+    // Upload sur Cloudinary
     const arrayBuffer = await fichier.arrayBuffer()
     const buffer      = Buffer.from(arrayBuffer)
-    const chemin      = `logos/${shopId}/logo.${ext}`
 
-    // Upload dans Supabase Storage
-    const { error: uploadError } = await adminClient.storage
-        .from('boutiques')
-        .upload(chemin, buffer, {
-            upsert:      true,
-            contentType: fichier.type || `image/${ext}`,
-        })
-
-    if (uploadError) {
-        console.error('ERREUR UPLOAD LOGO:', uploadError)
+    let logoUrl: string
+    try {
+        const res = await uploadImageCloudinary(buffer, `shops/${shopId}`, 'logo')
+        logoUrl = res.url
+    } catch (e) {
+        console.error('ERREUR UPLOAD LOGO CLOUDINARY:', e)
         return NextResponse.json(
-            { erreur: `Erreur lors de l'upload : ${uploadError.message}` },
+            { erreur: 'Erreur lors de l\'upload du logo.' },
             { status: 500 }
         )
     }
-
-    // Récupérer l'URL publique avec cache-busting
-    const { data: urlData } = adminClient.storage
-        .from('boutiques')
-        .getPublicUrl(chemin)
-
-    const logoUrl = `${urlData.publicUrl}?t=${Date.now()}`
 
     // Enregistrer l'URL en base
     const { error: dbError } = await adminClient

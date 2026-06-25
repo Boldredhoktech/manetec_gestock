@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
+import { uploadImageCloudinary } from '@/lib/cloudinary'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import * as argon2 from 'argon2'
@@ -340,24 +341,16 @@ export async function uploadLogoBoutique(formData: FormData) {
     }
 
     const adminClient = createAdminClient()
-    const chemin      = `logos/${shopId}/logo.${ext}`
 
-    // Upload dans Supabase Storage (bucket "boutiques")
-    const { error: uploadError } = await adminClient.storage
-        .from('boutiques')
-        .upload(chemin, fichier, {
-            upsert:      true,
-            contentType: fichier.type,
-        })
-
-    if (uploadError) return { erreur: 'Erreur lors de l\'upload : ' + uploadError.message }
-
-    // Récupérer l'URL publique
-    const { data: urlData } = adminClient.storage
-        .from('boutiques')
-        .getPublicUrl(chemin)
-
-    const logoUrl = urlData.publicUrl + `?t=${Date.now()}` // cache-busting
+    // Upload sur Cloudinary
+    let logoUrl: string
+    try {
+        const buffer = Buffer.from(await fichier.arrayBuffer())
+        const res = await uploadImageCloudinary(buffer, `shops/${shopId}`, 'logo')
+        logoUrl = res.url
+    } catch {
+        return { erreur: 'Erreur lors de l\'upload du logo.' }
+    }
 
     // Enregistrer l'URL en base
     const { error: dbError } = await adminClient
