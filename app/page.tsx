@@ -3,7 +3,7 @@
 import './landing.css'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Phone, MessageSquare, Mail, MapPin, Star } from 'lucide-react'
+import { Phone, MessageSquare, Mail, MapPin, Star, Smartphone, Tablet, Monitor, Wifi } from 'lucide-react'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 
 function LogoEntreprise({ className }: { className?: string }) {
@@ -101,7 +101,7 @@ export default function LandingPage() {
                     </p>
                 </div>
 
-                {/* Dashboard mockup */}
+                {/* Aperçu réel de l'application */}
                 <div className="landing-hero-mockup animate-fade-up animate-delay-3">
                     <div className="landing-mockup-window">
                         <div className="landing-mockup-bar">
@@ -110,39 +110,14 @@ export default function LandingPage() {
                             <span className="dot green"/>
                             <span className="landing-mockup-url">manetec.app/admin/dashboard</span>
                         </div>
-                        <div className="landing-mockup-body">
-                            <div className="landing-mockup-sidebar">
-                                {['Dashboard','Caisse POS','Produits','Clients','Factures','Rapports'].map((item, i) => (
-                                    <div key={item} className={`landing-mockup-nav-item ${i === 0 ? 'active' : ''}`}>
-                                        <span className="landing-mockup-nav-dot" />
-                                        {item}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="landing-mockup-main">
-                                <div className="landing-mockup-header">Tableau de bord · Aujourd'hui</div>
-                                <div className="landing-mockup-stats">
-                                    {[
-                                        { label: 'Ventes',   val: '347 000', unit: 'FCFA',      color: '#15335a' },
-                                        { label: 'Clients',  val: '28',      unit: 'ce jour',   color: '#059669' },
-                                        { label: 'En stock', val: '1 204',   unit: 'articles',  color: '#d97706' },
-                                        { label: 'Factures', val: '12',      unit: 'en attente', color: '#7c3aed' },
-                                    ].map(s => (
-                                        <div key={s.label} className="landing-mockup-stat" style={{ borderTopColor: s.color }}>
-                                            <span className="landing-mockup-stat-val" style={{ color: s.color }}>{s.val}</span>
-                                            <span className="landing-mockup-stat-unit">{s.unit}</span>
-                                            <span className="landing-mockup-stat-label">{s.label}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <div className="landing-mockup-chart">
-                                    {[40,65,45,80,55,90,70,85,60,95,75,88].map((h, i) => (
-                                        <div key={i} className="landing-mockup-bar-item"
-                                             style={{ height: `${h}%`, animationDelay: `${i * 0.08}s` }} />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
+                        <Image
+                            src="/marketing/app-entrepot.png"
+                            alt="Aperçu de l'application Manetec Gestock"
+                            width={1600}
+                            height={900}
+                            priority
+                            className="landing-mockup-shot"
+                        />
                     </div>
                 </div>
             </section>
@@ -180,6 +155,71 @@ export default function LandingPage() {
                             </div>
                             )
                         })}
+                    </div>
+                </div>
+            </section>
+
+            {/* ── TOUS VOS APPAREILS ───────────────────────────── */}
+            <section className="landing-devices">
+                <div className="landing-container landing-devices-grid">
+                    <div>
+                        <span className="landing-devices-tag">
+                            <Wifi size={14} /> Accessible partout
+                        </span>
+                        <h2 className="landing-devices-title">
+                            Une seule app,<br /><span>tous vos appareils.</span>
+                        </h2>
+                        <p className="landing-devices-desc">
+                            Manetec Gestock s'adapte à 100 % à votre écran : gérez votre boutique
+                            depuis un ordinateur au comptoir, une tablette en rayon ou votre
+                            téléphone en déplacement — sans rien installer.
+                        </p>
+                        <div className="landing-devices-list">
+                            {[
+                                { icone: Monitor,    t: 'Ordinateur — caisse et gestion complète' },
+                                { icone: Tablet,     t: 'Tablette — inventaire et ventes en rayon' },
+                                { icone: Smartphone, t: 'Téléphone — suivi en déplacement' },
+                            ].map(({ icone: I, t }, i) => (
+                                <div key={i} className="landing-devices-item">
+                                    <span className="landing-devices-ico"><I size={22} /></span>
+                                    {t}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="landing-devices-visual">
+                        <Image
+                            src="/marketing/flyer-appareils.png"
+                            alt="Manetec Gestock sur ordinateur, tablette et téléphone"
+                            width={900}
+                            height={1350}
+                        />
+                    </div>
+                </div>
+            </section>
+
+            {/* ── CAPTURES RÉELLES ─────────────────────────────── */}
+            <section className="landing-shots">
+                <div className="landing-container">
+                    <div className="landing-section-header">
+                        <span className="landing-section-tag">Aperçu</span>
+                        <h2 className="landing-section-title">L'application en images</h2>
+                        <p className="landing-section-desc">
+                            Une interface claire et moderne, pensée pour aller vite au quotidien.
+                        </p>
+                    </div>
+                    <div className="landing-shots-grid">
+                        {[
+                            { src: '/marketing/app-produits.png',    label: 'Catalogue produits' },
+                            { src: '/marketing/app-entrepot.png',    label: 'Détail d\'un entrepôt' },
+                            { src: '/marketing/app-mouvements.png',  label: 'Mouvements de stock' },
+                            { src: '/marketing/flyer-tablette.png',  label: 'Gérez votre stock en toute simplicité' },
+                        ].map((s) => (
+                            <div key={s.src} className="landing-shot-card">
+                                <Image src={s.src} alt={s.label} width={1600} height={900} />
+                                <p className="landing-shot-label">{s.label}</p>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </section>

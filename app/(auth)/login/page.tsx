@@ -10,6 +10,8 @@ export const metadata: Metadata = {
     title: `Connexion — ${ENTREPRISE.produit}`,
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function PageLoginBoutique({
     searchParams,
 }: {
@@ -23,369 +25,70 @@ export default async function PageLoginBoutique({
             : null
 
     return (
-        <div className="login-root">
+        <main className="min-h-screen w-full lg:grid lg:grid-cols-2 bg-[#0f2742]">
 
-            {/* Arrière-plan animé */}
-            <div className="login-bg">
-                <div className="login-orb login-orb-1" />
-                <div className="login-orb login-orb-2" />
-                <div className="login-orb login-orb-3" />
-                <div className="login-grid" />
-            </div>
+            {/* ── Panneau gauche : flyer réel (caché sur mobile) ── */}
+            <section className="relative hidden lg:block overflow-hidden"
+                     style={{ background: 'linear-gradient(160deg, #1a3d68 0%, #15335a 55%, #0f2742 100%)' }}>
+                <div className="pointer-events-none absolute -top-24 -left-24 w-96 h-96 rounded-full bg-[#ef5e22]/15 blur-3xl animate-pulse" />
+                <Image
+                    src="/marketing/flyer-groupe.png"
+                    alt="Manetec Gestock — gérez votre stock, développez votre business"
+                    fill
+                    priority
+                    className="object-cover object-top animate-fade-in"
+                />
+                {/* léger voile pour la profondeur */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0f2742]/40 via-transparent to-transparent" />
+            </section>
 
-            {/* Panneau gauche — branding */}
-            <div className="login-left">
-                <div className="login-left-content">
+            {/* ── Panneau droit : formulaire ── */}
+            <section className="flex min-h-screen items-center justify-center p-6 sm:p-10 bg-background">
+                <div className="w-full max-w-md animate-fade-up">
 
-                    {/* Logo */}
-                    <Link href="/" className="login-logo-link">
-                        <Image src="/logo/app_logo.png" alt={ENTREPRISE.produit}
-                               width={44} height={44}
-                               style={{ borderRadius: 9, objectFit: 'contain', background: '#fff', padding: 4 }} />
-                        <div>
-                            <p className="login-logo-produit">{ENTREPRISE.produit}</p>
-                            <p className="login-logo-par">par {ENTREPRISE.nom}</p>
-                        </div>
-                    </Link>
-
-                    {/* Tagline */}
-                    <div className="login-tagline">
-                        <h1 className="login-tagline-title">
-                            Gérez. Vendez.
-                            <br />
-                            <span className="login-tagline-accent">Prospérez.</span>
-                        </h1>
-                        <p className="login-tagline-desc">
-                            Votre outil de gestion commerciale tout-en-un.
-                            Caisse, stock, facturation et bien plus.
-                        </p>
-                    </div>
-
-                    {/* Stats */}
-                    <div className="login-stats">
-                        {[
-                            { val: '500+', label: 'Boutiques actives' },
-                            { val: '8',    label: 'Pays'              },
-                            { val: '99.9%',label: 'Disponibilité'     },
-                        ].map(s => (
-                            <div key={s.label} className="login-stat">
-                                <span className="login-stat-val">{s.val}</span>
-                                <span className="login-stat-label">{s.label}</span>
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Lien vers la landing */}
-                    <Link href="/" className="login-back-link">
-                        ← Retour à l'accueil
-                    </Link>
-                </div>
-            </div>
-
-            {/* Panneau droit — formulaire */}
-            <div className="login-right">
-                <div className="login-form-wrapper">
-
-                    <div className="login-form-header">
-                        <h2 className="login-form-title">Connexion à votre boutique</h2>
-                        <p className="login-form-subtitle">
-                            Entrez votre identifiant de boutique et vos credentials
+                    {/* Logo + titre */}
+                    <div className="flex flex-col items-center text-center mb-6">
+                        <Link href="/" className="flex items-center gap-2.5">
+                            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow border border-border">
+                                <Image src="/logo/app_logo.png" alt={ENTREPRISE.produit} width={34} height={34} className="object-contain" />
+                            </span>
+                            <span className="text-xl font-black text-[#15335a]">{ENTREPRISE.produit}</span>
+                        </Link>
+                        <h1 className="mt-5 text-2xl font-bold text-foreground">Connexion à votre boutique</h1>
+                        <p className="text-sm text-muted-foreground mt-1">
+                            Entrez votre identifiant de boutique et vos accès
                         </p>
                     </div>
 
                     {messageSuspension && (
-                        <div style={{
-                            display: 'flex', alignItems: 'flex-start', gap: 8,
-                            background: '#fef2f2', border: '1px solid #fecaca',
-                            color: '#b91c1c', borderRadius: 12, padding: '12px 14px',
-                            fontSize: 13, marginBottom: 16,
-                        }}>
-                            <AlertTriangle size={16} style={{ marginTop: 1, flexShrink: 0 }} />
+                        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3.5 py-3 text-sm mb-5">
+                            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                             <span>{messageSuspension}</span>
                         </div>
                     )}
 
                     <FormulaireConnexionBoutique />
 
-                    <div className="login-form-footer">
-                        <p>Pas encore de boutique ?</p>
-                        <Link href="/inscription" className="login-inscription-link">
+                    <div className="text-center mt-6 text-sm">
+                        <p className="text-muted-foreground">Pas encore de boutique ?</p>
+                        <Link href="/inscription" className="font-bold text-[#15335a] hover:text-[#ef5e22] transition-colors">
                             Créer ma boutique gratuitement →
                         </Link>
                     </div>
+                    <div className="text-center mt-4">
+                        <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+                            ← Retour à l'accueil
+                        </Link>
+                    </div>
                 </div>
-            </div>
+            </section>
 
             <style>{`
-                .login-root {
-                    min-height: 100vh;
-                    display: flex;
-                    position: relative;
-                    overflow: hidden;
-                    font-family: 'Plus Jakarta Sans', 'Outfit', -apple-system, sans-serif;
-                }
-
-                /* ── Arrière-plan ───────────────────────────── */
-                .login-bg {
-                    position: fixed;
-                    inset: 0;
-                    pointer-events: none;
-                    z-index: 0;
-                }
-
-                .login-orb {
-                    position: absolute;
-                    border-radius: 50%;
-                    filter: blur(70px);
-                    opacity: 0.3;
-                    animation: loginFloat 10s ease-in-out infinite;
-                }
-
-                .login-orb-1 {
-                    width: 500px; height: 500px;
-                    background: radial-gradient(circle, #93c5fd, transparent);
-                    top: -200px; left: -100px;
-                    animation-delay: 0s;
-                }
-
-                .login-orb-2 {
-                    width: 400px; height: 400px;
-                    background: radial-gradient(circle, #c7d2fe, transparent);
-                    bottom: -100px; right: -50px;
-                    animation-delay: 4s;
-                }
-
-                .login-orb-3 {
-                    width: 200px; height: 200px;
-                    background: radial-gradient(circle, #fde68a, transparent);
-                    top: 50%; left: 45%;
-                    animation-delay: 7s;
-                    opacity: 0.15;
-                }
-
-                .login-grid {
-                    position: absolute;
-                    inset: 0;
-                    background-image:
-                        linear-gradient(to right,  rgba(26,86,219,0.04) 1px, transparent 1px),
-                        linear-gradient(to bottom, rgba(26,86,219,0.04) 1px, transparent 1px);
-                    background-size: 48px 48px;
-                }
-
-                @keyframes loginFloat {
-                    0%, 100% { transform: translateY(0) scale(1);        }
-                    50%       { transform: translateY(-24px) scale(1.04); }
-                }
-
-                /* ── Panneau gauche ─────────────────────────── */
-                .login-left {
-                    display: none;
-                    flex: 1;
-                    background: linear-gradient(155deg, #15335a 0%, #1e3a8a 50%, #0f172a 100%);
-                    position: relative;
-                    z-index: 1;
-                    padding: 48px;
-                    align-items: center;
-                    justify-content: center;
-                }
-
-                @media (min-width: 1024px) {
-                    .login-left { display: flex; }
-                }
-
-                .login-left-content {
-                    max-width: 420px;
-                    width: 100%;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 40px;
-                }
-
-                .login-logo-link {
-                    display: flex;
-                    align-items: center;
-                    gap: 12px;
-                    text-decoration: none;
-                }
-
-                .login-logo-icon {
-                    width: 48px; height: 48px;
-                    background: rgba(255,255,255,0.15);
-                    border: 1px solid rgba(255,255,255,0.2);
-                    border-radius: 12px;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 16px;
-                    font-weight: 900;
-                    color: #fff;
-                    letter-spacing: -0.5px;
-                    backdrop-filter: blur(8px);
-                }
-
-                .login-logo-produit {
-                    font-size: 18px;
-                    font-weight: 800;
-                    color: #fff;
-                    margin: 0;
-                    line-height: 1;
-                }
-
-                .login-logo-par {
-                    font-size: 12px;
-                    color: rgba(255,255,255,0.6);
-                    margin: 3px 0 0;
-                }
-
-                .login-tagline { }
-
-                .login-tagline-title {
-                    font-size: 48px;
-                    font-weight: 900;
-                    color: #fff;
-                    line-height: 1.1;
-                    letter-spacing: -2px;
-                    margin: 0 0 16px;
-                }
-
-                .login-tagline-accent {
-                    background: linear-gradient(135deg, #fbbf24, #f59e0b);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                }
-
-                .login-tagline-desc {
-                    font-size: 16px;
-                    color: rgba(255,255,255,0.7);
-                    line-height: 1.7;
-                    margin: 0;
-                }
-
-                .login-stats {
-                    display: flex;
-                    gap: 0;
-                    background: rgba(255,255,255,0.07);
-                    border: 1px solid rgba(255,255,255,0.12);
-                    border-radius: 16px;
-                    overflow: hidden;
-                    backdrop-filter: blur(8px);
-                }
-
-                .login-stat {
-                    flex: 1;
-                    padding: 20px 16px;
-                    text-align: center;
-                    border-right: 1px solid rgba(255,255,255,0.12);
-                }
-
-                .login-stat:last-child { border-right: none; }
-
-                .login-stat-val {
-                    display: block;
-                    font-size: 24px;
-                    font-weight: 900;
-                    color: #fff;
-                    letter-spacing: -0.5px;
-                }
-
-                .login-stat-label {
-                    display: block;
-                    font-size: 11px;
-                    color: rgba(255,255,255,0.55);
-                    margin-top: 4px;
-                }
-
-                .login-back-link {
-                    font-size: 14px;
-                    color: rgba(255,255,255,0.5);
-                    text-decoration: none;
-                    transition: color 0.15s;
-                    display: inline-flex;
-                    align-items: center;
-                    gap: 4px;
-                }
-
-                .login-back-link:hover { color: rgba(255,255,255,0.9); }
-
-                /* ── Panneau droit ──────────────────────────── */
-                .login-right {
-                    flex: none;
-                    width: 100%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 32px 24px;
-                    background: rgba(255,255,255,0.92);
-                    backdrop-filter: blur(20px);
-                    position: relative;
-                    z-index: 1;
-                }
-
-                @media (min-width: 1024px) {
-                    .login-right {
-                        width: 480px;
-                        flex-shrink: 0;
-                        border-left: 1px solid rgba(26,86,219,0.1);
-                    }
-                }
-
-                .login-form-wrapper {
-                    width: 100%;
-                    max-width: 400px;
-                    display: flex;
-                    flex-direction: column;
-                    gap: 28px;
-                    animation: loginSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
-                }
-
-                @keyframes loginSlideIn {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to   { opacity: 1; transform: translateY(0);     }
-                }
-
-                .login-form-header { text-align: center; }
-
-                .login-form-title {
-                    font-size: 26px;
-                    font-weight: 900;
-                    color: #0f172a;
-                    letter-spacing: -0.5px;
-                    margin: 0 0 8px;
-                }
-
-                .login-form-subtitle {
-                    font-size: 14px;
-                    color: #64748b;
-                    margin: 0;
-                    line-height: 1.6;
-                }
-
-                .login-form-footer {
-                    text-align: center;
-                    padding-top: 16px;
-                    border-top: 1px solid #e2e8f0;
-                }
-
-                .login-form-footer p {
-                    font-size: 13px;
-                    color: #94a3b8;
-                    margin: 0 0 8px;
-                }
-
-                .login-inscription-link {
-                    font-size: 14px;
-                    font-weight: 700;
-                    color: #15335a;
-                    text-decoration: none;
-                    transition: color 0.15s;
-                }
-
-                .login-inscription-link:hover {
-                    color: #0f2742;
-                    text-decoration: underline;
-                }
+                @keyframes fadeUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: none } }
+                @keyframes fadeIn { from { opacity: 0; transform: scale(1.04) } to { opacity: 1; transform: none } }
+                .animate-fade-up { animation: fadeUp .6s ease both }
+                .animate-fade-in { animation: fadeIn 1s ease both }
             `}</style>
-        </div>
+        </main>
     )
 }
