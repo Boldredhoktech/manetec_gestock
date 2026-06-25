@@ -1,6 +1,7 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -48,7 +49,7 @@ interface FournisseurDette {
 }
 
 interface DonneesRapportFournisseurs {
-    boutique:         { nom: string; telephone_1: string; devise: string }
+    boutique: BoutiqueEntete & { devise: string }
     genere_le:        string
     total_fournisseurs: number
     fournisseurs_avec_dette: number
@@ -69,16 +70,7 @@ export function RapportFournisseursPDF({ donnees }: { donnees: DonneesRapportFou
         <Document>
             <Page size="A4" style={styles.page}>
 
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{donnees.boutique.nom}</Text>
-                        <Text style={styles.infoBoutique}>Tél : {donnees.boutique.telephone_1}</Text>
-                    </View>
-                    <View>
-                        <Text style={styles.titrePage}>RAPPORT FOURNISSEURS</Text>
-                        <Text style={styles.infoGrise}>Généré le {donnees.genere_le}</Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF boutique={donnees.boutique} titre="RAPPORT FOURNISSEURS" genereLe={donnees.genere_le} />
 
                 <View style={styles.statsRow}>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.accent }]}>

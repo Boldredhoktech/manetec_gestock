@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -60,7 +61,7 @@ interface ProduitStock {
 }
 
 interface DonneesRapportStock {
-    boutique:          { nom: string; telephone_1: string; devise: string }
+    boutique:          BoutiqueEntete & { devise: string }
     entrepot_filtre:   string
     genere_le:         string
     total_produits:    number
@@ -83,19 +84,12 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
             <Page size="A4" style={styles.page}>
 
                 {/* EN-TÊTE */}
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{donnees.boutique.nom}</Text>
-                        <Text style={styles.infoBoutique}>Tél : {donnees.boutique.telephone_1}</Text>
-                    </View>
-                    <View>
-                        <Text style={styles.titrePage}>ÉTAT DU STOCK</Text>
-                        <Text style={styles.infoGrise}>{donnees.entrepot_filtre}</Text>
-                        <Text style={[styles.infoGrise, { marginTop: 2 }]}>
-                            Généré le {donnees.genere_le}
-                        </Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF
+                    boutique={donnees.boutique}
+                    titre="ÉTAT DU STOCK"
+                    sousTitre={donnees.entrepot_filtre}
+                    genereLe={donnees.genere_le}
+                />
 
                 {/* STATS */}
                 <View style={styles.statsRow}>
@@ -157,26 +151,26 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                 </Text>
                 <View style={styles.tableauEntete}>
                     <Text style={[styles.cellEnt, { width: '10%' }]}>ID</Text>
-                    <Text style={[styles.cellEnt, { width: '28%' }]}>Produit</Text>
-                    <Text style={[styles.cellEnt, { width: '16%' }]}>Catégorie</Text>
+                    <Text style={[styles.cellEnt, { width: '23%' }]}>Produit</Text>
+                    <Text style={[styles.cellEnt, { width: '14%' }]}>Catégorie</Text>
                     <Text style={[styles.cellEnt, { width: '12%', textAlign: 'center' }]}>Stock</Text>
-                    <Text style={[styles.cellEnt, { width: '12%', textAlign: 'right' }]}>Prix achat</Text>
-                    <Text style={[styles.cellEnt, { width: '12%', textAlign: 'right' }]}>Prix vente</Text>
-                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>Val. stock</Text>
+                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix achat</Text>
+                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix vente</Text>
+                    <Text style={[styles.cellEnt, { width: '15%', textAlign: 'right' }]}>Val. stock</Text>
                 </View>
                 {normaux.map((p, i) => (
                     <View key={p.public_id} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
                         <Text style={[styles.cell, { width: '10%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
                             {p.public_id}
                         </Text>
-                        <Text style={[styles.cell, { width: '28%', maxLines: 1 }]}>{p.nom}</Text>
-                        <Text style={[styles.cell, { width: '16%' }]}>{p.categorie ?? '—'}</Text>
+                        <Text style={[styles.cell, { width: '23%', maxLines: 1 }]}>{p.nom}</Text>
+                        <Text style={[styles.cell, { width: '14%' }]}>{p.categorie ?? '—'}</Text>
                         <Text style={[styles.cell, { width: '12%', textAlign: 'center', fontFamily: 'Helvetica-Bold' }]}>
                             {p.stock} {p.unite}
                         </Text>
-                        <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>{fmt(p.prix_achat, d)}</Text>
-                        <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>{fmt(p.prix_vente, d)}</Text>
-                        <Text style={[styles.cell, { width: '10%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
+                        <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>{fmt(p.prix_achat, d)}</Text>
+                        <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>{fmt(p.prix_vente, d)}</Text>
+                        <Text style={[styles.cell, { width: '15%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
                             {fmt(p.stock * p.prix_achat, d)}
                         </Text>
                     </View>

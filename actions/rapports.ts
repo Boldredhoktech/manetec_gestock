@@ -5,6 +5,16 @@ import { createClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
+// Formate une date ISO (AAAA-MM-JJ) en JJ/MM/AAAA pour les périodes de rapport
+function formatFR(iso: string): string {
+    try {
+        const [a, m, j] = iso.split('-')
+        return j && m && a ? `${j}/${m}/${a}` : iso
+    } catch {
+        return iso
+    }
+}
+
 // ── Données rapport ventes ────────────────────────────────────
 export async function getDonneesRapportVentes(
     shopId: string,
@@ -15,7 +25,7 @@ export async function getDonneesRapportVentes(
 
     const { data: boutique } = await adminClient
         .from('shops')
-        .select('nom, adresse, telephone_1, devise')
+        .select('nom, adresse, ville, telephone_1, ifu, devise, logo_url')
         .eq('id', shopId)
         .single()
 
@@ -83,7 +93,7 @@ export async function getDonneesRapportVentes(
 
     return {
         boutique: boutique!,
-        periode:  `Du ${debut} au ${fin}`,
+        periode:  `Du ${formatFR(debut)} au ${formatFR(fin)}`,
         genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         total_ventes: ventesCompletees.length,
         ca_total:     caTotal,
@@ -108,7 +118,7 @@ export async function getDonneesRapportClients(shopId: string) {
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     const { data: clients } = await adminClient
         .from('clients')
@@ -284,7 +294,7 @@ export async function getDonneesRapportStock(
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     const { data: entrepots } = await adminClient
         .from('warehouses').select('id, nom').eq('shop_id', shopId)
@@ -350,7 +360,7 @@ export async function getDonneesRapportMouvements(
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, logo_url').eq('id', shopId).single()
 
     const { data: mouvements } = await adminClient
         .from('stock_movements')
@@ -370,7 +380,7 @@ export async function getDonneesRapportMouvements(
 
     return {
         boutique:          boutique!,
-        periode:           `Du ${debut} au ${fin}`,
+        periode:           `Du ${formatFR(debut)} au ${formatFR(fin)}`,
         genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         total_entrees:     (mouvements ?? []).filter(m => entrees.includes(m.type_mouvement)).length,
         total_sorties:     (mouvements ?? []).filter(m => sorties.includes(m.type_mouvement)).length,
@@ -393,7 +403,7 @@ export async function getDonneesRapportFournisseurs(shopId: string) {
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     // Note: solde_dû contient un caractère accentué qui casse le parser de types
     // Supabase. On caste la réponse en any[] pour contourner le problème.
@@ -488,7 +498,7 @@ export async function getDonneesRapportPP(
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     const debut = new Date(annee, mois - 1, 1).toISOString().split('T')[0]
     const fin   = new Date(annee, mois, 0).toISOString().split('T')[0]
@@ -586,7 +596,7 @@ export async function getDonneesRapportSalaires(
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     const { data: salaires } = await adminClient
         .from('salary_payments')
@@ -629,7 +639,7 @@ export async function getDonneesFacturesImpayees(shopId: string) {
     const adminClient = createAdminClient()
 
     const { data: boutique } = await adminClient
-        .from('shops').select('nom, telephone_1, devise').eq('id', shopId).single()
+        .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     const { data: factures } = await adminClient
         .from('factures')

@@ -4,6 +4,7 @@ import {
 } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -129,9 +130,7 @@ interface VenteLigne {
 }
 
 interface DonneesRapportVentes {
-    boutique: {
-        nom: string; adresse?: string | null; telephone_1: string; devise: string
-    }
+    boutique: BoutiqueEntete & { devise: string }
     periode:       string
     genere_le:     string
     total_ventes:  number
@@ -161,22 +160,7 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
             <Page size="A4" style={styles.page}>
 
                 {/* EN-TÊTE */}
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{boutique.nom}</Text>
-                        {boutique.adresse && (
-                            <Text style={styles.sousTitreBoutique}>{boutique.adresse}</Text>
-                        )}
-                        <Text style={styles.sousTitreBoutique}>Tél : {boutique.telephone_1}</Text>
-                    </View>
-                    <View style={{ alignItems: 'flex-end' }}>
-                        <Text style={styles.titrePage}>RAPPORT DE VENTES</Text>
-                        <Text style={styles.periode}>{donnees.periode}</Text>
-                        <Text style={[styles.periode, { marginTop: 3 }]}>
-                            Généré le {donnees.genere_le}
-                        </Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF boutique={boutique} titre="RAPPORT DE VENTES" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
 
                 {/* STATISTIQUES */}
                 <View style={styles.cartesStat}>

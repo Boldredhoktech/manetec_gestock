@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -63,7 +64,7 @@ interface Mouvement {
 }
 
 interface DonneesRapportMouvements {
-    boutique:        { nom: string; telephone_1: string }
+    boutique: BoutiqueEntete
     periode:         string
     genere_le:       string
     total_entrees:   number
@@ -77,19 +78,7 @@ export function RapportMouvementsPDF({ donnees }: { donnees: DonneesRapportMouve
         <Document>
             <Page size="A4" style={styles.page}>
 
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{donnees.boutique.nom}</Text>
-                        <Text style={styles.infoBoutique}>Tél : {donnees.boutique.telephone_1}</Text>
-                    </View>
-                    <View>
-                        <Text style={styles.titrePage}>MOUVEMENTS DE STOCK</Text>
-                        <Text style={styles.infoGrise}>{donnees.periode}</Text>
-                        <Text style={[styles.infoGrise, { marginTop: 2 }]}>
-                            Généré le {donnees.genere_le}
-                        </Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF boutique={donnees.boutique} titre="MOUVEMENTS DE STOCK" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
 
                 <View style={styles.statsRow}>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.vert }]}>

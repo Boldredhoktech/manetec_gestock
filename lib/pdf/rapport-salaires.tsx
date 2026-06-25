@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -56,7 +57,7 @@ interface LigneSalaire {
 }
 
 interface DonneesRapportSalaires {
-    boutique:       { nom: string; telephone_1: string; devise: string }
+    boutique: BoutiqueEntete & { devise: string }
     periode:        string
     genere_le:      string
     nb_employes:    number
@@ -83,21 +84,7 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
         <Document>
             <Page size="A4" style={styles.page}>
 
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{donnees.boutique.nom}</Text>
-                        <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 2 }}>
-                            Tél : {donnees.boutique.telephone_1}
-                        </Text>
-                    </View>
-                    <View>
-                        <Text style={styles.titrePage}>RAPPORT DE PAIE</Text>
-                        <Text style={styles.infoGrise}>{donnees.periode}</Text>
-                        <Text style={[styles.infoGrise, { marginTop: 2 }]}>
-                            Généré le {donnees.genere_le}
-                        </Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF boutique={donnees.boutique} titre="RAPPORT DE PAIE" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
 
                 <View style={styles.statsRow}>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.accent }]}>

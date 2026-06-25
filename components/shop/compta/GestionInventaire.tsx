@@ -8,7 +8,7 @@ import {
 import {
     ClipboardCheck, Plus, Search, CheckCircle, AlertTriangle,
     TrendingDown, TrendingUp, Loader2, AlertCircle, BarChart3,
-    Filter, Package, ChevronDown, ChevronUp, History,
+    Package, History, Printer, FileText,
 } from 'lucide-react'
 import { formatMontant, formatDate } from '@/lib/utils'
 
@@ -60,6 +60,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
     const [resultatVal, setResultatVal]   = useState<{
         valeurPertes: number; valeurGains: number; nbNegatifs: number
     } | null>(null)
+    const [inventaireValideId, setInventaireValideId] = useState<string | null>(null)
 
     const inventaireEnCours = inventaires.find(i => i.statut === 'en_cours')
     const historique        = inventaires.filter(i => i.statut !== 'en_cours')
@@ -156,9 +157,11 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
         if (!inventaireEnCours) return
         setValEnAttente(true)
         setErreur(undefined)
-        const res = await validerInventaire(inventaireEnCours.id)
+        const idValide = inventaireEnCours.id
+        const res = await validerInventaire(idValide)
         setValEnAttente(false)
         if (res?.erreur) { setErreur(res.erreur); return }
+        setInventaireValideId(idValide)
         setResultatVal({
             valeurPertes: res.valeurPertes ?? 0,
             valeurGains:  res.valeurGains  ?? 0,
@@ -181,9 +184,21 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
             {/* ── RÉSULTAT VALIDATION ────────────────────────────── */}
             {resultatVal && (
                 <div className="p-5 bg-green-50 border-2 border-green-200 rounded-2xl space-y-3">
-                    <div className="flex items-center gap-2">
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                        <h3 className="text-sm font-bold text-green-800">Inventaire validé avec succès !</h3>
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            <h3 className="text-sm font-bold text-green-800">Inventaire validé avec succès !</h3>
+                        </div>
+                        {inventaireValideId && (
+                            <a
+                                href={`/api/v1/pdf/inventaire-rapport/${inventaireValideId}`}
+                                target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#15335a] rounded-lg hover:bg-[#0f2742] transition-colors"
+                            >
+                                <FileText className="w-3.5 h-3.5" />
+                                Télécharger le rapport
+                            </a>
+                        )}
                     </div>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {resultatVal.valeurPertes > 0 && (
@@ -295,9 +310,19 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     · Démarré le {formatDate(inventaireEnCours.created_at)}
                                 </p>
                             </div>
-                            <span className="shrink-0 px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
-                En cours
-              </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                                <a
+                                    href={`/api/v1/pdf/inventaire-feuille/${inventaireEnCours.id}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors"
+                                >
+                                    <Printer className="w-3.5 h-3.5" />
+                                    Feuille de comptage
+                                </a>
+                                <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
+                                    En cours
+                                </span>
+                            </div>
                         </div>
 
                         {/* Barre de progression */}
@@ -691,6 +716,16 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     }`}>
                     {inv.statut === 'valide' ? 'Validé' : 'Annulé'}
                   </span>
+                                    {inv.statut === 'valide' && (
+                                        <a
+                                            href={`/api/v1/pdf/inventaire-rapport/${inv.id}`}
+                                            target="_blank" rel="noopener noreferrer"
+                                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors"
+                                        >
+                                            <FileText className="w-3.5 h-3.5" />
+                                            Rapport
+                                        </a>
+                                    )}
                                 </div>
                             </div>
                         ))}

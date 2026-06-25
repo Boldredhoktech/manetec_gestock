@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -46,7 +47,7 @@ interface ClientRapport {
 }
 
 interface DonneesRapportClients {
-    boutique:     { nom: string; telephone_1: string; devise: string }
+    boutique: BoutiqueEntete & { devise: string }
     genere_le:    string
     total_clients: number
     clients_en_credit: number
@@ -64,18 +65,7 @@ export function RapportClientsPDF({ donnees }: { donnees: DonneesRapportClients 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{donnees.boutique.nom}</Text>
-                        <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 2 }}>
-                            Tél : {donnees.boutique.telephone_1}
-                        </Text>
-                    </View>
-                    <View>
-                        <Text style={styles.titrePage}>RAPPORT CLIENTS</Text>
-                        <Text style={styles.infoGrise}>Généré le {donnees.genere_le}</Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF boutique={donnees.boutique} titre="RAPPORT CLIENTS" genereLe={donnees.genere_le} />
 
                 {/* Résumé */}
                 <View style={{ display: 'flex', flexDirection: 'row', gap: 8, marginBottom: 16 }}>

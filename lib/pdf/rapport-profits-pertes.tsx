@@ -2,6 +2,7 @@ import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
     page: {
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
 })
 
 interface DonneesRapportPP {
-    boutique:         { nom: string; telephone_1: string; devise: string }
+    boutique: BoutiqueEntete & { devise: string }
     periode:          string
     genere_le:        string
     entrees: {
@@ -99,19 +100,7 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
             <Page size="A4" style={styles.page}>
 
                 {/* EN-TÊTE */}
-                <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.titreBoutique}>{donnees.boutique.nom}</Text>
-                        <Text style={styles.infoBoutique}>Tél : {donnees.boutique.telephone_1}</Text>
-                    </View>
-                    <View>
-                        <Text style={styles.titrePage}>COMPTE DE RÉSULTAT</Text>
-                        <Text style={styles.infoGrise}>{donnees.periode}</Text>
-                        <Text style={[styles.infoGrise, { marginTop: 2 }]}>
-                            Généré le {donnees.genere_le}
-                        </Text>
-                    </View>
-                </View>
+                <EnteteRapportPDF boutique={donnees.boutique} titre="COMPTE DE RÉSULTAT" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
 
                 {/* RÉSULTAT NET */}
                 <View style={[styles.resultatBlock, {
@@ -121,7 +110,7 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                         {positif ? 'BÉNÉFICE NET' : 'DÉFICIT NET'}
                     </Text>
                     <Text style={[styles.resultatVal, { color: positif ? couleurs.vert : couleurs.rouge }]}>
-                        {positif ? '+' : '-'}{fmt(donnees.resultat, d)}
+                        {positif ? '+' : '-'}{fmt(Math.abs(donnees.resultat), d)}
                     </Text>
                 </View>
 
@@ -228,7 +217,7 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                                     width: '24%', textAlign: 'right', fontFamily: 'Helvetica-Bold',
                                     color: m.resultat >= 0 ? couleurs.vert : couleurs.rouge,
                                 }]}>
-                                    {m.resultat >= 0 ? '+' : '-'}{fmt(m.resultat, d)}
+                                    {m.resultat >= 0 ? '+' : '-'}{fmt(Math.abs(m.resultat), d)}
                                 </Text>
                             </View>
                         ))}
