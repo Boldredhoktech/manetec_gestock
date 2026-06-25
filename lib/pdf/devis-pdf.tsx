@@ -2,370 +2,284 @@
 // Template PDF pour les devis — affiche "PROFORMA" comme titre du document
 
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Text, View, Image, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
-import { formatMontantPDF, formatDatePDF } from '@/lib/pdf/utils-pdf'
-
-function fmt(n: number, d: string) {
-    return formatMontantPDF(n, d)
-}
+import {
+    formatMontantPDF, formatDatePDF, nombreEnLettresPDF, deviseEnLettresPDF,
+} from '@/lib/pdf/utils-pdf'
 
 const styles = StyleSheet.create({
     page: {
-        fontFamily:      'Helvetica',
-        fontSize:        9,
-        color:           couleurs.texte,
-        padding:         40,
-        backgroundColor: '#fff',
+        fontFamily: 'Helvetica', fontSize: 9, color: couleurs.texte,
+        paddingTop: 36, paddingBottom: 64, paddingHorizontal: 40, backgroundColor: '#fff',
     },
-    entete: {
-        display:        'flex',
-        flexDirection:  'row',
-        justifyContent: 'space-between',
-        marginBottom:   24,
+    entete: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+    logo: { width: 110, height: 56, objectFit: 'contain', marginBottom: 6 },
+    nomBoutique: { fontSize: 17, fontFamily: 'Helvetica-Bold', color: couleurs.primaire, marginBottom: 4 },
+    infoBoutique: { fontSize: 8, color: couleurs.texteFaible, marginBottom: 1.5 },
+    enteteDroite: { alignItems: 'flex-end', maxWidth: 220 },
+    titreDoc: { fontSize: 24, fontFamily: 'Helvetica-Bold', color: couleurs.primaire, letterSpacing: 1 },
+    refDoc: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: couleurs.texte, marginTop: 2 },
+
+    regle: { height: 2, backgroundColor: couleurs.primaire, marginTop: 14, marginBottom: 16 },
+
+    blocRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 16, gap: 16 },
+    adresseA: { flex: 1 },
+    blocLabel: {
+        fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: couleurs.accent,
+        textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5,
     },
-    nomBoutique: {
-        fontSize:     18,
-        fontFamily:   'Helvetica-Bold',
-        color:        couleurs.primaire,
-        marginBottom: 4,
-    },
-    infoBoutique: { fontSize: 8, color: couleurs.texteFaible, marginBottom: 2 },
-    titreDoc: {
-        fontSize:     22,
-        fontFamily:   'Helvetica-Bold',
-        color:        couleurs.primaire,
-        textAlign:    'right',
-        marginBottom: 4,
-    },
-    refDoc:  { fontSize: 9, fontFamily: 'Helvetica-Bold', textAlign: 'right', marginBottom: 2 },
-    dateDoc: { fontSize: 8, color: couleurs.texteFaible, textAlign: 'right' },
-    partiesBlock: {
-        display:        'flex',
-        flexDirection:  'row',
-        justifyContent: 'space-between',
-        marginBottom:   20,
-        gap:            16,
-    },
-    partieCard: {
-        flex:            1,
-        backgroundColor: couleurs.fondClair,
-        padding:         10,
-        borderRadius:    4,
-    },
-    partieLabel: {
-        fontSize:      7,
-        fontFamily:    'Helvetica-Bold',
-        color:         couleurs.texteFaible,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom:  5,
-    },
-    partieNom:  { fontSize: 10, fontFamily: 'Helvetica-Bold', color: couleurs.primaire, marginBottom: 3 },
-    partieInfo: { fontSize: 8, color: couleurs.texteFaible, marginBottom: 1 },
-    // Bande de validité
+    clientNom: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: couleurs.texte, marginBottom: 2 },
+    clientInfo: { fontSize: 8.5, color: couleurs.texteFaible, marginBottom: 1.5 },
+    metaBox: { width: 215, borderWidth: 1, borderColor: couleurs.bordure, borderRadius: 3 },
+    metaLigne: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 10, paddingVertical: 5 },
+    metaLigneAlt: { backgroundColor: couleurs.fondClair },
+    metaLabel: { fontSize: 8.5, color: couleurs.texteFaible },
+    metaValeur: { fontSize: 8.5, fontFamily: 'Helvetica-Bold', color: couleurs.texte },
+
     validiteBlock: {
-        backgroundColor: '#fff8e1',
-        borderLeftWidth: 3,
-        borderLeftColor: couleurs.orange,
-        padding:         8,
-        borderRadius:    4,
-        marginBottom:    16,
+        backgroundColor: '#fff8e1', borderLeftWidth: 3, borderLeftColor: couleurs.accent,
+        paddingVertical: 7, paddingHorizontal: 10, borderRadius: 2, marginBottom: 14,
     },
-    validiteTexte: { fontSize: 8, color: couleurs.orange, fontFamily: 'Helvetica-Bold' },
-    // Tableau
-    tableauEntete: {
-        display:         'flex',
-        flexDirection:   'row',
-        backgroundColor: couleurs.primaire,
-        padding:         7,
-        borderRadius:    4,
+    validiteTexte: { fontSize: 8, color: '#92400e' },
+    objet: { fontSize: 9, marginBottom: 12 },
+
+    thead: { flexDirection: 'row', backgroundColor: couleurs.primaire, paddingVertical: 7, paddingHorizontal: 8 },
+    th: { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
+    tr: { flexDirection: 'row', paddingVertical: 6, paddingHorizontal: 8, borderBottomWidth: 1, borderBottomColor: couleurs.bordure },
+    trAlt: { backgroundColor: couleurs.fondClair },
+    td: { fontSize: 8.5, color: couleurs.texte },
+
+    totauxRow: { flexDirection: 'row', justifyContent: 'flex-end', marginTop: 14 },
+    totaux: { width: '45%' },
+    totLigne: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2.5 },
+    totLabel: { fontSize: 9, color: couleurs.texteFaible },
+    totValeur: { fontSize: 9, color: couleurs.texte },
+    grandTotal: {
+        flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+        backgroundColor: couleurs.primaire, paddingVertical: 7, paddingHorizontal: 10,
+        borderRadius: 3, marginTop: 6,
     },
-    cellEnt:   { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
-    tableLigne: {
-        display:          'flex',
-        flexDirection:    'row',
-        padding:          6,
-        borderBottomWidth:1,
-        borderBottomColor:couleurs.bordure,
+    grandTotalLabel: { fontSize: 10, fontFamily: 'Helvetica-Bold', color: '#fff' },
+    grandTotalValeur: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: '#fff' },
+
+    enLettres: {
+        marginTop: 18, paddingVertical: 8, paddingHorizontal: 10,
+        backgroundColor: couleurs.fondClair, borderLeftWidth: 3, borderLeftColor: couleurs.primaire, borderRadius: 2,
     },
-    tableLigneImp: { backgroundColor: couleurs.fondClair },
-    cell:      { fontSize: 8.5, color: couleurs.texte },
-    // Totaux
-    totauxBlock: {
-        display:        'flex',
-        flexDirection:  'row',
-        justifyContent: 'flex-end',
-        marginTop:      12,
-    },
-    totauxInner: { width: '40%' },
-    totalLigne: {
-        display:        'flex',
-        flexDirection:  'row',
-        justifyContent: 'space-between',
-        marginBottom:   3,
-    },
-    totalLabel:  { fontSize: 8.5, color: couleurs.texteFaible },
-    totalValeur: { fontSize: 8.5, color: couleurs.texte },
-    grandTotalLigne: {
-        display:          'flex',
-        flexDirection:    'row',
-        justifyContent:   'space-between',
-        borderTopWidth:   2,
-        borderTopColor:   couleurs.primaire,
-        paddingTop:       6,
-        marginTop:        4,
-    },
-    grandTotalLabel:  { fontSize: 11, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    grandTotalValeur: { fontSize: 11, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    // Note
-    noteBlock: {
-        marginTop:       16,
-        padding:         10,
-        backgroundColor: couleurs.fondClair,
-        borderRadius:    4,
-        borderLeftWidth: 3,
-        borderLeftColor: couleurs.accent,
-    },
-    noteLabel:  { fontSize: 7, fontFamily: 'Helvetica-Bold', color: couleurs.texteFaible, marginBottom: 3 },
-    noteTexte:  { fontSize: 8, color: couleurs.texte },
-    // Signatures
-    signatureBlock: {
-        display:        'flex',
-        flexDirection:  'row',
-        justifyContent: 'space-between',
-        marginTop:      36,
-        gap:            20,
-    },
-    signatureBox: {
-        flex:           1,
-        borderTopWidth: 1,
-        borderTopColor: couleurs.bordure,
-        paddingTop:     6,
-        alignItems:     'center',
-    },
-    signatureLabel: { fontSize: 8, color: couleurs.texteFaible },
-    // Pied de page
+    enLettresLabel: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: couleurs.texteFaible, marginBottom: 2 },
+    enLettresTexte: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: couleurs.texte },
+
+    note: { marginTop: 14 },
+    noteTexte: { fontSize: 8, color: couleurs.texte },
+
+    signatureBlock: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 28, gap: 24 },
+    signatureBox: { flex: 1, borderWidth: 1, borderColor: couleurs.bordure, borderRadius: 3, height: 70, padding: 6 },
+    signatureLabel: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: couleurs.texteFaible },
+
     pied: {
-        position:         'absolute',
-        bottom:           24,
-        left:             40,
-        right:            40,
-        textAlign:        'center',
-        fontSize:         7,
-        color:            couleurs.texteFaible,
-        borderTopWidth:   1,
-        borderTopColor:   couleurs.bordure,
-        paddingTop:       6,
+        position: 'absolute', bottom: 26, left: 40, right: 40, textAlign: 'center',
+        fontSize: 7, color: couleurs.texteFaible, borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 6,
     },
 })
 
 interface LigneDevis {
-    designation:   string
-    quantite:      number
-    prix_unitaire: number
-    remise_pct:    number
-    tva_pct:       number
-    montant_ttc:   number
+    designation: string; quantite: number; prix_unitaire: number
+    remise_pct: number; tva_pct: number; montant_ttc: number
 }
-
 export interface DonneesDevisPDF {
     boutique: {
-        nom:        string
-        adresse?:   string | null
-        ville?:     string | null
-        telephone_1: string
-        email?:     string | null
-        ifu?:       string | null
-        rccm?:      string | null
-        message_pied_facture?: string | null
-        devise:     string
+        nom: string; adresse?: string | null; ville?: string | null; telephone_1: string
+        email?: string | null; ifu?: string | null; rccm?: string | null
+        message_pied_facture?: string | null; devise: string; logo_url?: string | null
     }
     client?: {
-        nom:        string
-        adresse?:   string | null
-        telephone?: string | null
-        email?:     string | null
-        ifu?:       string | null
-        rccm?:      string | null
-        ville?:     string | null
-        pays?:      string | null
+        nom: string; adresse?: string | null; telephone?: string | null; email?: string | null
+        ifu?: string | null; rccm?: string | null; ville?: string | null; pays?: string | null
     } | null
     devis: {
-        public_id:      string
-        date_devis:     string
-        date_validite?: string | null
-        objet?:         string | null
-        note_client?:   string | null
-        montant_ht:     number
-        remise_val:     number
-        remise_pct:     number
-        montant_tva:    number
-        montant_ttc:    number
+        public_id: string; date_devis: string; date_validite?: string | null
+        objet?: string | null; note_client?: string | null
+        montant_ht: number; remise_val: number; remise_pct: number
+        montant_tva: number; montant_ttc: number
     }
-    lignes:    LigneDevis[]
+    lignes: LigneDevis[]
     genere_le: string
 }
+
+function capitaliser(s: string) { return s.charAt(0).toUpperCase() + s.slice(1) }
 
 export function DevisPDF({ donnees }: { donnees: DonneesDevisPDF }) {
     const { boutique, client, devis, lignes } = donnees
     const d = boutique.devise
+    const fmt = (n: number) => formatMontantPDF(n, d)
+    const enLettres = capitaliser(nombreEnLettresPDF(devis.montant_ttc)) + ' ' + deviseEnLettresPDF(d)
 
     return (
         <Document>
             <Page size="A4" style={styles.page}>
 
-                {/* ── EN-TÊTE ── */}
+                {/* EN-TÊTE */}
                 <View style={styles.entete}>
-                    <View>
-                        <Text style={styles.nomBoutique}>{boutique.nom}</Text>
-                        {boutique.adresse && <Text style={styles.infoBoutique}>{boutique.adresse}</Text>}
-                        {boutique.ville  && <Text style={styles.infoBoutique}>{boutique.ville}</Text>}
+                    <View style={{ maxWidth: 280 }}>
+                        {boutique.logo_url
+                            ? <Image src={boutique.logo_url} style={styles.logo} />
+                            : <Text style={styles.nomBoutique}>{boutique.nom}</Text>}
+                        {boutique.logo_url && (
+                            <Text style={[styles.infoBoutique, { fontFamily: 'Helvetica-Bold', color: couleurs.texte, fontSize: 9.5 }]}>
+                                {boutique.nom}
+                            </Text>
+                        )}
+                        {boutique.adresse && (
+                            <Text style={styles.infoBoutique}>
+                                {boutique.adresse}{boutique.ville ? `, ${boutique.ville}` : ''}
+                            </Text>
+                        )}
                         <Text style={styles.infoBoutique}>Tél : {boutique.telephone_1}</Text>
-                        {boutique.email  && <Text style={styles.infoBoutique}>{boutique.email}</Text>}
-                        {boutique.ifu   && <Text style={styles.infoBoutique}>IFU : {boutique.ifu}</Text>}
-                        {boutique.rccm  && <Text style={styles.infoBoutique}>RCCM : {boutique.rccm}</Text>}
+                        {boutique.email && <Text style={styles.infoBoutique}>{boutique.email}</Text>}
+                        {boutique.ifu && <Text style={styles.infoBoutique}>IFU : {boutique.ifu}</Text>}
+                        {boutique.rccm && <Text style={styles.infoBoutique}>RCCM : {boutique.rccm}</Text>}
                     </View>
-                    <View>
-                        {/* PROFORMA au lieu de DEVIS */}
+                    <View style={styles.enteteDroite}>
                         <Text style={styles.titreDoc}>PROFORMA</Text>
                         <Text style={styles.refDoc}>{devis.public_id}</Text>
-                        <Text style={styles.dateDoc}>Date : {formatDatePDF(devis.date_devis)}</Text>
-                        {devis.date_validite && (
-                            <Text style={[styles.dateDoc, { marginTop: 2 }]}>
-                                Valide jusqu'au : {formatDatePDF(devis.date_validite)}
-                            </Text>
-                        )}
-                        {devis.objet && (
-                            <Text style={[styles.dateDoc, { marginTop: 4, fontFamily: 'Helvetica-Bold' }]}>
-                                Objet : {devis.objet}
-                            </Text>
-                        )}
                     </View>
                 </View>
 
-                {/* ── BANDEAU VALIDITÉ ── */}
+                <View style={styles.regle} />
+
+                {/* ADRESSÉ À + MÉTA */}
+                <View style={styles.blocRow}>
+                    <View style={styles.adresseA}>
+                        <Text style={styles.blocLabel}>Adressé à</Text>
+                        {client ? (
+                            <>
+                                <Text style={styles.clientNom}>{client.nom}</Text>
+                                {client.adresse
+                                    ? <Text style={styles.clientInfo}>{client.adresse}</Text>
+                                    : (client.ville || client.pays) && (
+                                        <Text style={styles.clientInfo}>
+                                            {[client.ville, client.pays].filter(Boolean).join(', ')}
+                                        </Text>
+                                    )}
+                                {client.telephone && <Text style={styles.clientInfo}>Tél : {client.telephone}</Text>}
+                                {client.email && <Text style={styles.clientInfo}>{client.email}</Text>}
+                                {client.ifu && <Text style={styles.clientInfo}>IFU : {client.ifu}</Text>}
+                            </>
+                        ) : (
+                            <Text style={styles.clientInfo}>Client non spécifié</Text>
+                        )}
+                    </View>
+                    <View style={styles.metaBox}>
+                        <View style={styles.metaLigne}>
+                            <Text style={styles.metaLabel}>Date</Text>
+                            <Text style={styles.metaValeur}>{formatDatePDF(devis.date_devis)}</Text>
+                        </View>
+                        {devis.date_validite && (
+                            <View style={[styles.metaLigne, styles.metaLigneAlt]}>
+                                <Text style={styles.metaLabel}>Valable jusqu'au</Text>
+                                <Text style={styles.metaValeur}>{formatDatePDF(devis.date_validite)}</Text>
+                            </View>
+                        )}
+                        <View style={[styles.metaLigne, devis.date_validite ? {} : styles.metaLigneAlt]}>
+                            <Text style={styles.metaLabel}>Référence</Text>
+                            <Text style={styles.metaValeur}>{devis.public_id}</Text>
+                        </View>
+                    </View>
+                </View>
+
                 {devis.date_validite && (
                     <View style={styles.validiteBlock}>
                         <Text style={styles.validiteTexte}>
-                            Ce document est un devis commercial. Il est valable jusqu'au {formatDatePDF(devis.date_validite)}.
-                            Passé ce délai, les prix peuvent être sujets à modification.
+                            Devis commercial valable jusqu'au {formatDatePDF(devis.date_validite)}. Passé ce délai, les prix peuvent être révisés.
                         </Text>
                     </View>
                 )}
 
-                {/* ── PARTIES ── */}
-                <View style={styles.partiesBlock}>
-                    <View style={styles.partieCard}>
-                        <Text style={styles.partieLabel}>Émetteur</Text>
-                        <Text style={styles.partieNom}>{boutique.nom}</Text>
-                        {boutique.adresse   && <Text style={styles.partieInfo}>{boutique.adresse}</Text>}
-                        <Text style={styles.partieInfo}>{boutique.telephone_1}</Text>
-                        {boutique.ifu  && <Text style={styles.partieInfo}>IFU : {boutique.ifu}</Text>}
-                        {boutique.rccm && <Text style={styles.partieInfo}>RCCM : {boutique.rccm}</Text>}
-                    </View>
-                    <View style={styles.partieCard}>
-                        <Text style={styles.partieLabel}>Destinataire</Text>
-                        {client ? (
-                            <>
-                                <Text style={styles.partieNom}>{client.nom}</Text>
-                                {client.adresse   && <Text style={styles.partieInfo}>{client.adresse}</Text>}
-                                {client.ville     && <Text style={styles.partieInfo}>{client.ville}</Text>}
-                                {client.telephone && <Text style={styles.partieInfo}>{client.telephone}</Text>}
-                                {client.ifu       && <Text style={styles.partieInfo}>IFU : {client.ifu}</Text>}
-                                {client.rccm      && <Text style={styles.partieInfo}>RCCM : {client.rccm}</Text>}
-                            </>
-                        ) : (
-                            <Text style={styles.partieInfo}>Client non spécifié</Text>
-                        )}
-                    </View>
-                </View>
+                {devis.objet && (
+                    <Text style={styles.objet}>
+                        <Text style={{ fontFamily: 'Helvetica-Bold' }}>Objet : </Text>{devis.objet}
+                    </Text>
+                )}
 
-                {/* ── TABLEAU DES LIGNES ── */}
-                <View style={styles.tableauEntete}>
-                    <Text style={[styles.cellEnt, { width: '40%' }]}>Désignation</Text>
-                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'center' }]}>Qté</Text>
-                    <Text style={[styles.cellEnt, { width: '15%', textAlign: 'right' }]}>P.U. HT</Text>
-                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>Remise</Text>
-                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>TVA</Text>
-                    <Text style={[styles.cellEnt, { width: '15%', textAlign: 'right' }]}>Total TTC</Text>
+                {/* TABLEAU */}
+                <View style={styles.thead}>
+                    <Text style={[styles.th, { width: '44%' }]}>Désignation</Text>
+                    <Text style={[styles.th, { width: '9%', textAlign: 'center' }]}>Qté</Text>
+                    <Text style={[styles.th, { width: '17%', textAlign: 'right' }]}>P.U. HT</Text>
+                    <Text style={[styles.th, { width: '9%', textAlign: 'center' }]}>Rem.</Text>
+                    <Text style={[styles.th, { width: '7%', textAlign: 'center' }]}>TVA</Text>
+                    <Text style={[styles.th, { width: '14%', textAlign: 'right' }]}>Total TTC</Text>
                 </View>
-
                 {lignes.map((l, i) => (
-                    <View key={i} style={[styles.tableLigne, i % 2 !== 0 ? styles.tableLigneImp : {}]}>
-                        <Text style={[styles.cell, { width: '40%' }]}>{l.designation}</Text>
-                        <Text style={[styles.cell, { width: '10%', textAlign: 'center' }]}>{l.quantite}</Text>
-                        <Text style={[styles.cell, { width: '15%', textAlign: 'right' }]}>
-                            {fmt(l.prix_unitaire, d)}
-                        </Text>
-                        <Text style={[styles.cell, { width: '10%', textAlign: 'right' }]}>
-                            {l.remise_pct > 0 ? `${l.remise_pct}%` : '—'}
-                        </Text>
-                        <Text style={[styles.cell, { width: '10%', textAlign: 'right' }]}>
-                            {l.tva_pct > 0 ? `${l.tva_pct}%` : '—'}
-                        </Text>
-                        <Text style={[styles.cell, { width: '15%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                            {fmt(l.montant_ttc, d)}
-                        </Text>
+                    <View key={i} style={[styles.tr, i % 2 !== 0 ? styles.trAlt : {}]}>
+                        <Text style={[styles.td, { width: '44%' }]}>{l.designation}</Text>
+                        <Text style={[styles.td, { width: '9%', textAlign: 'center' }]}>{l.quantite}</Text>
+                        <Text style={[styles.td, { width: '17%', textAlign: 'right' }]}>{fmt(l.prix_unitaire)}</Text>
+                        <Text style={[styles.td, { width: '9%', textAlign: 'center' }]}>{l.remise_pct > 0 ? `${l.remise_pct}%` : '—'}</Text>
+                        <Text style={[styles.td, { width: '7%', textAlign: 'center' }]}>{l.tva_pct > 0 ? `${l.tva_pct}%` : '—'}</Text>
+                        <Text style={[styles.td, { width: '14%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>{fmt(l.montant_ttc)}</Text>
                     </View>
                 ))}
 
-                {/* ── TOTAUX ── */}
-                <View style={styles.totauxBlock}>
-                    <View style={styles.totauxInner}>
-                        <View style={styles.totalLigne}>
-                            <Text style={styles.totalLabel}>Sous-total HT</Text>
-                            <Text style={styles.totalValeur}>{fmt(devis.montant_ht + devis.remise_val, d)}</Text>
+                {/* TOTAUX */}
+                <View style={styles.totauxRow}>
+                    <View style={styles.totaux}>
+                        <View style={styles.totLigne}>
+                            <Text style={styles.totLabel}>Sous-total HT</Text>
+                            <Text style={styles.totValeur}>{fmt(devis.montant_ht + devis.remise_val)}</Text>
                         </View>
                         {devis.remise_val > 0 && (
-                            <View style={styles.totalLigne}>
-                                <Text style={[styles.totalLabel, { color: couleurs.vert }]}>
-                                    Remise ({devis.remise_pct}%)
-                                </Text>
-                                <Text style={[styles.totalValeur, { color: couleurs.vert }]}>
-                                    -{fmt(devis.remise_val, d)}
-                                </Text>
+                            <View style={styles.totLigne}>
+                                <Text style={[styles.totLabel, { color: couleurs.vert }]}>Remise ({devis.remise_pct}%)</Text>
+                                <Text style={[styles.totValeur, { color: couleurs.vert }]}>-{fmt(devis.remise_val)}</Text>
                             </View>
                         )}
                         {devis.montant_tva > 0 && (
-                            <View style={styles.totalLigne}>
-                                <Text style={styles.totalLabel}>TVA</Text>
-                                <Text style={styles.totalValeur}>{fmt(devis.montant_tva, d)}</Text>
+                            <View style={styles.totLigne}>
+                                <Text style={styles.totLabel}>TVA</Text>
+                                <Text style={styles.totValeur}>{fmt(devis.montant_tva)}</Text>
                             </View>
                         )}
-                        <View style={styles.grandTotalLigne}>
+                        <View style={styles.grandTotal}>
                             <Text style={styles.grandTotalLabel}>TOTAL TTC</Text>
-                            <Text style={styles.grandTotalValeur}>{fmt(devis.montant_ttc, d)}</Text>
+                            <Text style={styles.grandTotalValeur}>{fmt(devis.montant_ttc)}</Text>
                         </View>
                     </View>
                 </View>
 
-                {/* ── NOTE CLIENT ── */}
-                {devis.note_client && (
-                    <View style={styles.noteBlock}>
-                        <Text style={styles.noteLabel}>CONDITIONS / NOTES</Text>
-                        <Text style={styles.noteTexte}>{devis.note_client}</Text>
+                {/* MONTANT EN LETTRES */}
+                <View style={styles.enLettres}>
+                    <Text style={styles.enLettresLabel}>ARRÊTÉ LE PRÉSENT DEVIS À LA SOMME DE</Text>
+                    <Text style={styles.enLettresTexte}>{enLettres}.</Text>
+                </View>
+
+                {/* CONDITIONS */}
+                {(devis.note_client || boutique.message_pied_facture) && (
+                    <View style={styles.note}>
+                        <Text style={styles.blocLabel}>Conditions</Text>
+                        <Text style={styles.noteTexte}>
+                            {devis.note_client || boutique.message_pied_facture}
+                        </Text>
                     </View>
                 )}
 
-                {/* ── SIGNATURES ── */}
+                {/* SIGNATURES */}
                 <View style={styles.signatureBlock}>
                     <View style={styles.signatureBox}>
-                        <Text style={styles.signatureLabel}>Signature et cachet émetteur</Text>
+                        <Text style={styles.signatureLabel}>Cachet et signature — Émetteur</Text>
                     </View>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Bon pour accord — Client</Text>
                     </View>
                 </View>
 
-                {/* ── PIED DE PAGE ── */}
-                <Text style={styles.pied}>
+                {/* PIED */}
+                <Text style={styles.pied} fixed>
                     {boutique.nom}
-                    {boutique.message_pied_facture
-                        ? ` — ${boutique.message_pied_facture}`
-                        : ' — Manetec Gestock'
-                    }
-                    {' — '}{devis.public_id} — Généré le {donnees.genere_le}
+                    {boutique.ifu ? ` · IFU ${boutique.ifu}` : ''}
+                    {boutique.rccm ? ` · RCCM ${boutique.rccm}` : ''}
+                    {'  —  '}{devis.public_id} · Généré le {donnees.genere_le}
                 </Text>
 
             </Page>

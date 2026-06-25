@@ -40,7 +40,7 @@ export async function GET(
             .eq('shop_id', shopId)
             .single(),
         adminClient.from('shops')
-            .select('nom, adresse, ville, telephone_1, email, ifu, rccm, message_pied_facture, devise')
+            .select('nom, adresse, ville, telephone_1, email, ifu, rccm, message_pied_facture, devise, logo_url')
             .eq('id', shopId)
             .single(),
     ])
@@ -60,6 +60,7 @@ export async function GET(
             rccm:                 boutique.rccm,
             message_pied_facture: boutique.message_pied_facture,
             devise:               boutique.devise ?? 'FCFA',
+            logo_url:             boutique.logo_url,
         },
         client: devis.clients
             ? (Array.isArray(devis.clients) ? (devis.clients as any[])[0] : devis.clients) as any

@@ -236,7 +236,7 @@ export async function getDonneesFacturePDF(factureId: string, shopId: string) {
       facture_items(designation, quantite, prix_unitaire, remise_pct, tva_pct, montant_ttc)
     `).eq('id', factureId).eq('shop_id', shopId).single(),
         adminClient.from('shops').select(
-            'nom, adresse, ville, telephone_1, email, ifu, rccm, devise, message_pied_facture'
+            'nom, adresse, ville, telephone_1, email, ifu, rccm, devise, message_pied_facture, logo_url'
         ).eq('id', shopId).single(),
     ])
 
@@ -253,6 +253,7 @@ export async function getDonneesFacturePDF(factureId: string, shopId: string) {
             rccm:                 boutique.rccm,
             devise:               boutique.devise,
             message_pied_facture: boutique.message_pied_facture,
+            logo_url:             boutique.logo_url,
         },
         facture: {
             public_id:       facture.public_id,
