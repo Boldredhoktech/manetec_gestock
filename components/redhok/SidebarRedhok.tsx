@@ -3,19 +3,31 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { Store, Users, LayoutDashboard, LogOut } from 'lucide-react'
+import { Store, Users, LayoutDashboard, LogOut, History, ShieldCheck } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
+import { useSessionPlateforme } from '@/hooks/useSession'
 import SidebarDrawer from '@/components/shared/SidebarDrawer'
 
-const NAVIGATION = [
+const NAVIGATION_BASE = [
     { label: 'Dashboard',  href: '/redhok/dashboard', icone: LayoutDashboard },
     { label: 'Boutiques',  href: '/redhok/boutiques',  icone: Store           },
     { label: 'Agents',     href: '/redhok/agents',     icone: Users           },
 ]
 
+// Liens réservés au super admin plateforme
+const NAVIGATION_AUDIT = [
+    { label: 'Audit boutiques', href: '/redhok/audit/boutiques', icone: History      },
+    { label: 'Audit agents',    href: '/redhok/audit/agents',    icone: ShieldCheck  },
+]
+
 export default function SidebarRedhok() {
     const pathname = usePathname()
+    const { session } = useSessionPlateforme()
+    const estSuperAdmin = session?.role === 'super_platform_admin'
+    const NAVIGATION = estSuperAdmin
+        ? [...NAVIGATION_BASE, ...NAVIGATION_AUDIT]
+        : NAVIGATION_BASE
 
     return (
         <SidebarDrawer title="Manetec Inter BJ">
