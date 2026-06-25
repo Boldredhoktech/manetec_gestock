@@ -7,6 +7,8 @@ import { ArrowLeft } from 'lucide-react'
 import CarteInfosBoutique from '@/components/redhok/CarteInfosBoutique'
 import CarteAbonnement from '@/components/redhok/CarteAbonnement'
 import CarteActivationBoutique from '@/components/redhok/CarteActivationBoutique'
+import CarteUsageBoutique from '@/components/redhok/CarteUsageBoutique'
+import CarteUtilisateursBoutique from '@/components/redhok/CarteUtilisateursBoutique'
 
 export const metadata: Metadata = { title: 'Détail boutique' }
 
@@ -34,10 +36,29 @@ export default async function PageDetailBoutique({ params }: Props) {
 
     if (!boutique) notFound()
 
-    const { count: nbUtilisateurs } = await adminClient
-        .from('shop_users')
-        .select('*', { count: 'exact', head: true })
-        .eq('shop_id', id)
+    const [
+        { data: utilisateurs },
+        { count: nbProduits },
+        { count: nbClients },
+        { count: nbVentes },
+    ] = await Promise.all([
+        adminClient
+            .from('shop_users')
+            .select('id, public_id, nom_complet, identifiant, role, est_actif, est_bloque')
+            .eq('shop_id', id)
+            .order('created_at', { ascending: true }),
+        adminClient.from('products')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', id),
+        adminClient.from('clients')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', id).eq('est_anonyme', false),
+        adminClient.from('sales')
+            .select('*', { count: 'exact', head: true })
+            .eq('shop_id', id).eq('statut', 'completee'),
+    ])
+
+    const nbUtilisateurs = utilisateurs?.length ?? 0
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -63,9 +84,20 @@ export default async function PageDetailBoutique({ params }: Props) {
             <main className="flex-1 p-4 sm:p-6 space-y-6 max-w-4xl">
                 <CarteInfosBoutique
                     boutique={boutique}
-                    nbUtilisateurs={nbUtilisateurs ?? 0}
+                    nbUtilisateurs={nbUtilisateurs}
+                />
+                <CarteUsageBoutique
+                    plan={boutique.plan}
+                    nbProduits={nbProduits ?? 0}
+                    nbClients={nbClients ?? 0}
+                    nbUtilisateurs={nbUtilisateurs}
+                    nbVentes={nbVentes ?? 0}
                 />
                 <CarteAbonnement boutique={boutique} />
+                <CarteUtilisateursBoutique
+                    shopId={id}
+                    utilisateurs={(utilisateurs ?? []) as any[]}
+                />
                 <CarteActivationBoutique boutique={boutique} />
             </main>
         </div>

@@ -363,3 +363,154 @@ export async function uploadLogoBoutique(formData: FormData) {
     revalidatePath('/admin/parametres')
     return { succes: true, logoUrl }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// Gestion des utilisateurs d'une boutique par l'admin plateforme
+// (Bold Redhok) — accès profond à n'importe quelle boutique
+// ═══════════════════════════════════════════════════════════════
+
+async function gardePlateforme() {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'platform') return null
+    return user
+}
+
+// ── Modifier l'identifiant de connexion d'un utilisateur boutique ──
+export async function modifierIdentifiantUserBoutique(
+    shopId: string, userId: string, nouvelIdentifiant: string
+) {
+    const user = await gardePlateforme()
+    if (!user) return { erreur: 'Non autorisé.' }
+
+    const identifiant = (nouvelIdentifiant ?? '').trim().toLowerCase()
+    if (!identifiant) return { erreur: 'L\'identifiant est requis.' }
+
+    const adminClient = createAdminClient()
+
+    const { data: existant } = await adminClient
+        .from('shop_users')
+        .select('id')
+        .eq('shop_id', shopId)
+        .eq('identifiant', identifiant)
+        .neq('id', userId)
+        .maybeSingle()
+
+    if (existant) return { erreur: 'Cet identifiant est déjà utilisé dans cette boutique.' }
+
+    const { error } = await adminClient
+        .from('shop_users')
+        .update({ identifiant })
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour de l\'identifiant.' }
+
+    await adminClient.from('audit_logs').insert({
+        shop_id:        shopId,
+        user_id:        user.user_metadata.admin_id,
+        user_nom:       user.user_metadata.nom_complet ?? 'Admin Plateforme',
+        type_acteur:    'platform',
+        event_type:     'SHOP_USER_IDENTIFIANT_CHANGED',
+        reference_type: 'shop_user',
+        reference_id:   userId,
+        details_json:   { identifiant },
+    })
+
+    revalidatePath(`/redhok/boutiques/${shopId}`)
+    return { succes: true }
+}
+
+// ── Réinitialiser le mot de passe d'un utilisateur boutique ──────
+// Génère un mot de passe temporaire (renvoyé pour communication) et
+// débloque le compte. Le propriétaire le changera ensuite.
+export async function reinitialiserMdpUserBoutique(shopId: string, userId: string) {
+    const user = await gardePlateforme()
+    if (!user) return { erreur: 'Non autorisé.' }
+
+    const adminClient = createAdminClient()
+
+    const motDePasseTemp = Math.random().toString(36).slice(2, 8).toUpperCase() +
+        Math.random().toString(36).slice(2, 5)
+
+    const passwordHash = await argon2.hash(motDePasseTemp, {
+        type: argon2.argon2id, memoryCost: 65536, timeCost: 3, parallelism: 1,
+    })
+
+    const { error } = await adminClient
+        .from('shop_users')
+        .update({
+            password_hash:     passwordHash,
+            est_bloque:        false,
+            tentatives_echecs: 0,
+            bloque_le:         null,
+        })
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la réinitialisation.' }
+
+    await adminClient.from('audit_logs').insert({
+        shop_id:        shopId,
+        user_id:        user.user_metadata.admin_id,
+        user_nom:       user.user_metadata.nom_complet ?? 'Admin Plateforme',
+        type_acteur:    'platform',
+        event_type:     'SHOP_USER_PASSWORD_RESET',
+        reference_type: 'shop_user',
+        reference_id:   userId,
+    })
+
+    revalidatePath(`/redhok/boutiques/${shopId}`)
+    return { succes: true, motDePasse: motDePasseTemp }
+}
+
+// ── Activer / Désactiver un utilisateur boutique ────────────────
+export async function toggleActifUserBoutique(
+    shopId: string, userId: string, estActif: boolean
+) {
+    const user = await gardePlateforme()
+    if (!user) return { erreur: 'Non autorisé.' }
+
+    const adminClient = createAdminClient()
+    const { error } = await adminClient
+        .from('shop_users')
+        .update({
+            est_actif:    estActif,
+            desactive_le: estActif ? null : new Date().toISOString(),
+        })
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour.' }
+
+    await adminClient.from('audit_logs').insert({
+        shop_id:        shopId,
+        user_id:        user.user_metadata.admin_id,
+        user_nom:       user.user_metadata.nom_complet ?? 'Admin Plateforme',
+        type_acteur:    'platform',
+        event_type:     estActif ? 'SHOP_USER_ACTIVATED' : 'SHOP_USER_DEACTIVATED',
+        reference_type: 'shop_user',
+        reference_id:   userId,
+    })
+
+    revalidatePath(`/redhok/boutiques/${shopId}`)
+    return { succes: true }
+}
+
+// ── Débloquer un utilisateur boutique ───────────────────────────
+export async function debloquerUserBoutique(shopId: string, userId: string) {
+    const user = await gardePlateforme()
+    if (!user) return { erreur: 'Non autorisé.' }
+
+    const adminClient = createAdminClient()
+    const { error } = await adminClient
+        .from('shop_users')
+        .update({ est_bloque: false, tentatives_echecs: 0, bloque_le: null })
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors du déblocage.' }
+
+    revalidatePath(`/redhok/boutiques/${shopId}`)
+    return { succes: true }
+}
