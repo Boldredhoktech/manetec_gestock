@@ -16,6 +16,24 @@ const ROUTES_PLATEFORME = ['/redhok']
 // Routes réservées aux boutiques
 const ROUTES_BOUTIQUE = ['/admin', '/pos', '/stock', '/compta']
 
+// ── Déconnexion automatique après inactivité ───────────────────
+// 10 heures sans navigation = session expirée. Basé sur un cookie
+// horodaté persistant : fonctionne même si l'appareil a été éteint.
+const INACTIVITE_MAX_MS = 10 * 60 * 60 * 1000          // 10 heures
+const COOKIE_ACTIVITE   = 'manetec_activite'
+const COOKIE_ACTIVITE_MAX_AGE = 60 * 60 * 24 * 30       // 30 j (le cookie doit survivre > 10h)
+
+// Construit une réponse qui déconnecte (efface les cookies Supabase + activité)
+function reponseDeconnexion(request: NextRequest, urlLogin: string) {
+    const res = NextResponse.redirect(new URL(urlLogin, request.url))
+    for (const c of request.cookies.getAll()) {
+        if (c.name.startsWith('sb-') || c.name === COOKIE_ACTIVITE) {
+            res.cookies.delete(c.name)
+        }
+    }
+    return res
+}
+
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl
 
@@ -59,6 +77,19 @@ export async function middleware(request: NextRequest) {
 
     const { data: { user } } = await supabase.auth.getUser()
 
+    const maintenant = Date.now()
+    // Vérifie l'inactivité : true si la dernière activité date de plus de 10h
+    const inactiviteExpiree = () => {
+        const ts = Number(request.cookies.get(COOKIE_ACTIVITE)?.value ?? 0)
+        return ts > 0 && (maintenant - ts) > INACTIVITE_MAX_MS
+    }
+    // Rafraîchit l'horodatage d'activité sur la réponse
+    const marquerActivite = () => {
+        response.cookies.set(COOKIE_ACTIVITE, String(maintenant), {
+            httpOnly: true, sameSite: 'lax', path: '/', maxAge: COOKIE_ACTIVITE_MAX_AGE,
+        })
+    }
+
     // ── Protection routes plateforme /redhok ──────────────────
     if (ROUTES_PLATEFORME.some(route => pathname.startsWith(route))) {
         if (!user) {
@@ -67,6 +98,10 @@ export async function middleware(request: NextRequest) {
         if (user.user_metadata?.type_acteur !== 'platform') {
             return NextResponse.redirect(new URL('/redhok/login', request.url))
         }
+        if (inactiviteExpiree()) {
+            return reponseDeconnexion(request, '/redhok/login?inactif=1')
+        }
+        marquerActivite()
         return response
     }
 
@@ -78,6 +113,10 @@ export async function middleware(request: NextRequest) {
         if (user.user_metadata?.type_acteur === 'platform') {
             return NextResponse.redirect(new URL('/redhok/dashboard', request.url))
         }
+        if (inactiviteExpiree()) {
+            return reponseDeconnexion(request, '/login?inactif=1')
+        }
+        marquerActivite()
         return response
     }
 

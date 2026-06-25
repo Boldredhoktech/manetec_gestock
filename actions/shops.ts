@@ -532,3 +532,103 @@ export async function debloquerUserBoutique(shopId: string, userId: string) {
     revalidatePath(`/redhok/boutiques/${shopId}`)
     return { succes: true }
 }
+// ═══════════════════════════════════════════════════════════════
+// DANGER : suppression de TOUTES les boutiques et leurs données
+// Réservé au super_platform_admin, protégé par double validation
+// (mot de passe + phrase exacte).
+// ═══════════════════════════════════════════════════════════════
+
+const PHRASE_SUPPRESSION_BOUTIQUES = 'SUPPRIMER TOUTES LES BOUTIQUES'
+
+// Tables liées aux boutiques à vider entièrement (hors tables plateforme)
+const TABLES_BOUTIQUE = [
+    'brands', 'purchase_order_items', 'avoirs', 'sale_payments', 'reception_items',
+    'stock_adjustment_items', 'supplier_return_items', 'facture_fournisseur_items',
+    'clients', 'price_history', 'expense_categories', 'facture_payments', 'employees',
+    'salary_payments', 'inventories', 'product_variants', 'supplier_returns',
+    'inventory_items', 'products', 'stock_levels', 'shop_user_permissions', 'suppliers',
+    'receptions', 'public_id_counters', 'supplier_payments', 'stock_transfers',
+    'warehouses', 'sale_items', 'facture_items', 'sales', 'factures_fournisseurs',
+    'shop_users', 'stock_adjustments', 'stock_movements', 'devis_items', 'devis',
+    'expenses', 'factures', 'facture_fournisseur_payments', 'stock_transfer_items',
+    'client_balance_operations', 'purchase_orders', 'categories', 'business_clients',
+    'shop_sessions', 'shops',
+]
+
+export async function supprimerToutesBoutiques(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+
+    // 1) Réservé au super admin plateforme
+    if (!user || user.user_metadata?.type_acteur !== 'platform'
+        || user.user_metadata?.role !== 'super_platform_admin') {
+        return { erreur: 'Action réservée au Super Admin Plateforme.' }
+    }
+
+    const motDePasse = (formData.get('motDePasse') as string) ?? ''
+    const phrase     = ((formData.get('phrase') as string) ?? '').trim()
+
+    if (phrase !== PHRASE_SUPPRESSION_BOUTIQUES) {
+        return { erreur: `Phrase de confirmation incorrecte. Tapez exactement : ${PHRASE_SUPPRESSION_BOUTIQUES}` }
+    }
+
+    const adminClient = createAdminClient()
+
+    // 2) Vérifier le mot de passe du super admin (second facteur)
+    const { data: admin } = await adminClient
+        .from('platform_admins')
+        .select('id, password_hash, public_id, nom_complet')
+        .eq('id', user.user_metadata.admin_id)
+        .single()
+
+    if (!admin) return { erreur: 'Compte administrateur introuvable.' }
+
+    let mdpValide = false
+    try { mdpValide = await argon2.verify(admin.password_hash, motDePasse) } catch { /* */ }
+    if (!mdpValide) return { erreur: 'Mot de passe incorrect.' }
+
+    // 3) Purge des tables boutique (plusieurs passes pour résoudre les FK)
+    let restantes = new Set(TABLES_BOUTIQUE)
+    for (let passe = 0; passe < 6 && restantes.size > 0; passe++) {
+        const echecs = new Set<string>()
+        for (const t of restantes) {
+            const { error } = await adminClient.from(t).delete().not('id', 'is', null)
+            if (error) { echecs.add(t); continue }
+            const { count } = await adminClient.from(t).select('*', { count: 'exact', head: true })
+            if ((count ?? 0) > 0) echecs.add(t)
+        }
+        restantes = echecs
+    }
+    if (restantes.size > 0) {
+        return { erreur: `Suppression partielle. Tables restantes : ${[...restantes].join(', ')}` }
+    }
+
+    // 4) Audit logs liés aux boutiques (on garde l'historique plateforme)
+    await adminClient.from('audit_logs').delete().not('shop_id', 'is', null)
+
+    // 5) Réinitialiser le compteur de boutiques (prochaine = SHOP-00001)
+    await adminClient.from('platform_id_counters').update({ last_value: 0 }).eq('prefix', 'SHOP')
+
+    // 6) Supprimer les comptes Auth des utilisateurs boutique (orphelins)
+    try {
+        const { data: liste } = await adminClient.auth.admin.listUsers({ perPage: 1000 })
+        for (const u of (liste?.users ?? [])) {
+            if (u.email?.startsWith('shop_')) {
+                await adminClient.auth.admin.deleteUser(u.id)
+            }
+        }
+    } catch { /* best effort */ }
+
+    // 7) Journaliser l'action
+    await adminClient.from('audit_logs').insert({
+        user_id:      admin.id,
+        user_nom:     admin.nom_complet,
+        type_acteur:  'platform',
+        event_type:   'ALL_SHOPS_DELETED',
+        details_json: { par: admin.public_id },
+    })
+
+    revalidatePath('/redhok/boutiques')
+    revalidatePath('/redhok/dashboard')
+    return { succes: true }
+}

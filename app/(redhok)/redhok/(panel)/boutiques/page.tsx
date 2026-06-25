@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TableauBoutiques from '@/components/redhok/TableauBoutiques'
+import ZoneDangerBoutiques from '@/components/redhok/ZoneDangerBoutiques'
 
 export const metadata: Metadata = { title: 'Boutiques' }
 
@@ -44,6 +45,9 @@ export default async function PageBoutiques() {
             </header>
             <main className="flex-1 p-4 sm:p-6">
                 <TableauBoutiques boutiques={boutiques ?? []} />
+                {user.user_metadata?.role === 'super_platform_admin' && (
+                    <ZoneDangerBoutiques />
+                )}
             </main>
         </div>
     )

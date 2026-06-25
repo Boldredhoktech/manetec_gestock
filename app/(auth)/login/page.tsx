@@ -15,14 +15,16 @@ export const dynamic = 'force-dynamic'
 export default async function PageLoginBoutique({
     searchParams,
 }: {
-    searchParams: Promise<{ suspendu?: string }>
+    searchParams: Promise<{ suspendu?: string; inactif?: string }>
 }) {
-    const { suspendu } = await searchParams
+    const { suspendu, inactif } = await searchParams
     const messageSuspension = suspendu === 'expire'
         ? 'L\'abonnement de votre boutique a expiré. Contactez Manetec Inter BJ pour le renouveler.'
         : suspendu === 'desactive'
             ? 'Votre boutique a été désactivée. Contactez Manetec Inter BJ.'
-            : null
+            : inactif === '1'
+                ? 'Vous avez été déconnecté après 10 heures d\'inactivité. Reconnectez-vous.'
+                : null
 
     return (
         <main className="min-h-screen w-full lg:grid lg:grid-cols-2 bg-[#0f2742]">

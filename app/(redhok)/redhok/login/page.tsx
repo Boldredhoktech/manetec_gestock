@@ -1,16 +1,21 @@
 import type { Metadata } from 'next'
 import Image from 'next/image'
-import { ShieldCheck, Store, Users, BarChart3 } from 'lucide-react'
+import { ShieldCheck, Store, Users, BarChart3, AlertTriangle } from 'lucide-react'
 import FormulaireConnexionPlateforme from '@/components/redhok/FormulaireConnexionPlateforme'
 
 export const metadata: Metadata = {
-    title: 'Accès Plateforme — Bold Redhok Tech',
+    title: 'Accès Plateforme — Manetec Inter BJ',
 }
 
 // Toujours dynamique : jamais de rendu en cache de la page de connexion
 export const dynamic = 'force-dynamic'
 
-export default function PageConnexionPlateforme() {
+export default async function PageConnexionPlateforme({
+    searchParams,
+}: {
+    searchParams: Promise<{ inactif?: string }>
+}) {
+    const { inactif } = await searchParams
     return (
         <main className="min-h-screen w-full lg:grid lg:grid-cols-2 bg-[#0f2742]">
 
@@ -34,7 +39,7 @@ export default function PageConnexionPlateforme() {
                 <div className="relative z-10 space-y-6">
                     <div className="inline-flex items-center gap-2 rounded-full bg-white/10 border border-white/15 px-3 py-1.5 text-xs font-semibold animate-fade-up">
                         <ShieldCheck className="w-3.5 h-3.5 text-[#ef5e22]" />
-                        Accès réservé à l'équipe Bold Redhok Tech
+                        Accès réservé à l'équipe Manetec Inter BJ
                     </div>
                     <h1 className="text-3xl font-black leading-tight animate-fade-up animate-delay-1">
                         Pilotez toutes les boutiques<br />
@@ -67,6 +72,12 @@ export default function PageConnexionPlateforme() {
                         </span>
                         <span className="text-lg font-black text-[#15335a]">Manetec Inter BJ</span>
                     </div>
+                    {inactif === '1' && (
+                        <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-3.5 py-3 text-sm mb-5">
+                            <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                            <span>Vous avez été déconnecté après 10 heures d'inactivité. Reconnectez-vous.</span>
+                        </div>
+                    )}
                     <FormulaireConnexionPlateforme />
                 </div>
             </section>
