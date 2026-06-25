@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     note: { marginTop: 14 },
     noteTexte: { fontSize: 8, color: couleurs.texte },
 
-    signatureBlock: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 28, gap: 24 },
+    signatureBlock: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 56, gap: 24 },
     signatureBox: { flex: 1, borderWidth: 1, borderColor: couleurs.bordure, borderRadius: 3, height: 70, padding: 6 },
     signatureLabel: { fontSize: 7.5, fontFamily: 'Helvetica-Bold', color: couleurs.texteFaible },
 
@@ -177,7 +177,7 @@ export function DevisPDF({ donnees }: { donnees: DonneesDevisPDF }) {
                         </View>
                         {devis.date_validite && (
                             <View style={[styles.metaLigne, styles.metaLigneAlt]}>
-                                <Text style={styles.metaLabel}>Valable jusqu'au</Text>
+                                <Text style={styles.metaLabel}>Échéance</Text>
                                 <Text style={styles.metaValeur}>{formatDatePDF(devis.date_validite)}</Text>
                             </View>
                         )}
@@ -187,14 +187,6 @@ export function DevisPDF({ donnees }: { donnees: DonneesDevisPDF }) {
                         </View>
                     </View>
                 </View>
-
-                {devis.date_validite && (
-                    <View style={styles.validiteBlock}>
-                        <Text style={styles.validiteTexte}>
-                            Devis commercial valable jusqu'au {formatDatePDF(devis.date_validite)}. Passé ce délai, les prix peuvent être révisés.
-                        </Text>
-                    </View>
-                )}
 
                 {devis.objet && (
                     <Text style={styles.objet}>
@@ -250,7 +242,7 @@ export function DevisPDF({ donnees }: { donnees: DonneesDevisPDF }) {
 
                 {/* MONTANT EN LETTRES */}
                 <View style={styles.enLettres}>
-                    <Text style={styles.enLettresLabel}>ARRÊTÉ LE PRÉSENT DEVIS À LA SOMME DE</Text>
+                    <Text style={styles.enLettresLabel}>ARRÊTÉE LA PRÉSENTE PROFORMA À LA SOMME DE</Text>
                     <Text style={styles.enLettresTexte}>{enLettres}.</Text>
                 </View>
 
@@ -267,7 +259,7 @@ export function DevisPDF({ donnees }: { donnees: DonneesDevisPDF }) {
                 {/* SIGNATURES */}
                 <View style={styles.signatureBlock}>
                     <View style={styles.signatureBox}>
-                        <Text style={styles.signatureLabel}>Cachet et signature — Émetteur</Text>
+                        <Text style={styles.signatureLabel}>Cachet et signature</Text>
                     </View>
                     <View style={styles.signatureBox}>
                         <Text style={styles.signatureLabel}>Bon pour accord — Client</Text>

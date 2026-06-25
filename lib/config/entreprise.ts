@@ -102,7 +102,7 @@ export const ENTREPRISE = {
                 '500 produits',
                 '10 utilisateurs',
                 '1 000 clients',
-                'Factures A4 + Devis',
+                'Factures A4 + Proforma',
                 'Multi-entrepôts',
                 'Rapports avancés',
                 'Alertes stock email',

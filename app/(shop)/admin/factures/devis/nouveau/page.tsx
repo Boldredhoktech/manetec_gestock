@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireDevis from '@/components/shop/facturation/FormulaireDevis'
 
-export const metadata: Metadata = { title: 'Nouveau devis' }
+export const metadata: Metadata = { title: 'Nouvelle proforma' }
 
 interface PageProps {
     searchParams: Promise<{ clientId?: string }>
@@ -50,7 +50,7 @@ export default async function PageNouveauDevis({ searchParams }: PageProps) {
                           className="text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
-                    <h1 className="text-xl font-bold text-foreground">Nouveau devis</h1>
+                    <h1 className="text-xl font-bold text-foreground">Nouvelle proforma</h1>
                 </div>
             </header>
             <main className="flex-1 p-4 sm:p-6 max-w-3xl">

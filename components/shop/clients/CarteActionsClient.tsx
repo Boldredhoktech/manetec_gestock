@@ -65,7 +65,7 @@ export default function CarteActionsClient({ clientId, clientNom, estActif }: Pr
                         <ShoppingCart className="w-4 h-4 text-white" />
                     </div>
                     <div className="flex-1">
-                        <p className="text-sm font-bold">Créer un devis</p>
+                        <p className="text-sm font-bold">Créer une proforma</p>
                         <p className="text-xs text-white/70">Client pré-sélectionné</p>
                     </div>
                 </Link>

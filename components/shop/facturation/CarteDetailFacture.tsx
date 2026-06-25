@@ -5,6 +5,9 @@ import { useState } from 'react'
 import { Download, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMontant } from '@/lib/utils'
+import { nombreEnLettresPDF, deviseEnLettresPDF } from '@/lib/pdf/utils-pdf'
+
+const capitaliser = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 interface Props {
     facture: any
@@ -168,6 +171,16 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
                         </div>
                     )}
                 </div>
+            </div>
+
+            {/* Montant en toutes lettres */}
+            <div className="rounded-xl bg-muted/40 border-l-4 border-[#15335a] px-4 py-3">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
+                    Arrêtée la présente facture à la somme de
+                </p>
+                <p className="text-sm font-bold text-foreground mt-0.5">
+                    {capitaliser(nombreEnLettresPDF(facture.montant_ttc))} {deviseEnLettresPDF(boutique?.devise ?? 'FCFA')}.
+                </p>
             </div>
 
             {/* Paiements reçus */}

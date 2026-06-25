@@ -6,7 +6,10 @@ import { useRouter } from 'next/navigation'
 import { Download, Loader2, CheckCircle, XCircle, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMontant } from '@/lib/utils'
+import { nombreEnLettresPDF, deviseEnLettresPDF } from '@/lib/pdf/utils-pdf'
 import { modifierStatutDevis, convertirDevisEnFacture } from '@/actions/facturation'
+
+const capitaliser = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 interface Props {
     devis:    any
@@ -71,8 +74,12 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
                     </p>
                     <p className="text-sm text-gray-500 mt-1">
                         Émis le {formatDate(devis.date_devis)}
-                        {devis.date_validite && ` · Valide jusqu'au ${formatDate(devis.date_validite)}`}
                     </p>
+                    {devis.date_validite && (
+                        <p className="text-sm text-gray-500 mt-0.5">
+                            Échéance : {formatDate(devis.date_validite)}
+                        </p>
+                    )}
                     {devis.objet && (
                         <p className="text-sm text-gray-600 mt-1">
                             <span className="font-medium">Objet :</span> {devis.objet}
@@ -176,6 +183,16 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
                         <span>{formatMontant(devis.montant_ttc, boutique?.devise)}</span>
                     </div>
                 </div>
+            </div>
+
+            {/* Montant en toutes lettres */}
+            <div className="rounded-xl bg-gray-50 border-l-4 border-[#15335a] px-4 py-3">
+                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+                    Arrêtée la présente proforma à la somme de
+                </p>
+                <p className="text-sm font-bold text-gray-800 mt-0.5">
+                    {capitaliser(nombreEnLettresPDF(devis.montant_ttc))} {deviseEnLettresPDF(boutique?.devise ?? 'FCFA')}.
+                </p>
             </div>
 
             {/* Actions selon statut */}

@@ -42,7 +42,7 @@ export default function TableauDevis({ devis }: Props) {
     if (devis.length === 0) {
         return (
             <div className="text-center py-10 text-muted-foreground text-sm bg-card border border-border rounded-xl">
-                Aucun devis.
+                Aucune proforma.
             </div>
         )
     }
@@ -53,7 +53,7 @@ export default function TableauDevis({ devis }: Props) {
                 <table className="w-full text-sm">
                     <thead>
                     <tr className="border-b border-border bg-muted/40">
-                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Devis</th>
+                        <th className="text-left px-4 py-3 font-medium text-muted-foreground">Proforma</th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Client</th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Statut</th>
                         <th className="text-left px-4 py-3 font-medium text-muted-foreground">Montant TTC</th>

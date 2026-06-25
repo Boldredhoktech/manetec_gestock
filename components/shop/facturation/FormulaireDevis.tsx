@@ -52,7 +52,7 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
             {succes && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    Devis {succes} créé. Redirection...
+                    Proforma {succes} créée. Redirection...
                 </div>
             )}
 
@@ -90,7 +90,7 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
                         type="text"
                         value={objet}
                         onChange={e => setObjet(e.target.value)}
-                        placeholder="Objet du devis"
+                        placeholder="Objet de la proforma"
                         className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                     />
                 </div>
@@ -111,7 +111,7 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
                             type="text"
                             value={noteClient}
                             onChange={e => setNoteClient(e.target.value)}
-                            placeholder="Visible sur le devis"
+                            placeholder="Visible sur la proforma"
                             className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>
@@ -130,7 +130,7 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
             </div>
 
             <div className="bg-card border border-border rounded-xl p-5 space-y-3">
-                <h2 className="text-sm font-semibold text-foreground">Lignes du devis</h2>
+                <h2 className="text-sm font-semibold text-foreground">Lignes de la proforma</h2>
                 <EditeurLignes lignes={lignes} onChanger={setLignes} produits={produits} />
             </div>
 
@@ -141,7 +141,7 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer le devis'
+                    : 'Créer la proforma'
                 }
             </Button>
         </div>

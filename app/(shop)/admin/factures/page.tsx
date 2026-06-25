@@ -48,14 +48,14 @@ export default async function PageFactures() {
                     <div>
                         <h1 className="text-xl font-bold text-foreground">Facturation</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
-                            Factures, devis et avoirs
+                            Factures, proformas et avoirs
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
                         <Button variant="outline" asChild>
                             <Link href="/admin/factures/devis/nouveau">
                                 <ClipboardList className="w-4 h-4 mr-2" />
-                                Nouveau devis
+                                Nouvelle proforma
                             </Link>
                         </Button>
                         <Button asChild>
@@ -79,7 +79,7 @@ export default async function PageFactures() {
                 <div>
                     <h2 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                         <ClipboardList className="w-4 h-4" />
-                        Devis ({devisList?.length ?? 0})
+                        Proformas ({devisList?.length ?? 0})
                     </h2>
                     <TableauDevis devis={(devisList ?? []) as any[]} />
                 </div>

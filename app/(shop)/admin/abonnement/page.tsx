@@ -37,7 +37,7 @@ const PLAN_CONFIG: Record<string, {
         bg:       'bg-blue-100',
         bgHeader: 'from-[#15335a] to-[#0f2742]',
         icone:    Star,
-        fonctionnalites: ['500 produits', '10 utilisateurs', '1 000 clients', 'Factures A4 + Devis', 'Multi-entrepôts', 'Rapports avancés', 'Alertes email'],
+        fonctionnalites: ['500 produits', '10 utilisateurs', '1 000 clients', 'Factures A4 + Proforma', 'Multi-entrepôts', 'Rapports avancés', 'Alertes email'],
     },
     enterprise: {
         label:    'Enterprise',

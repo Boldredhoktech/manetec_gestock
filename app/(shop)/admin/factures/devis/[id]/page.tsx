@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import CarteDetailDevis from '@/components/shop/facturation/CarteDetailDevis'
 
-export const metadata: Metadata = { title: 'Détail devis' }
+export const metadata: Metadata = { title: 'Détail proforma' }
 
 interface Props { params: Promise<{ id: string }> }
 
