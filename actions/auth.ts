@@ -143,6 +143,11 @@ export async function connexionBoutique(formData: FormData) {
         return { erreur: 'Cette boutique est désactivée.' }
     }
 
+    // Vérifier l'expiration de l'abonnement / licence
+    if (shop.plan_expire_le && new Date(shop.plan_expire_le) < new Date()) {
+        return { erreur: 'L\'abonnement de cette boutique a expiré. Contactez Manetec Inter BJ pour le renouveler.' }
+    }
+
     // Trouver l'utilisateur dans cette boutique
     const { data: utilisateur } = await adminClient
         .from('shop_users')

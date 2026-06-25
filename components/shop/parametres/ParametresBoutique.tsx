@@ -16,7 +16,7 @@ const DEVISES = ['FCFA', 'XOF', 'GHS', 'NGN', 'EUR', 'USD', 'MAD', 'XAF']
 const PAYS = [
     'Bénin', 'Togo', 'Côte d\'Ivoire', 'Sénégal', 'Mali',
     'Burkina Faso', 'Niger', 'Ghana', 'Nigeria', 'Cameroun',
-    'Gabon', 'Congo', 'RDC', 'Côte d\'Ivoire', 'France', 'Maroc', 'Autre',
+    'Gabon', 'Congo', 'RDC', 'France', 'Maroc', 'Autre',
 ]
 
 interface EtatAction { erreur?: string; succes?: boolean }

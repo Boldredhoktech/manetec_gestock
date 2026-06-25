@@ -69,12 +69,18 @@ export async function enregistrerVente(donnees: DonneesVente) {
 
     const adminClient = createAdminClient()
 
-    // Récupérer la remise max de la boutique
+    // Récupérer la remise max + statut licence de la boutique
     const { data: boutique } = await adminClient
         .from('shops')
-        .select('remise_max_pct')
+        .select('remise_max_pct, est_active, plan_expire_le')
         .eq('id', shopId)
         .single()
+
+    // Garde licence — bloque la vente si boutique désactivée ou abonnement expiré
+    if (!boutique || !boutique.est_active ||
+        (boutique.plan_expire_le && new Date(boutique.plan_expire_le) < new Date())) {
+        return { erreur: 'Abonnement expiré ou boutique désactivée. Vente impossible — contactez Manetec Inter BJ.' }
+    }
 
     const remiseMax = boutique?.remise_max_pct ?? 15
 

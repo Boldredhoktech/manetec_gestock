@@ -11,7 +11,10 @@ export function useSessionBoutique() {
     useEffect(() => {
         const supabase = createClient()
 
-        supabase.auth.getUser().then(({ data: { user } }) => {
+        // getSession() lit le JWT local (aucun appel réseau) — fiable et instantané.
+        // L'autorisation réelle reste appliquée côté serveur (middleware, layout, actions).
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const user = session?.user
             if (!user || user.user_metadata?.type_acteur !== 'shop') {
                 setSession(null)
                 setChargement(false)
@@ -43,7 +46,8 @@ export function useSessionPlateforme() {
     useEffect(() => {
         const supabase = createClient()
 
-        supabase.auth.getUser().then(({ data: { user } }) => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            const user = session?.user
             if (!user || user.user_metadata?.type_acteur !== 'platform') {
                 setSession(null)
                 setChargement(false)

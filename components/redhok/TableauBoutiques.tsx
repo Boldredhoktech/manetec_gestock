@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { Search, ChevronRight, CheckCircle, XCircle } from 'lucide-react'
+import { Search, ChevronRight, CheckCircle, XCircle, Clock } from 'lucide-react'
 import BadgePlan from '@/components/redhok/BadgePlan'
 import { formatDate } from '@/lib/utils'
 
@@ -128,15 +128,20 @@ export default function TableauBoutiques({ boutiques }: Props) {
                                             : '—'}
                                     </td>
                                     <td className="px-4 py-3">
-                                        {boutique.est_active ? (
-                                            <span className="flex items-center gap-1.5 text-green-600 text-xs font-medium">
-                          <CheckCircle className="w-3.5 h-3.5" />
-                          Active
-                        </span>
-                                        ) : (
+                                        {!boutique.est_active ? (
                                             <span className="flex items-center gap-1.5 text-destructive text-xs font-medium">
                           <XCircle className="w-3.5 h-3.5" />
                           Inactive
+                        </span>
+                                        ) : (boutique.plan_expire_le && new Date(boutique.plan_expire_le) < new Date()) ? (
+                                            <span className="flex items-center gap-1.5 text-amber-600 text-xs font-medium">
+                          <Clock className="w-3.5 h-3.5" />
+                          Expirée
+                        </span>
+                                        ) : (
+                                            <span className="flex items-center gap-1.5 text-green-600 text-xs font-medium">
+                          <CheckCircle className="w-3.5 h-3.5" />
+                          Active
                         </span>
                                         )}
                                     </td>

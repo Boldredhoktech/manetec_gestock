@@ -2,6 +2,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import Image from 'next/image'
+import { AlertTriangle } from 'lucide-react'
 import FormulaireConnexionBoutique from '@/components/shared/FormulaireConnexionBoutique'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 
@@ -9,7 +10,18 @@ export const metadata: Metadata = {
     title: `Connexion — ${ENTREPRISE.produit}`,
 }
 
-export default function PageLoginBoutique() {
+export default async function PageLoginBoutique({
+    searchParams,
+}: {
+    searchParams: Promise<{ suspendu?: string }>
+}) {
+    const { suspendu } = await searchParams
+    const messageSuspension = suspendu === 'expire'
+        ? 'L\'abonnement de votre boutique a expiré. Contactez Manetec Inter BJ pour le renouveler.'
+        : suspendu === 'desactive'
+            ? 'Votre boutique a été désactivée. Contactez Manetec Inter BJ.'
+            : null
+
     return (
         <div className="login-root">
 
@@ -80,6 +92,18 @@ export default function PageLoginBoutique() {
                             Entrez votre identifiant de boutique et vos credentials
                         </p>
                     </div>
+
+                    {messageSuspension && (
+                        <div style={{
+                            display: 'flex', alignItems: 'flex-start', gap: 8,
+                            background: '#fef2f2', border: '1px solid #fecaca',
+                            color: '#b91c1c', borderRadius: 12, padding: '12px 14px',
+                            fontSize: 13, marginBottom: 16,
+                        }}>
+                            <AlertTriangle size={16} style={{ marginTop: 1, flexShrink: 0 }} />
+                            <span>{messageSuspension}</span>
+                        </div>
+                    )}
 
                     <FormulaireConnexionBoutique />
 
