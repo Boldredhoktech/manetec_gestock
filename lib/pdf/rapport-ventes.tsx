@@ -129,14 +129,26 @@ interface VenteLigne {
     nb_articles:   number
 }
 
+interface PaiementFactureLigne {
+    facture_public_id: string
+    date:              string
+    client_nom:        string | null
+    moyen:             string
+    montant:           number
+}
+
 interface DonneesRapportVentes {
     boutique: BoutiqueEntete & { devise: string }
     periode:       string
     genere_le:     string
     total_ventes:  number
-    ca_total:      number
+    ca_total:      number   // POS + factures encaissées
+    ca_pos:        number
+    ca_factures:   number
     ca_moyen:      number
+    nb_paiements_factures: number
     ventes:        VenteLigne[]
+    ventes_facture: PaiementFactureLigne[]
     top_produits:  { nom: string; quantite: number; ca: number }[]
     par_vendeur:   { nom: string; nb_ventes: number; ca: number }[]
     par_moyen:     { moyen: string; montant: number }[]
@@ -147,7 +159,7 @@ function fmt(n: number, d: string) {
 }
 
 export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes }) {
-    const { boutique, ventes, top_produits, par_vendeur, par_moyen } = donnees
+    const { boutique, ventes, ventes_facture, top_produits, par_vendeur, par_moyen } = donnees
     const d = boutique.devise
 
     const MOYENS_LABELS: Record<string, string> = {
@@ -164,26 +176,26 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
 
                 {/* STATISTIQUES */}
                 <View style={styles.cartesStat}>
-                    <View style={styles.carte}>
-                        <Text style={styles.carteLabel}>Nombre de ventes</Text>
-                        <Text style={styles.carteValeur}>{donnees.total_ventes}</Text>
-                    </View>
                     <View style={[styles.carte, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.carteLabel}>Chiffre d'affaires</Text>
+                        <Text style={styles.carteLabel}>CA total (POS + factures)</Text>
                         <Text style={[styles.carteValeur, { color: couleurs.vert }]}>
                             {fmt(donnees.ca_total, d)}
                         </Text>
                     </View>
+                    <View style={styles.carte}>
+                        <Text style={styles.carteLabel}>dont ventes POS ({donnees.total_ventes})</Text>
+                        <Text style={styles.carteValeur}>{fmt(donnees.ca_pos, d)}</Text>
+                    </View>
                     <View style={[styles.carte, { borderLeftColor: couleurs.orange }]}>
-                        <Text style={styles.carteLabel}>Panier moyen</Text>
+                        <Text style={styles.carteLabel}>dont sur facture ({donnees.nb_paiements_factures})</Text>
                         <Text style={[styles.carteValeur, { color: couleurs.orange }]}>
-                            {fmt(donnees.ca_moyen, d)}
+                            {fmt(donnees.ca_factures, d)}
                         </Text>
                     </View>
                 </View>
 
-                {/* TABLEAU DES VENTES */}
-                <Text style={styles.sectionTitre}>Détail des ventes</Text>
+                {/* TABLEAU DES VENTES POS */}
+                <Text style={styles.sectionTitre}>Ventes POS (caisse)</Text>
                 <View style={styles.enteteTableau}>
                     <Text style={[styles.celluleEntete, { width: '15%' }]}>N° Vente</Text>
                     <Text style={[styles.celluleEntete, { width: '15%' }]}>Date</Text>
@@ -220,6 +232,44 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                         </Text>
                     </View>
                 ))}
+                {ventes.length === 0 && (
+                    <View style={styles.ligne}>
+                        <Text style={[styles.cellule, { width: '100%', color: couleurs.texteFaible }]}>
+                            Aucune vente POS sur la période.
+                        </Text>
+                    </View>
+                )}
+
+                {/* VENTES SUR FACTURE (ENCAISSEMENTS) */}
+                {ventes_facture.length > 0 && (
+                    <>
+                        <Text style={styles.sectionTitre}>Ventes sur facture (encaissements)</Text>
+                        <View style={styles.enteteTableau}>
+                            <Text style={[styles.celluleEntete, { width: '18%' }]}>N° Facture</Text>
+                            <Text style={[styles.celluleEntete, { width: '20%' }]}>Date</Text>
+                            <Text style={[styles.celluleEntete, { width: '30%' }]}>Client</Text>
+                            <Text style={[styles.celluleEntete, { width: '17%' }]}>Moyen</Text>
+                            <Text style={[styles.celluleEntete, { width: '15%', textAlign: 'right' }]}>Montant</Text>
+                        </View>
+                        {ventes_facture.map((p, i) => (
+                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImpaire : {}]}>
+                                <Text style={[styles.cellule, { width: '18%', fontFamily: 'Helvetica-Bold' }]}>
+                                    {p.facture_public_id}
+                                </Text>
+                                <Text style={[styles.cellule, { width: '20%' }]}>{p.date}</Text>
+                                <Text style={[styles.cellule, { width: '30%', maxLines: 1 }]}>
+                                    {p.client_nom || '—'}
+                                </Text>
+                                <Text style={[styles.cellule, { width: '17%' }]}>
+                                    {MOYENS_LABELS[p.moyen] ?? p.moyen}
+                                </Text>
+                                <Text style={[styles.cellule, { width: '15%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
+                                    {fmt(p.montant, d)}
+                                </Text>
+                            </View>
+                        ))}
+                    </>
+                )}
 
                 {/* TOP PRODUITS */}
                 {top_produits.length > 0 && (

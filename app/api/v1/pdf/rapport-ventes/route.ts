@@ -6,6 +6,8 @@ import { RapportVentesPDF } from '@/lib/pdf/rapport-ventes'
 import { getDonneesRapportVentes } from '@/actions/rapports'
 import { createClient } from '@/lib/supabase/server'
 import { getPlanBoutique } from '@/lib/supabase/getPlanBoutique'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import React from 'react'
 
 export async function GET(request: NextRequest) {
@@ -14,6 +16,9 @@ export async function GET(request: NextRequest) {
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
+    }
+    if (!aPermission(user, PERMISSIONS.RAPPORTS_GENERER)) {
+        return new NextResponse('Permission insuffisante.', { status: 403 })
     }
 
     const { limites } = await getPlanBoutique(user.user_metadata.shop_id)

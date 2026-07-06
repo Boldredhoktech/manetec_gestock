@@ -43,6 +43,19 @@ export async function getDonneesRapportVentes(
         .lte('created_at', fin + 'T23:59:59')
         .order('created_at', { ascending: false })
 
+    // Ventes sur facture A4 = paiements de factures encaissés sur la période
+    // (base trésorerie, cohérente avec le rapport Profits & Pertes).
+    const { data: paiementsFacture } = await adminClient
+        .from('facture_payments')
+        .select(`
+      montant, moyen_paiement, created_at,
+      factures(public_id, clients(nom))
+    `)
+        .eq('shop_id', shopId)
+        .gte('created_at', debut + 'T00:00:00')
+        .lte('created_at', fin + 'T23:59:59')
+        .order('created_at', { ascending: false })
+
     // Top produits
     const { data: topProduits } = await adminClient
         .from('sale_items')
@@ -77,27 +90,42 @@ export async function getDonneesRapportVentes(
         parVendeur[nom].ca += v.montant_total
     })
 
-    // Par moyen paiement
+    // Par moyen paiement — inclut les encaissements POS ET les paiements de
+    // factures (vue trésorerie complète des entrées d'argent).
     const parMoyen: Record<string, { moyen: string; montant: number }> = {}
+    const ajouterMoyen = (moyen: string, montant: number) => {
+        if (!parMoyen[moyen]) parMoyen[moyen] = { moyen, montant: 0 }
+        parMoyen[moyen].montant += montant
+    }
     ventes?.forEach(v => {
-        (v.sale_payments as any[])?.forEach((p: any) => {
-            if (!parMoyen[p.moyen_paiement]) {
-                parMoyen[p.moyen_paiement] = { moyen: p.moyen_paiement, montant: 0 }
-            }
-            parMoyen[p.moyen_paiement].montant += p.montant
-        })
+        (v.sale_payments as any[])?.forEach((p: any) => ajouterMoyen(p.moyen_paiement, p.montant))
     })
+    paiementsFacture?.forEach((p: any) => ajouterMoyen(p.moyen_paiement, p.montant))
 
     const ventesCompletees = ventes?.filter(v => v.statut === 'completee') ?? []
-    const caTotal = ventesCompletees.reduce((a, v) => a + v.montant_total, 0)
+    const caPos = ventesCompletees.reduce((a, v) => a + v.montant_total, 0)
+
+    // Ventes sur facture (encaissements)
+    const ventesFacture = (paiementsFacture ?? []).map((p: any) => ({
+        facture_public_id: (p.factures as any)?.public_id ?? '—',
+        date:              format(new Date(p.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+        client_nom:        ((p.factures as any)?.clients as any)?.nom ?? null,
+        moyen:             p.moyen_paiement,
+        montant:           p.montant,
+    }))
+    const caFactures = ventesFacture.reduce((a, v) => a + v.montant, 0)
+    const caTotal    = caPos + caFactures
 
     return {
         boutique: boutique!,
         periode:  `Du ${formatFR(debut)} au ${formatFR(fin)}`,
         genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         total_ventes: ventesCompletees.length,
-        ca_total:     caTotal,
-        ca_moyen:     ventesCompletees.length > 0 ? caTotal / ventesCompletees.length : 0,
+        ca_total:     caTotal,   // POS + factures encaissées
+        ca_pos:       caPos,
+        ca_factures:  caFactures,
+        ca_moyen:     ventesCompletees.length > 0 ? caPos / ventesCompletees.length : 0,
+        nb_paiements_factures: ventesFacture.length,
         ventes: (ventes ?? []).map(v => ({
             public_id:     v.public_id,
             date:          format(new Date(v.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
@@ -107,6 +135,7 @@ export async function getDonneesRapportVentes(
             statut:        v.statut,
             nb_articles:   (v.sale_items as any[])?.length ?? 0,
         })),
+        ventes_facture: ventesFacture,
         top_produits: topProduitsArr,
         par_vendeur:  Object.values(parVendeur),
         par_moyen:    Object.values(parMoyen),
