@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import type { LigneFacture } from '@/actions/facturation'
 import { formatMontant } from '@/lib/utils'
 
@@ -89,30 +89,30 @@ export default function EditeurLignes({ lignes, onChanger, produits }: Props) {
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         <div>
                             <label className="text-xs text-muted-foreground">Qté</label>
-                            <input type="number" min="1" step="1"
+                            <ChampNombre entier videVaut={1}
                                    value={ligne.quantite}
-                                   onChange={e => modifierLigne(i, 'quantite', parseFloat(e.target.value) || 1)}
+                                   onChange={n => modifierLigne(i, 'quantite', n)}
                                    className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
                         </div>
                         <div>
                             <label className="text-xs text-muted-foreground">Prix HT</label>
-                            <input type="number" min="0" step="0.01"
+                            <ChampNombre
                                    value={ligne.prix_unitaire}
-                                   onChange={e => modifierLigne(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
+                                   onChange={n => modifierLigne(i, 'prix_unitaire', n)}
                                    className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
                         </div>
                         <div>
                             <label className="text-xs text-muted-foreground">Remise (%)</label>
-                            <input type="number" min="0" max="100" step="0.5"
+                            <ChampNombre
                                    value={ligne.remise_pct}
-                                   onChange={e => modifierLigne(i, 'remise_pct', parseFloat(e.target.value) || 0)}
+                                   onChange={n => modifierLigne(i, 'remise_pct', n)}
                                    className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
                         </div>
                         <div>
                             <label className="text-xs text-muted-foreground">TVA (%)</label>
-                            <input type="number" min="0" step="0.5"
+                            <ChampNombre
                                    value={ligne.tva_pct}
-                                   onChange={e => modifierLigne(i, 'tva_pct', parseFloat(e.target.value) || 0)}
+                                   onChange={n => modifierLigne(i, 'tva_pct', n)}
                                    className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
                         </div>
                     </div>
