@@ -1,5 +1,6 @@
 import { Package, UserSquare, ShoppingCart, TrendingUp } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
+import { estAdminComplet } from '@/lib/constants/permissions'
 
 interface Props {
     nbProduits:          number
@@ -50,7 +51,7 @@ export default function CartesStatsBoutique({
             roles:   ['super_admin_boutique', 'comptable'],
             format:  'montant',
         },
-    ].filter(c => c.roles.includes(role))
+    ].filter(c => estAdminComplet(role) || c.roles.includes(role))
 
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">

@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { uploadImageCloudinary } from '@/lib/cloudinary'
+import { estAdminComplet } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 
 export async function POST(request: NextRequest) {
@@ -15,8 +16,8 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ erreur: 'Non autorisé.' }, { status: 401 })
     }
 
-    if (user.user_metadata?.role !== 'super_admin_boutique') {
-        return NextResponse.json({ erreur: 'Réservé au SuperAdmin.' }, { status: 403 })
+    if (!estAdminComplet(user.user_metadata?.role)) {
+        return NextResponse.json({ erreur: 'Réservé aux administrateurs.' }, { status: 403 })
     }
 
     const shopId = user.user_metadata.shop_id as string

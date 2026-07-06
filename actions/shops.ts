@@ -6,6 +6,7 @@ import { uploadImageCloudinary } from '@/lib/cloudinary'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import * as argon2 from 'argon2'
+import { estAdminComplet } from '@/lib/constants/permissions'
 
 // ── Créer une boutique ─────────────────────────────────────────
 export async function creerBoutique(formData: FormData) {
@@ -265,8 +266,8 @@ export async function modifierParametresBoutique(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
-    if (user.user_metadata?.role !== 'super_admin_boutique') {
-        return { erreur: 'Réservé au SuperAdmin boutique.' }
+    if (!estAdminComplet(user.user_metadata?.role)) {
+        return { erreur: 'Réservé aux administrateurs de la boutique.' }
     }
 
     const shopId      = user.user_metadata.shop_id as string

@@ -4,6 +4,7 @@ import {
     ShoppingCart, Plus, UserSquare, Package,
     Warehouse, FileText, Tags, BarChart3,
 } from 'lucide-react'
+import { estAdminComplet } from '@/lib/constants/permissions'
 
 interface AccesRapide {
     label:       string
@@ -102,7 +103,7 @@ const ACCES: AccesRapide[] = [
 interface Props { role: string }
 
 export default function AccesRapidesBoutique({ role }: Props) {
-    const accesFiltres = ACCES.filter(a => a.roles.includes(role))
+    const accesFiltres = ACCES.filter(a => estAdminComplet(role) || a.roles.includes(role))
 
     return (
         <div className="space-y-3">

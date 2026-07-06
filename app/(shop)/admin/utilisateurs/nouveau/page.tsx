@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireUtilisateur from '@/components/shop/FormulaireUtilisateur'
-import { ROLES } from '@/lib/constants/permissions'
+import { estAdminComplet, ROLES } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Nouvel utilisateur' }
 
@@ -12,9 +12,11 @@ export default async function PageNouvelUtilisateur() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) {
+    if (!user || !estAdminComplet(user.user_metadata?.role)) {
         redirect('/admin/utilisateurs')
     }
+
+    const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -37,7 +39,7 @@ export default async function PageNouvelUtilisateur() {
                 </div>
             </header>
             <main className="flex-1 p-4 sm:p-6 max-w-xl">
-                <FormulaireUtilisateur />
+                <FormulaireUtilisateur estProprietaire={estProprietaire} />
             </main>
         </div>
     )

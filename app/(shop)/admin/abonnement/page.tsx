@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import { ROLES } from '@/lib/constants/permissions'
+import { estAdminComplet } from '@/lib/constants/permissions'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 import {
     CheckCircle, Clock, AlertTriangle, Crown, Rocket, Star,
@@ -54,7 +54,7 @@ export default async function PageAbonnement() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
-    if (user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) redirect('/admin/dashboard')
+    if (!estAdminComplet(user.user_metadata?.role)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
     const { data: boutique } = await adminClient

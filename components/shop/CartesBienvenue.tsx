@@ -14,7 +14,8 @@ interface Props {
 }
 
 const LABELS_ROLE: Record<string, string> = {
-    super_admin_boutique: 'Super Admin',
+    super_admin_boutique: 'Propriétaire',
+    admin_boutique:       'Administrateur',
     vendeur:              'Vendeur',
     stock_manager:        'Gestionnaire de stock',
     comptable:            'Comptable',

@@ -9,7 +9,7 @@ import {
 import { formatDate } from '@/lib/utils'
 import {
     CheckCircle, XCircle, Lock, Loader2,
-    ShieldCheck, User, Calculator, Package,
+    ShieldCheck, Shield, User, Calculator, Package,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
@@ -28,17 +28,28 @@ interface Utilisateur {
 
 interface Props {
     utilisateurs: Utilisateur[]
+    estProprietaire: boolean
+    currentUserId: string
 }
 
 const ROLES_CONFIG: Record<string, { label: string; icone: React.ElementType; couleur: string }> = {
-    super_admin_boutique: { label: 'Super Admin',   icone: ShieldCheck, couleur: 'text-purple-500' },
+    super_admin_boutique: { label: 'Propriétaire',  icone: ShieldCheck, couleur: 'text-purple-500' },
+    admin_boutique:       { label: 'Administrateur', icone: Shield,     couleur: 'text-indigo-500' },
     vendeur:              { label: 'Vendeur',        icone: User,        couleur: 'text-blue-500'   },
     stock_manager:        { label: 'Stock Manager',  icone: Package,     couleur: 'text-amber-500'  },
     comptable:            { label: 'Comptable',      icone: Calculator,  couleur: 'text-green-500'  },
 }
 
-export default function TableauUtilisateurs({ utilisateurs }: Props) {
+export default function TableauUtilisateurs({ utilisateurs, estProprietaire, currentUserId }: Props) {
     const [enAttenteId, setEnAttenteId] = useState<string | null>(null)
+
+    // Peut-on agir (activer/désactiver/débloquer) sur cette ligne ?
+    // - jamais sur le propriétaire, ni sur soi-même
+    // - sur un administrateur : uniquement si l'acteur est le propriétaire
+    const peutGerer = (u: Utilisateur) =>
+        u.id !== currentUserId &&
+        u.role !== 'super_admin_boutique' &&
+        (u.role !== 'admin_boutique' || estProprietaire)
 
     async function handleToggle(u: Utilisateur) {
         setEnAttenteId(u.id)
@@ -122,7 +133,7 @@ export default function TableauUtilisateurs({ utilisateurs }: Props) {
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex items-center gap-2">
-                                        {u.est_bloque && u.role !== 'super_admin_boutique' && (
+                                        {u.est_bloque && peutGerer(u) && (
                                             <Button
                                                 variant="outline"
                                                 size="sm"
@@ -136,7 +147,7 @@ export default function TableauUtilisateurs({ utilisateurs }: Props) {
                                                 }
                                             </Button>
                                         )}
-                                        {u.role !== 'super_admin_boutique' && (
+                                        {peutGerer(u) && (
                                             <Button
                                                 variant="ghost"
                                                 size="sm"

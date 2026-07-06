@@ -14,7 +14,9 @@ const EXTENSIONS_LABELS: Record<string, string> = {
     [PERMISSIONS.CLIENTS_ACCES_COMPLET]: 'Accès complet clients (crédit, avances)',
 }
 
-export default function FormulaireUtilisateur() {
+interface Props { estProprietaire: boolean }
+
+export default function FormulaireUtilisateur({ estProprietaire }: Props) {
     const [role, setRole] = useState('vendeur')
 
     const [etat, action, enAttente] = useActionState(
@@ -101,9 +103,31 @@ export default function FormulaireUtilisateur() {
                         <option value="vendeur">Vendeur</option>
                         <option value="stock_manager">Gestionnaire de stock</option>
                         <option value="comptable">Comptable</option>
+                        {estProprietaire && (
+                            <option value="admin_boutique">Administrateur (accès complet)</option>
+                        )}
                     </select>
+                    {estProprietaire && (
+                        <p className="text-xs text-muted-foreground">
+                            Un administrateur a les mêmes accès que vous, sauf la création
+                            d&apos;autres administrateurs.
+                        </p>
+                    )}
                 </div>
             </div>
+
+            {/* Note rôle administrateur */}
+            {role === 'admin_boutique' && (
+                <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-5 flex items-start gap-3">
+                    <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-indigo-500" />
+                    <p className="text-sm text-indigo-700">
+                        Ce compte disposera d&apos;un accès complet à la boutique
+                        (ventes, stock, comptabilité, rapports, paramètres, abonnement et
+                        gestion des vendeurs/comptables). Il ne pourra pas créer ni gérer
+                        d&apos;autres administrateurs.
+                    </p>
+                </div>
+            )}
 
             {/* Extensions vendeur */}
             {role === 'vendeur' && (

@@ -23,7 +23,8 @@ interface Utilisateur {
 }
 
 const ROLE_LABELS: Record<string, string> = {
-    super_admin_boutique: 'Super Admin',
+    super_admin_boutique: 'Propriétaire',
+    admin_boutique:       'Administrateur',
     vendeur:              'Vendeur',
     gestionnaire_stock:   'Gestion stock',
     stock_manager:        'Gestion stock',

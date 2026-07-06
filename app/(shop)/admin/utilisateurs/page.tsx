@@ -8,7 +8,7 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TableauUtilisateurs from '@/components/shop/TableauUtilisateurs'
-import { ROLES } from '@/lib/constants/permissions'
+import { estAdminComplet, ROLES } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Utilisateurs' }
 
@@ -16,10 +16,11 @@ export default async function PageUtilisateurs() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) {
+    if (!user || !estAdminComplet(user.user_metadata?.role)) {
         redirect('/admin/dashboard')
     }
 
+    const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
     const shopId = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
@@ -52,7 +53,11 @@ export default async function PageUtilisateurs() {
                 </div>
             </header>
             <main className="flex-1 p-4 sm:p-6">
-                <TableauUtilisateurs utilisateurs={utilisateurs ?? []} />
+                <TableauUtilisateurs
+                    utilisateurs={utilisateurs ?? []}
+                    estProprietaire={estProprietaire}
+                    currentUserId={user.user_metadata.user_id}
+                />
             </main>
         </div>
     )

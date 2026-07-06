@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import FormulairePromo from '@/components/shop/FormulairePromo'
-import { ROLES } from '@/lib/constants/permissions'
+import { estAdminComplet } from '@/lib/constants/permissions'
 import { Lock } from 'lucide-react'
 
 export const metadata: Metadata = { title: 'Communications clients' }
@@ -11,7 +11,7 @@ export const metadata: Metadata = { title: 'Communications clients' }
 export default async function PageCommunications() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) redirect('/admin/dashboard')
+    if (!user || !estAdminComplet(user.user_metadata?.role)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
     const { data: boutique } = await adminClient

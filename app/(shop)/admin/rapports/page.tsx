@@ -4,6 +4,8 @@ import { getPlanBoutique } from '@/lib/supabase/getPlanBoutique'
 import { redirect } from 'next/navigation'
 import { BarChart3, Lock } from 'lucide-react'
 import CentreRapports from '@/components/shop/rapports/CentreRapports'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Rapports' }
 
@@ -11,6 +13,7 @@ export default async function PageRapports() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.RAPPORTS_GENERER)) redirect('/admin/dashboard')
 
     const { limites } = await getPlanBoutique(user.user_metadata.shop_id)
 

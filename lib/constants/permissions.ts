@@ -1,9 +1,24 @@
 export const ROLES = {
     SUPER_ADMIN_BOUTIQUE: 'super_admin_boutique',
+    ADMIN_BOUTIQUE: 'admin_boutique',
     VENDEUR: 'vendeur',
     STOCK_MANAGER: 'stock_manager',
     COMPTABLE: 'comptable',
 } as const
+
+// Rôles disposant d'un accès complet à la boutique (propriétaire + admins).
+// Le propriétaire (super_admin_boutique) est l'unique à pouvoir gérer les
+// comptes admin ; l'admin_boutique a les mêmes droits métier mais ne peut
+// pas créer/gérer d'autres admins.
+export const ROLES_ADMIN_COMPLET: readonly string[] = [
+    ROLES.SUPER_ADMIN_BOUTIQUE,
+    ROLES.ADMIN_BOUTIQUE,
+]
+
+/** true si le rôle a un accès complet à la boutique (propriétaire ou admin). */
+export function estAdminComplet(role?: string | null): boolean {
+    return role === ROLES.SUPER_ADMIN_BOUTIQUE || role === ROLES.ADMIN_BOUTIQUE
+}
 
 export const ROLES_PLATEFORME = {
     SUPER_PLATFORM_ADMIN: 'super_platform_admin',
@@ -62,6 +77,7 @@ export const PERMISSIONS = {
 
 export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
     super_admin_boutique: [], // a tout — vérifié séparément
+    admin_boutique:       [], // a tout — vérifié séparément (comme le propriétaire)
     vendeur: [
         PERMISSIONS.PRODUITS_VOIR,
         PERMISSIONS.STOCK_VOIR,

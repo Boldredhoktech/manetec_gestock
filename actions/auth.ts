@@ -259,6 +259,7 @@ export async function connexionBoutique(formData: FormData) {
     // Redirection selon le rôle
     const redirections: Record<string, string> = {
         super_admin_boutique: '/admin/dashboard',
+        admin_boutique: '/admin/dashboard',
         vendeur: '/pos',
         stock_manager: '/stock',
         comptable: '/compta',

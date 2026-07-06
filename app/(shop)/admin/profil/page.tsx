@@ -28,9 +28,11 @@ export default async function PageProfil() {
         .single()
 
     const ROLES_LABELS: Record<string, string> = {
-        super_admin_boutique: 'Super Administrateur',
+        super_admin_boutique: 'Propriétaire',
+        admin_boutique:       'Administrateur',
         vendeur:              'Vendeur',
         gestionnaire_stock:   'Gestionnaire de stock',
+        stock_manager:        'Gestionnaire de stock',
         comptable:            'Comptable',
     }
 

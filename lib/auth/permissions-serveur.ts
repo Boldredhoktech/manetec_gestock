@@ -6,7 +6,7 @@
 // appliquée.
 // ═══════════════════════════════════════════════════════════════
 
-import { ROLES, PERMISSIONS_PAR_DEFAUT, type RoleBoutique } from '@/lib/constants/permissions'
+import { estAdminComplet, PERMISSIONS_PAR_DEFAUT, type RoleBoutique } from '@/lib/constants/permissions'
 
 type UserLike = {
     user_metadata?: {
@@ -24,7 +24,7 @@ type UserLike = {
 export function aPermission(user: UserLike, permission: string): boolean {
     const meta = user?.user_metadata
     if (!meta || meta.type_acteur !== 'shop') return false
-    if (meta.role === ROLES.SUPER_ADMIN_BOUTIQUE) return true
+    if (estAdminComplet(meta.role)) return true
 
     const defauts  = PERMISSIONS_PAR_DEFAUT[meta.role as RoleBoutique] ?? []
     const etendues = meta.permissions_etendues ?? []

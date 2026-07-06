@@ -9,6 +9,8 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import ListeDepenses from '@/components/shop/compta/ListeDepenses'
 import GestionCategoriesDepense from '@/components/shop/compta/GestionCategoriesDepense'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Dépenses' }
 
@@ -16,6 +18,7 @@ export default async function PageDepenses() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

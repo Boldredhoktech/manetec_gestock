@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import GestionInventaire from '@/components/shop/compta/GestionInventaire'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Inventaire physique' }
 
@@ -12,6 +14,11 @@ export default async function PageInventaire() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    // Accessible au gestionnaire de stock (inventaire) ou au comptable (vue compta).
+    if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_CREER)
+        && !aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) {
+        redirect('/admin/dashboard')
+    }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { ROLES } from '@/lib/constants/permissions'
+import { estAdminComplet, ROLES } from '@/lib/constants/permissions'
 import GestionPermissionsUser from '@/components/shop/utilisateurs/GestionPermissionsUser'
 
 export const metadata: Metadata = { title: 'Fiche utilisateur' }
@@ -19,8 +19,9 @@ export default async function PageFicheUtilisateur({ params }: Props) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
-    if (user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) redirect('/admin/dashboard')
+    if (!estAdminComplet(user.user_metadata?.role)) redirect('/admin/dashboard')
 
+    const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
@@ -36,6 +37,13 @@ export default async function PageFicheUtilisateur({ params }: Props) {
         .single()
 
     if (!utilisateur) notFound()
+
+    // Un administrateur non-propriétaire ne peut pas ouvrir la fiche d'un
+    // autre admin/propriétaire.
+    if (estAdminComplet(utilisateur.role) && !estProprietaire
+        && utilisateur.id !== user.user_metadata.user_id) {
+        redirect('/admin/utilisateurs')
+    }
 
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
@@ -72,6 +80,7 @@ export default async function PageFicheUtilisateur({ params }: Props) {
                     utilisateur={utilisateur as any}
                     shopId={shopId}
                     currentUserId={user.user_metadata.user_id}
+                    estProprietaire={estProprietaire}
                 />
             </main>
         </div>

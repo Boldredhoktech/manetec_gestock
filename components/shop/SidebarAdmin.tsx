@@ -15,6 +15,7 @@ import { deconnexion } from '@/actions/auth'
 import { useSessionBoutique } from '@/hooks/useSession'
 import SidebarDrawer from '@/components/shared/SidebarDrawer'
 import { getPlanLimites } from '@/lib/constants/plans'
+import { estAdminComplet } from '@/lib/constants/permissions'
 
 // Liens réservés à certaines fonctionnalités du plan (masqués sinon)
 const FEATURE_PAR_HREF: Record<string, 'rapports' | 'communications'> = {
@@ -109,6 +110,7 @@ const NAVIGATION_COMPTABLE = [
 
 const NAVIGATIONS_PAR_ROLE: Record<string, typeof NAVIGATION_SUPER_ADMIN> = {
     super_admin_boutique: NAVIGATION_SUPER_ADMIN,
+    admin_boutique:       NAVIGATION_SUPER_ADMIN,
     vendeur:              NAVIGATION_VENDEUR,
     gestionnaire_stock:   NAVIGATION_STOCK_MANAGER,
     stock_manager:        NAVIGATION_STOCK_MANAGER,
@@ -134,7 +136,7 @@ export default function SidebarAdmin({ planReel }: Props) {
     const { session } = useSessionBoutique()
     const navigationBrute = NAVIGATIONS_PAR_ROLE[session?.role ?? 'vendeur'] ?? NAVIGATION_VENDEUR
     const plan        = planReel ?? session?.shop_plan ?? 'starter'
-    const estSuperAdmin = session?.role === 'super_admin_boutique'
+    const estSuperAdmin = estAdminComplet(session?.role)
 
     // Masquer les liens dont la fonctionnalité n'est pas incluse dans le plan
     const limites = getPlanLimites(plan)

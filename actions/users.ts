@@ -9,8 +9,12 @@ import {
     ROLES,
     PERMISSIONS_PAR_DEFAUT,
     EXTENSIONS_VENDEUR,
+    estAdminComplet,
 } from '@/lib/constants/permissions'
 import { getPlanLimites } from '@/lib/constants/plans'
+
+// Rôles qu'un administrateur (non-propriétaire) peut créer et gérer.
+const ROLES_STANDARDS = [ROLES.VENDEUR, ROLES.STOCK_MANAGER, ROLES.COMPTABLE] as const
 
 // ── Créer un utilisateur boutique ─────────────────────────────
 export async function creerUtilisateur(formData: FormData) {
@@ -21,9 +25,12 @@ export async function creerUtilisateur(formData: FormData) {
         return { erreur: 'Non autorisé.' }
     }
 
-    if (user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) {
-        return { erreur: 'Réservé au SuperAdmin boutique.' }
+    const roleActeur = user.user_metadata?.role as string
+    if (!estAdminComplet(roleActeur)) {
+        return { erreur: 'Réservé aux administrateurs de la boutique.' }
     }
+
+    const estProprietaire = roleActeur === ROLES.SUPER_ADMIN_BOUTIQUE
 
     const shopId    = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -59,6 +66,20 @@ export async function creerUtilisateur(formData: FormData) {
 
     if (!nomComplet || !identifiant || !motDePasse || !role) {
         return { erreur: 'Tous les champs obligatoires doivent être remplis.' }
+    }
+
+    // Rôles autorisés à la création. Seul le propriétaire peut créer un
+    // administrateur ; personne ne crée un second propriétaire.
+    const rolesAutorises: string[] = estProprietaire
+        ? [...ROLES_STANDARDS, ROLES.ADMIN_BOUTIQUE]
+        : [...ROLES_STANDARDS]
+
+    if (!rolesAutorises.includes(role)) {
+        return {
+            erreur: role === ROLES.ADMIN_BOUTIQUE || role === ROLES.SUPER_ADMIN_BOUTIQUE
+                ? 'Seul le propriétaire de la boutique peut créer un administrateur.'
+                : 'Rôle invalide.',
+        }
     }
 
     if (motDePasse.length < 6) {
@@ -151,7 +172,7 @@ export async function modifierPermissionsVendeur(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) {
+    if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Non autorisé.' }
     }
 
@@ -160,10 +181,24 @@ export async function modifierPermissionsVendeur(formData: FormData) {
     const permissions = formData.getAll('permissions') as string[]
     const adminClient = createAdminClient()
 
+    // La cible doit appartenir à la même boutique et ne pas être un admin/propriétaire.
+    const { data: cible } = await adminClient
+        .from('shop_users')
+        .select('role')
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+        .single()
+
+    if (!cible) return { erreur: 'Utilisateur introuvable.' }
+    if (estAdminComplet(cible.role)) {
+        return { erreur: 'Impossible de modifier les permissions d\'un administrateur.' }
+    }
+
     await adminClient
         .from('shop_user_permissions')
         .delete()
         .eq('user_id', userId)
+        .eq('shop_id', shopId)
         .in('permission', EXTENSIONS_VENDEUR)
 
     if (permissions.length > 0) {
@@ -191,11 +226,28 @@ export async function toggleActivationUtilisateur(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) {
+    if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Non autorisé.' }
     }
 
-    const adminClient = createAdminClient()
+    const shopId          = user.user_metadata.shop_id as string
+    const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
+    const adminClient     = createAdminClient()
+
+    const { data: cible } = await adminClient
+        .from('shop_users')
+        .select('role')
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+        .single()
+
+    if (!cible) return { erreur: 'Utilisateur introuvable.' }
+    if (cible.role === ROLES.SUPER_ADMIN_BOUTIQUE) {
+        return { erreur: 'Le compte propriétaire ne peut pas être désactivé.' }
+    }
+    if (cible.role === ROLES.ADMIN_BOUTIQUE && !estProprietaire) {
+        return { erreur: 'Seul le propriétaire peut gérer un administrateur.' }
+    }
 
     await adminClient
         .from('shop_users')
@@ -204,6 +256,7 @@ export async function toggleActivationUtilisateur(
             desactive_le: estActif ? null : new Date().toISOString(),
         })
         .eq('id', userId)
+        .eq('shop_id', shopId)
 
     revalidatePath('/admin/utilisateurs')
     return { succes: true }
@@ -214,11 +267,25 @@ export async function debloquerUtilisateur(userId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
-    if (!user || user.user_metadata?.role !== ROLES.SUPER_ADMIN_BOUTIQUE) {
+    if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Non autorisé.' }
     }
 
-    const adminClient = createAdminClient()
+    const shopId          = user.user_metadata.shop_id as string
+    const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
+    const adminClient     = createAdminClient()
+
+    const { data: cible } = await adminClient
+        .from('shop_users')
+        .select('role')
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+        .single()
+
+    if (!cible) return { erreur: 'Utilisateur introuvable.' }
+    if (cible.role === ROLES.ADMIN_BOUTIQUE && !estProprietaire) {
+        return { erreur: 'Seul le propriétaire peut gérer un administrateur.' }
+    }
 
     await adminClient
         .from('shop_users')
@@ -228,6 +295,7 @@ export async function debloquerUtilisateur(userId: string) {
             bloque_le:         null,
         })
         .eq('id', userId)
+        .eq('shop_id', shopId)
 
     await adminClient.from('audit_logs').insert({
         shop_id:        user.user_metadata.shop_id,
@@ -251,11 +319,29 @@ export async function mettreAJourPermissions(
 ) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.user_metadata?.role !== 'super_admin_boutique') {
-        return { erreur: 'Réservé au SuperAdmin.' }
+    if (!user || !estAdminComplet(user.user_metadata?.role)) {
+        return { erreur: 'Réservé aux administrateurs.' }
+    }
+
+    // La cible doit appartenir à la boutique de l'acteur.
+    if (shopId !== user.user_metadata.shop_id) {
+        return { erreur: 'Non autorisé.' }
     }
 
     const adminClient = createAdminClient()
+
+    // Interdiction de modifier les permissions d'un admin/propriétaire (ils ont tout).
+    const { data: cible } = await adminClient
+        .from('shop_users')
+        .select('role')
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+        .single()
+
+    if (!cible) return { erreur: 'Utilisateur introuvable.' }
+    if (estAdminComplet(cible.role)) {
+        return { erreur: 'Impossible de modifier les permissions d\'un administrateur.' }
+    }
 
     // Supprimer toutes les permissions existantes
     await adminClient
@@ -365,12 +451,15 @@ export async function modifierNomComplet(userId: string, nomComplet: string) {
         return { erreur: 'Non autorisé.' }
     }
 
-    // Un utilisateur ne peut modifier que son propre nom
-    // (le SuperAdmin peut modifier le nom de n'importe quel utilisateur)
-    const estSuperAdmin = user.user_metadata.role === 'super_admin_boutique'
-    const estSonPropre  = userId === user.user_metadata.user_id
+    // Un utilisateur peut modifier son propre nom. Un administrateur peut aussi
+    // modifier le nom des comptes standards, mais pas celui d'un autre
+    // admin/propriétaire (réservé au propriétaire).
+    const shopId          = user.user_metadata.shop_id as string
+    const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
+    const estAdmin        = estAdminComplet(user.user_metadata.role)
+    const estSonPropre    = userId === user.user_metadata.user_id
 
-    if (!estSonPropre && !estSuperAdmin) {
+    if (!estSonPropre && !estAdmin) {
         return { erreur: 'Vous ne pouvez modifier que votre propre nom.' }
     }
 
@@ -378,11 +467,27 @@ export async function modifierNomComplet(userId: string, nomComplet: string) {
     if (!nom) return { erreur: 'Le nom ne peut pas être vide.' }
 
     const adminClient = createAdminClient()
+
+    // Si l'acteur agit sur un autre compte, vérifier la cible.
+    if (!estSonPropre) {
+        const { data: cible } = await adminClient
+            .from('shop_users')
+            .select('role')
+            .eq('id', userId)
+            .eq('shop_id', shopId)
+            .single()
+
+        if (!cible) return { erreur: 'Utilisateur introuvable.' }
+        if (estAdminComplet(cible.role) && !estProprietaire) {
+            return { erreur: 'Seul le propriétaire peut modifier un administrateur.' }
+        }
+    }
+
     const { error } = await adminClient
         .from('shop_users')
         .update({ nom_complet: nom })
         .eq('id', userId)
-        .eq('shop_id', user.user_metadata.shop_id)
+        .eq('shop_id', shopId)
 
     if (error) return { erreur: 'Erreur lors de la mise à jour du nom.' }
 

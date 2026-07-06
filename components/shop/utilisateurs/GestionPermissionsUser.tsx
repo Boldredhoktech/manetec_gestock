@@ -10,6 +10,7 @@ import {
     Shield, Check, X, Loader2, AlertCircle,
     CheckCircle, Power, User, Lock,
 } from 'lucide-react'
+import { estAdminComplet } from '@/lib/constants/permissions'
 
 // Permissions disponibles par rôle (issues du document Flutter)
 const PERMISSIONS_PAR_ROLE: Record<string, { code: string; label: string; description: string }[]> = {
@@ -35,9 +36,11 @@ const PERMISSIONS_PAR_ROLE: Record<string, { code: string; label: string; descri
 }
 
 const ROLES_LABELS: Record<string, string> = {
-    super_admin_boutique: 'SuperAdmin',
+    super_admin_boutique: 'Propriétaire',
+    admin_boutique:       'Administrateur',
     vendeur:              'Vendeur',
     gestionnaire_stock:   'Gestionnaire stock',
+    stock_manager:        'Gestionnaire stock',
     comptable:            'Comptable',
 }
 
@@ -54,11 +57,20 @@ interface Props {
     utilisateur: Utilisateur
     shopId:      string
     currentUserId: string
+    estProprietaire: boolean
 }
 
-export default function GestionPermissionsUser({ utilisateur, shopId, currentUserId }: Props) {
+export default function GestionPermissionsUser({ utilisateur, shopId, currentUserId, estProprietaire }: Props) {
     const router = useRouter()
-    const estSuperAdmin = utilisateur.role === 'super_admin_boutique'
+    // Un admin/propriétaire n'a pas de permissions modifiables (accès complet).
+    const cibleEstAdmin        = estAdminComplet(utilisateur.role)
+    const cibleEstProprietaire = utilisateur.role === 'super_admin_boutique'
+    // On peut activer/désactiver la cible sauf : le propriétaire, soi-même,
+    // ou un administrateur si l'acteur n'est pas le propriétaire.
+    const peutBasculerActivation =
+        !cibleEstProprietaire &&
+        utilisateur.id !== currentUserId &&
+        (utilisateur.role !== 'admin_boutique' || estProprietaire)
 
     // Permissions actuellement accordées
     const [permissionsActives, setPermissionsActives] = useState<Set<string>>(
@@ -123,7 +135,7 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
                     </div>
 
                     {/* Toggle activation */}
-                    {!estSuperAdmin && utilisateur.id !== currentUserId && (
+                    {peutBasculerActivation && (
                         <button
                             onClick={handleToggleActivation}
                             disabled={toggleEnCours}
@@ -158,13 +170,15 @@ export default function GestionPermissionsUser({ utilisateur, shopId, currentUse
                     </div>
                 </div>
 
-                {estSuperAdmin ? (
+                {cibleEstAdmin ? (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-3">
                         <Lock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                         <div>
-                            <p className="text-sm font-bold text-amber-700">SuperAdmin</p>
+                            <p className="text-sm font-bold text-amber-700">
+                                {cibleEstProprietaire ? 'Propriétaire' : 'Administrateur'}
+                            </p>
                             <p className="text-xs text-amber-600 mt-0.5">
-                                Le SuperAdmin a accès à toutes les fonctionnalités. Ses permissions ne peuvent pas être modifiées.
+                                {cibleEstProprietaire ? 'Le propriétaire' : 'Un administrateur'} a accès à toutes les fonctionnalités. Ses permissions ne peuvent pas être modifiées.
                             </p>
                         </div>
                     </div>
