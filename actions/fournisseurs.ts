@@ -276,103 +276,34 @@ export async function creerTransfert(
         return { erreur: 'Source et destination doivent être différentes.' }
     }
 
-    const { data: publicId } = await adminClient
-        .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'TRF' })
+    // Tout le transfert est appliqué dans une seule transaction SQL
+    // (effectuer_transfert → appliquer_mouvement_stock) : si une ligne
+    // échoue, aucune n'est appliquée. L'ancienne version écrivait ligne
+    // par ligne et laissait le stock à moitié déplacé.
+    const { data: result, error } = await adminClient.rpc('effectuer_transfert', {
+        p_data: {
+            shop_id:        shopId,
+            warehouse_from: warehouseSourceId,
+            warehouse_to:   warehouseDestId,
+            note:           notes || null,
+            user_id:        user.user_metadata.user_id,
+            items:          lignes.map(l => ({
+                product_id: l.product_id,
+                quantite:   l.quantite,
+            })),
+        },
+    })
 
-    const { data: transfert, error } = await adminClient.from('stock_transfers').insert({
-        public_id:           publicId,
-        shop_id:             shopId,
-        warehouse_source_id: warehouseSourceId,
-        warehouse_dest_id:   warehouseDestId,
-        statut:              'effectue',
-        notes:               notes || null,
-        created_by:          user.user_metadata.user_id,
-    }).select().single()
-
-    if (error || !transfert) return { erreur: 'Erreur lors du transfert.' }
-
-    for (const ligne of lignes) {
-        // Vérifier stock source
-        const { data: stockSource } = await adminClient
-            .from('stock_levels')
-            .select('quantite')
-            .eq('product_id', ligne.product_id)
-            .eq('warehouse_id', warehouseSourceId)
-            .single()
-
-        if (!stockSource || stockSource.quantite < ligne.quantite) {
-            await adminClient.from('stock_transfers').update({ statut: 'annule' })
-                .eq('id', transfert.id)
-            return { erreur: `Stock insuffisant pour le transfert.` }
-        }
-
-        // Déduire source
-        await adminClient.from('stock_levels')
-            .update({ quantite: stockSource.quantite - ligne.quantite })
-            .eq('product_id', ligne.product_id)
-            .eq('warehouse_id', warehouseSourceId)
-
-        // Ajouter destination
-        const { data: stockDest } = await adminClient
-            .from('stock_levels')
-            .select('quantite')
-            .eq('product_id', ligne.product_id)
-            .eq('warehouse_id', warehouseDestId)
-            .single()
-
-        if (stockDest) {
-            await adminClient.from('stock_levels')
-                .update({ quantite: stockDest.quantite + ligne.quantite })
-                .eq('product_id', ligne.product_id)
-                .eq('warehouse_id', warehouseDestId)
-        } else {
-            await adminClient.from('stock_levels').insert({
-                shop_id:      shopId,
-                product_id:   ligne.product_id,
-                warehouse_id: warehouseDestId,
-                quantite:     ligne.quantite,
-            })
-        }
-
-        // Mouvements
-        const { data: mvtPid1 } = await adminClient
-            .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'MVT' })
-        const { data: mvtPid2 } = await adminClient
-            .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'MVT' })
-
-        await adminClient.from('stock_movements').insert([
-            {
-                public_id: mvtPid1, shop_id: shopId,
-                product_id: ligne.product_id, warehouse_id: warehouseSourceId,
-                type_mouvement: 'transfert_sortie',
-                quantite: ligne.quantite,
-                quantite_avant: stockSource.quantite,
-                quantite_apres: stockSource.quantite - ligne.quantite,
-                reference_type: 'transfer', reference_id: transfert.id,
-                reference_public_id: transfert.public_id,
-                created_by: user.user_metadata.user_id,
-            },
-            {
-                public_id: mvtPid2, shop_id: shopId,
-                product_id: ligne.product_id, warehouse_id: warehouseDestId,
-                type_mouvement: 'transfert_entree',
-                quantite: ligne.quantite,
-                quantite_avant: stockDest?.quantite ?? 0,
-                quantite_apres: (stockDest?.quantite ?? 0) + ligne.quantite,
-                reference_type: 'transfer', reference_id: transfert.id,
-                reference_public_id: transfert.public_id,
-                created_by: user.user_metadata.user_id,
-            }
-        ])
-
-        await adminClient.from('stock_transfer_items').insert({
-            shop_id: shopId, transfer_id: transfert.id,
-            product_id: ligne.product_id, quantite: ligne.quantite,
-        })
+    if (error) {
+        console.error('ERREUR TRANSFERT:', error)
+        return { erreur: 'Erreur lors du transfert.' }
     }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors du transfert.' }
 
     revalidatePath('/stock/mouvements')
-    return { succes: true, transfer_id: transfert.id, public_id: transfert.public_id }
+    revalidatePath('/stock/produits')
+    revalidatePath('/stock/entrepots')
+    return { succes: true, transfer_id: result.transfer_id, public_id: result.public_id }
 }
 
 // ── Ajustement de stock ────────────────────────────────────────
@@ -393,71 +324,33 @@ export async function creerAjustement(
     if (!motif) return { erreur: 'Le motif est obligatoire.' }
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
 
-    const { data: publicId } = await adminClient
-        .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'ADJ' })
+    // Une seule transaction SQL : la quantité de départ est lue sous
+    // verrou juste avant d'écrire l'écart, donc une vente concurrente
+    // ne peut plus être écrasée en silence.
+    const { data: result, error } = await adminClient.rpc('effectuer_ajustement', {
+        p_data: {
+            shop_id:      shopId,
+            warehouse_id: warehouseId,
+            motif,
+            note:         notes || null,
+            user_id:      user.user_metadata.user_id,
+            items:        lignes.map(l => ({
+                product_id:     l.product_id,
+                quantite_apres: l.quantite_apres,
+            })),
+        },
+    })
 
-    const { data: adj, error } = await adminClient.from('stock_adjustments').insert({
-        public_id:    publicId,
-        shop_id:      shopId,
-        warehouse_id: warehouseId,
-        motif,
-        notes:        notes || null,
-        created_by:   user.user_metadata.user_id,
-    }).select().single()
-
-    if (error || !adj) return { erreur: 'Erreur lors de la création de l\'ajustement.' }
-
-    for (const ligne of lignes) {
-        const { data: stock } = await adminClient
-            .from('stock_levels')
-            .select('quantite')
-            .eq('product_id', ligne.product_id)
-            .eq('warehouse_id', warehouseId)
-            .single()
-
-        const qteAvant = stock?.quantite ?? 0
-        const diff     = ligne.quantite_apres - qteAvant
-
-        if (diff === 0) continue
-
-        await adminClient.from('stock_levels')
-            .upsert({
-                shop_id:      shopId,
-                product_id:   ligne.product_id,
-                warehouse_id: warehouseId,
-                quantite:     ligne.quantite_apres,
-            }, { onConflict: 'product_id,warehouse_id' })
-
-        const { data: mvtPid } = await adminClient
-            .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'MVT' })
-
-        await adminClient.from('stock_movements').insert({
-            public_id:      mvtPid,
-            shop_id:        shopId,
-            product_id:     ligne.product_id,
-            warehouse_id:   warehouseId,
-            type_mouvement: diff > 0 ? 'ajustement_positif' : 'ajustement_negatif',
-            quantite:       Math.abs(diff),
-            quantite_avant: qteAvant,
-            quantite_apres: ligne.quantite_apres,
-            reference_type: 'adjustment',
-            reference_id:   adj.id,
-            reference_public_id: adj.public_id,
-            created_by:     user.user_metadata.user_id,
-        })
-
-        await adminClient.from('stock_adjustment_items').insert({
-            shop_id:        shopId,
-            adjustment_id:  adj.id,
-            product_id:     ligne.product_id,
-            quantite_avant: qteAvant,
-            quantite_apres: ligne.quantite_apres,
-            difference:     diff,
-        })
+    if (error) {
+        console.error('ERREUR AJUSTEMENT:', error)
+        return { erreur: 'Erreur lors de la création de l\'ajustement.' }
     }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de l\'ajustement.' }
 
     revalidatePath('/stock/mouvements')
-    return { succes: true }
+    revalidatePath('/stock/produits')
+    revalidatePath('/stock/entrepots')
+    return { succes: true, adjustment_id: result.adjustment_id, public_id: result.public_id, nb_lignes: result.nb_lignes }
 }
 
 // ── À AJOUTER dans actions/fournisseurs.ts ────────────────────

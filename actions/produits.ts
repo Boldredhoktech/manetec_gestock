@@ -59,7 +59,7 @@ export async function creerEntrepot(formData: FormData) {
         .select('*', { count: 'exact', head: true })
         .eq('shop_id', shopId)
 
-    const { error } = await adminClient.from('warehouses').insert({
+    const { data: entrepot, error } = await adminClient.from('warehouses').insert({
         public_id:   publicId,
         shop_id:     shopId,
         nom,
@@ -68,9 +68,29 @@ export async function creerEntrepot(formData: FormData) {
         est_defaut:  estDefaut || (count === 0), // premier = défaut auto
         est_actif:   true,
         created_by:  user.user_metadata.user_id,
-    })
+    }).select('id').single()
 
-    if (error) return { erreur: 'Erreur lors de la création de l\'entrepôt.' }
+    if (error || !entrepot) return { erreur: 'Erreur lors de la création de l\'entrepôt.' }
+
+    // Le nouvel entrepôt démarre avec une ligne de stock à zéro pour
+    // tout le catalogue : les produits existants y sont vendables dès
+    // la première réception, sans erreur « Stock introuvable ».
+    const { data: produits } = await adminClient
+        .from('products')
+        .select('id')
+        .eq('shop_id', shopId)
+
+    if (produits && produits.length > 0) {
+        await adminClient.from('stock_levels').upsert(
+            produits.map(p => ({
+                shop_id:      shopId,
+                product_id:   p.id,
+                warehouse_id: entrepot.id,
+                quantite:     0,
+            })),
+            { onConflict: 'product_id,warehouse_id', ignoreDuplicates: true }
+        )
+    }
 
     revalidatePath('/stock/entrepots')
     redirect('/stock/entrepots')
@@ -241,31 +261,45 @@ export async function creerProduit(formData: FormData) {
 
     if (error || !produit) return { erreur: 'Erreur lors de la création du produit.' }
 
-    // Créer le niveau de stock initial
-    await adminClient.from('stock_levels').insert({
-        shop_id:      shopId,
-        product_id:   produit.id,
-        warehouse_id: warehouseId,
-        quantite:     stockInitial,
-    })
+    // Une ligne de stock à zéro dans CHAQUE entrepôt de la boutique :
+    // sans elle, la vente du produit depuis un autre entrepôt échouait
+    // avec « Stock introuvable » au lieu d'un simple stock à zéro.
+    const { data: entrepots } = await adminClient
+        .from('warehouses')
+        .select('id')
+        .eq('shop_id', shopId)
 
-    // Si stock initial > 0 : enregistrer le mouvement
+    if (entrepots && entrepots.length > 0) {
+        await adminClient.from('stock_levels').upsert(
+            entrepots.map(e => ({
+                shop_id:      shopId,
+                product_id:   produit.id,
+                warehouse_id: e.id,
+                quantite:     0,
+            })),
+            { onConflict: 'product_id,warehouse_id', ignoreDuplicates: true }
+        )
+    }
+
+    // Le stock initial passe par le point d'entrée unique : il est
+    // journalisé comme n'importe quel autre mouvement.
     if (stockInitial > 0) {
-        const { data: mvtPublicId } = await adminClient
-            .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'MVT' })
-
-        await adminClient.from('stock_movements').insert({
-            public_id:      mvtPublicId,
-            shop_id:        shopId,
-            product_id:     produit.id,
-            warehouse_id:   warehouseId,
-            type_mouvement: 'entree_initiale',
-            quantite:       stockInitial,
-            quantite_avant: 0,
-            quantite_apres: stockInitial,
-            note:           'Stock initial à la création du produit',
-            created_by:     user.user_metadata.user_id,
+        const { data: mvt } = await adminClient.rpc('appliquer_mouvement_stock', {
+            p_shop_id:        shopId,
+            p_product_id:     produit.id,
+            p_warehouse_id:   warehouseId,
+            p_delta:          stockInitial,
+            p_type_mouvement: 'entree_initiale',
+            p_reference_type: 'product',
+            p_reference_id:   produit.id,
+            p_reference_pid:  produit.public_id,
+            p_note:           'Stock initial à la création du produit',
+            p_user_id:        user.user_metadata.user_id,
         })
+
+        if (!mvt?.succes) {
+            console.error('ERREUR STOCK INITIAL:', mvt?.erreur)
+        }
     }
 
     revalidatePath('/stock/produits')
