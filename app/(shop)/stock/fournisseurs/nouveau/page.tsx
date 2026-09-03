@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireFournisseur from '@/components/shop/fournisseurs/FormulaireFournisseur'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Nouveau fournisseur' }
 
@@ -11,6 +13,7 @@ export default async function PageNouveauFournisseur() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.FOURNISSEURS_CREER)) redirect('/admin/dashboard')
 
     return (
         <div className="flex flex-col min-h-screen">

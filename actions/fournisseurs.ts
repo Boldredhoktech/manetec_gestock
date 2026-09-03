@@ -501,22 +501,25 @@ export async function creerFactureFournisseur(
         }
     }
 
-    // Mettre à jour le solde fournisseur
-    await adminClient
-        .from('suppliers')
-        .update({ solde_dû: adminClient.rpc('increment_solde_du' as any, { amount: montantTTC }) as any })
-
-    // Mettre à jour le solde manuellement
+    // Mettre à jour le solde fournisseur.
+    // (Ici se trouvait un UPDATE sur suppliers SANS clause WHERE, avec le
+    //  client admin : il visait donc toutes les boutiques à la fois, et
+    //  écrivait un objet non résolu appelant une fonction SQL inexistante.
+    //  Supprimé — le recalcul ci-dessous, lui, est correct et cloisonné.)
     const { data: sup } = await adminClient
         .from('suppliers')
         .select('solde_dû')
         .eq('id', supplierId)
+        .eq('shop_id', shopId)
         .single()
+
+    if (!sup) return { erreur: 'Fournisseur introuvable.' }
 
     await adminClient
         .from('suppliers')
         .update({ solde_dû: ((sup as any)?.['solde_dû'] ?? 0) + montantTTC })
         .eq('id', supplierId)
+        .eq('shop_id', shopId)
 
     console.log('[FACT FOURN] ✅ Facture fournisseur créée :', facture.id)
 

@@ -12,6 +12,7 @@ const EXTENSIONS_LABELS: Record<string, string> = {
     [PERMISSIONS.FOURNISSEURS_CREER]:    'Créer des fournisseurs',
     [PERMISSIONS.RAPPORTS_GENERER]:      'Générer des rapports',
     [PERMISSIONS.CLIENTS_ACCES_COMPLET]: 'Accès complet clients (crédit, avances)',
+    [PERMISSIONS.PRODUITS_COUT_VOIR]:    'Voir les prix d\'achat et les marges',
 }
 
 interface Props { estProprietaire: boolean }

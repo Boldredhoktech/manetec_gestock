@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { ArrowDown, ArrowUp, ArrowLeftRight } from 'lucide-react'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Mouvements de stock' }
 
@@ -25,6 +27,7 @@ export default async function PageMouvements() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.STOCK_VOIR)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
     const { data: mouvements } = await adminClient

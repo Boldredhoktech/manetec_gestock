@@ -215,15 +215,18 @@ export async function creerProduit(formData: FormData) {
     const limites = PLANS[(boutique?.plan ?? 'starter') as keyof typeof PLANS]
 
     if (limites.max_produits !== -1) {
+        // Le quota compte TOUS les produits du catalogue, désactivés
+        // compris : ils restent en base et dans les écrans. Ne compter
+        // que les actifs permettait de dépasser la limite du plan en
+        // désactivant puis recréant.
         const { count } = await adminClient
             .from('products')
             .select('*', { count: 'exact', head: true })
             .eq('shop_id', shopId)
-            .eq('est_actif', true)
 
         if ((count ?? 0) >= limites.max_produits) {
             return {
-                erreur: `Votre plan est limité à ${limites.max_produits} produits. Passez au plan supérieur.`,
+                erreur: `Votre plan est limité à ${limites.max_produits} produits (produits désactivés inclus). Passez au plan supérieur ou supprimez des produits.`,
             }
         }
     }
@@ -316,6 +319,7 @@ export async function modifierPrixProduit(formData: FormData) {
     }
     if (!aPermission(user, PERMISSIONS.PRODUITS_PRIX_MODIFIER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
+    const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
     const productId   = formData.get('productId') as string
     const prixAchat   = parseFloat(formData.get('prixAchat') as string)
@@ -323,11 +327,14 @@ export async function modifierPrixProduit(formData: FormData) {
     const prixGros    = parseFloat(formData.get('prixGros') as string) || null
     const prixMinimum = parseFloat(formData.get('prixMinimum') as string) || null
 
-    // Récupérer anciens prix pour historique
+    // Récupérer anciens prix pour historique — cloisonné à la boutique :
+    // sans ce filtre, l'identifiant d'un produit d'une autre boutique
+    // suffisait à en modifier les prix (le client admin ignore la RLS).
     const { data: ancien } = await adminClient
         .from('products')
         .select('prix_achat, prix_vente, shop_id')
         .eq('id', productId)
+        .eq('shop_id', shopId)
         .single()
 
     if (!ancien) return { erreur: 'Produit introuvable.' }
@@ -336,9 +343,10 @@ export async function modifierPrixProduit(formData: FormData) {
         .from('products')
         .update({ prix_achat: prixAchat, prix_vente: prixVente, prix_gros: prixGros, prix_minimum: prixMinimum })
         .eq('id', productId)
+        .eq('shop_id', shopId)
 
     // Historique des prix
-    await adminClient.from('price_history').insert({
+    const { error: erreurHistorique } = await adminClient.from('price_history').insert({
         shop_id:            ancien.shop_id,
         product_id:         productId,
         ancien_prix_achat:  ancien.prix_achat,
@@ -347,6 +355,8 @@ export async function modifierPrixProduit(formData: FormData) {
         nouveau_prix_vente: prixVente,
         modifie_par:        user.user_metadata.user_id,
     })
+
+    if (erreurHistorique) console.error('ERREUR HISTORIQUE PRIX:', erreurHistorique)
 
     revalidatePath('/stock/produits')
     return { succes: true }
@@ -367,10 +377,13 @@ export async function toggleActivationProduit(
 
     const adminClient = createAdminClient()
 
-    await adminClient
+    const { error } = await adminClient
         .from('products')
         .update({ est_actif: estActif })
         .eq('id', productId)
+        .eq('shop_id', user.user_metadata.shop_id)
+
+    if (error) return { erreur: 'Erreur lors de la modification du produit.' }
 
     revalidatePath('/stock/produits')
     return { succes: true }
@@ -391,6 +404,16 @@ export async function creerVarianteProduit(formData: FormData) {
     const colorHex      = (formData.get('colorHex') as string) || null
 
     if (!nom || !productId) return { erreur: 'Données manquantes.' }
+
+    // Le produit doit appartenir à la boutique de l'utilisateur.
+    const { data: produitCible } = await adminClient
+        .from('products')
+        .select('id')
+        .eq('id', productId)
+        .eq('shop_id', shopId)
+        .single()
+
+    if (!produitCible) return { erreur: 'Produit introuvable.' }
 
     const { error } = await adminClient.from('product_variants').insert({
         shop_id:        shopId,
@@ -475,7 +498,10 @@ export async function modifierProduit(formData: FormData) {
         .from('products')
         .select('prix_achat, prix_vente')
         .eq('id', productId)
+        .eq('shop_id', shopId)
         .single()
+
+    if (!ancienProduit) return { erreur: 'Produit introuvable.' }
 
     const prixChange = ancienProduit && (
         ancienProduit.prix_vente !== prixVente ||
@@ -512,17 +538,22 @@ export async function modifierProduit(formData: FormData) {
         return { erreur: 'Erreur lors de la modification du produit.' }
     }
 
-    // Enregistrer dans l'historique des prix si changement
+    // Enregistrer dans l'historique des prix si changement.
+    // La colonne s'appelle modifie_par : avec created_by, l'insertion
+    // échouait sans bruit et l'historique n'était jamais alimenté depuis
+    // ce formulaire.
     if (prixChange) {
-        await adminClient.from('price_history').insert({
+        const { error: erreurHistorique } = await adminClient.from('price_history').insert({
             shop_id:            shopId,
             product_id:         productId,
             ancien_prix_achat:  ancienProduit!.prix_achat,
             nouveau_prix_achat: prixAchat,
             ancien_prix_vente:  ancienProduit!.prix_vente,
             nouveau_prix_vente: prixVente,
-            created_by:         user.user_metadata.user_id,
+            modifie_par:        user.user_metadata.user_id,
         })
+
+        if (erreurHistorique) console.error('ERREUR HISTORIQUE PRIX:', erreurHistorique)
     }
 
     revalidatePath(`/stock/produits/${productId}`)

@@ -9,6 +9,8 @@ import { ArrowLeft, Star } from 'lucide-react'
 import CarteInfosEntrepot from '@/components/shop/entrepots/CarteInfosEntrepot'
 import CarteStockEntrepot from '@/components/shop/entrepots/CarteStockEntrepot'
 import CarteDerniersMovements from '@/components/shop/entrepots/CarteDerniersMovements'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Fiche entrepôt' }
 
@@ -20,6 +22,7 @@ export default async function PageFicheEntrepot({ params }: Props) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.STOCK_VOIR)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

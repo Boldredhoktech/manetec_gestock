@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TableauEntrepots from '@/components/shop/TableauEntrepots'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Entrepôts' }
 
@@ -14,6 +16,7 @@ export default async function PageEntrepots() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.STOCK_VOIR)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
     const { data: entrepots } = await adminClient

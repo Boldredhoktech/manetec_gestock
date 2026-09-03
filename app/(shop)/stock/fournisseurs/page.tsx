@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TableauFournisseurs from '@/components/shop/fournisseurs/TableauFournisseurs'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Fournisseurs' }
 
@@ -13,6 +15,7 @@ export default async function PageFournisseurs() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.FOURNISSEURS_VOIR)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
     const { data: fournisseurs } = await adminClient

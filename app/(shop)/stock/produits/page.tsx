@@ -6,6 +6,8 @@ import Link from 'next/link'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TableauProduits from '@/components/shop/TableauProduits'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Produits' }
 
@@ -14,9 +16,12 @@ export default async function PageProduits() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.PRODUITS_VOIR)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
+
+    const peutVoirCout = aPermission(user, PERMISSIONS.PRODUITS_COUT_VOIR)
 
     const { data: produits } = await adminClient
         .from('products')
@@ -26,7 +31,7 @@ export default async function PageProduits() {
       unite, seuil_alerte, est_actif,
       categories(nom),
       brands(nom),
-      stock_levels(quantite, warehouse_id)
+      stock_levels(quantite, warehouse_id, warehouses(nom))
     `)
         .eq('shop_id', shopId)
         .order('created_at', { ascending: false })
@@ -34,8 +39,17 @@ export default async function PageProduits() {
     // Normalisation : categories et brands sont des relations *-to-one, Supabase les retourne en tableau
     const produitsNormalises = (produits ?? []).map(p => ({
         ...p,
+        // Le prix d'achat ne quitte même pas le serveur pour un rôle qui
+        // n'a pas le droit de voir les coûts.
+        prix_achat: peutVoirCout ? p.prix_achat : null,
         categories: Array.isArray(p.categories) ? (p.categories[0] ?? null) : p.categories,
         brands:     Array.isArray(p.brands)      ? (p.brands[0]      ?? null) : p.brands,
+        stock_levels: (p.stock_levels ?? []).map((s: any) => ({
+            quantite:  s.quantite,
+            entrepot:  Array.isArray(s.warehouses)
+                ? (s.warehouses[0]?.nom ?? null)
+                : (s.warehouses?.nom ?? null),
+        })),
     }))
 
     return (

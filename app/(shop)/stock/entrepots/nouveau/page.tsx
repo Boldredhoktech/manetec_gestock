@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireEntrepot from '@/components/shop/FormulaireEntrepot'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Nouvel entrepôt' }
 
@@ -12,6 +14,7 @@ export default async function PageNouvelEntrepot() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) redirect('/admin/dashboard')
 
     return (
         <div className="flex flex-col min-h-screen">

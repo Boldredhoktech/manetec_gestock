@@ -14,13 +14,13 @@ interface Produit {
     type_produit: string
     sku: string | null
     prix_vente: number
-    prix_achat: number
+    prix_achat: number | null
     unite: string
     seuil_alerte: number
     est_actif: boolean
     categories: { nom: string } | null
     brands: { nom: string } | null
-    stock_levels: { quantite: number }[]
+    stock_levels: { quantite: number; entrepot: string | null }[]
 }
 
 interface Props { produits: Produit[] }
@@ -45,6 +45,11 @@ export default function TableauProduits({ produits }: Props) {
 
     const stockTotal = (p: Produit) =>
         p.stock_levels.reduce((acc, s) => acc + s.quantite, 0)
+
+    // Le seuil d'alerte s'apprécie PAR entrepôt : avec le stock cumulé,
+    // un rayon vide passait inaperçu tant que la réserve compensait.
+    const entrepotsSousSeuil = (p: Produit) =>
+        p.stock_levels.filter(s => s.quantite <= p.seuil_alerte)
 
     return (
         <div className="space-y-4">
@@ -91,8 +96,10 @@ export default function TableauProduits({ produits }: Props) {
                             </thead>
                             <tbody className="divide-y divide-border">
                             {filtres.map(p => {
-                                const stock = stockTotal(p)
-                                const enAlerte = stock <= p.seuil_alerte
+                                const stock       = stockTotal(p)
+                                const sousSeuil   = entrepotsSousSeuil(p)
+                                const enAlerte    = sousSeuil.length > 0
+                                const multiDepots = p.stock_levels.length > 1
                                 return (
                                     <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                                         <td className="px-4 py-3">
@@ -127,6 +134,13 @@ export default function TableauProduits({ produits }: Props) {
                                                 {enAlerte && <AlertTriangle className="w-3.5 h-3.5" />}
                                                 {stock} {p.unite}
                                             </span>
+                                            {multiDepots && (
+                                                <p className="text-[11px] text-muted-foreground mt-1">
+                                                    {enAlerte
+                                                        ? `Sous le seuil : ${sousSeuil.map(s => `${s.entrepot ?? 'Entrepôt'} (${s.quantite})`).join(', ')}`
+                                                        : `Réparti sur ${p.stock_levels.length} entrepôts`}
+                                                </p>
+                                            )}
                                         </td>
                                         <td className="px-4 py-3">
                                             <Button

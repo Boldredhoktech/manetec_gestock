@@ -5,6 +5,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Tag, Package, ChevronRight } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Détail catégorie' }
 
@@ -16,6 +18,7 @@ export default async function PageDetailCategorie({ params }: Props) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.PRODUITS_VOIR)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

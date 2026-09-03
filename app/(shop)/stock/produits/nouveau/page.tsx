@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireProduit from '@/components/shop/FormulaireProduit'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Nouveau produit' }
 
@@ -13,6 +15,7 @@ export default async function PageNouveauProduit() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.PRODUITS_CREER)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

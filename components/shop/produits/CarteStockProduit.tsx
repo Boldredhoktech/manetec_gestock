@@ -13,7 +13,11 @@ interface Props {
 
 export default function CarteStockProduit({ stockLevels, seuilAlerte, unite }: Props) {
     const stockTotal = stockLevels.reduce((acc, s) => acc + s.quantite, 0)
-    const enAlerte   = stockTotal <= seuilAlerte
+    // Alerte dès qu'UN entrepôt passe sous le seuil : le cumul masquait
+    // un rayon vide quand la réserve était pleine.
+    const enAlerte   = stockLevels.length > 0
+        ? stockLevels.some(s => s.quantite <= seuilAlerte)
+        : stockTotal <= seuilAlerte
     const enRupture  = stockTotal <= 0
 
     return (

@@ -6,9 +6,9 @@ import { formatMontant } from '@/lib/utils'
 import { TrendingUp, Edit2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-interface Props { produit: any; shopId: string }
+interface Props { produit: any; shopId: string; peutVoirCout?: boolean }
 
-export default function CartePrixProduit({ produit }: Props) {
+export default function CartePrixProduit({ produit, peutVoirCout = false }: Props) {
     const [editable, setEditable] = useState(false)
     const [prixAchat,   setPrixAchat]   = useState(produit.prix_achat)
     const [prixVente,   setPrixVente]   = useState(produit.prix_vente)
@@ -76,7 +76,11 @@ export default function CartePrixProduit({ produit }: Props) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {[
-                    { label: 'Prix d\'achat',   val: prixAchat,   set: setPrixAchat   },
+                    // Le prix d'achat n'apparaît que pour les rôles autorisés
+                    // à voir les coûts (le vendeur voit la vente, pas la marge).
+                    ...(peutVoirCout
+                        ? [{ label: 'Prix d\'achat', val: prixAchat, set: setPrixAchat }]
+                        : []),
                     { label: 'Prix de vente',   val: prixVente,   set: setPrixVente   },
                     { label: 'Prix de gros',    val: prixGros,    set: setPrixGros    },
                     { label: 'Prix minimum',    val: prixMin,     set: setPrixMin     },
@@ -98,10 +102,12 @@ export default function CartePrixProduit({ produit }: Props) {
             </div>
 
             {/* Marge */}
-            <div className="flex items-center justify-between p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl">
-                <span className="text-xs font-bold text-[#15335a]">Marge brute estimée</span>
-                <span className="text-sm font-black text-[#15335a]">{marge}%</span>
-            </div>
+            {peutVoirCout && (
+                <div className="flex items-center justify-between p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl">
+                    <span className="text-xs font-bold text-[#15335a]">Marge brute estimée</span>
+                    <span className="text-sm font-black text-[#15335a]">{marge}%</span>
+                </div>
+            )}
         </div>
     )
 }

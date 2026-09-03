@@ -35,6 +35,10 @@ export const PERMISSIONS = {
     PRODUITS_MODIFIER: 'products.edit',
     PRODUITS_DESACTIVER: 'products.deactivate',
     PRODUITS_PRIX_MODIFIER: 'products.price.edit',
+    // Voir le prix d'achat, donc la marge. Volontairement séparé de
+    // PRODUITS_VOIR : un vendeur consulte le catalogue sans accéder
+    // aux coûts d'achat.
+    PRODUITS_COUT_VOIR: 'products.cost.view',
     // Stock
     STOCK_VOIR: 'stock.view',
     STOCK_TRANSFERT: 'stock.transfer',
@@ -94,6 +98,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
         PERMISSIONS.PRODUITS_VOIR,
         PERMISSIONS.PRODUITS_CREER,
         PERMISSIONS.PRODUITS_MODIFIER,
+        PERMISSIONS.PRODUITS_COUT_VOIR,
         PERMISSIONS.STOCK_VOIR,
         PERMISSIONS.STOCK_TRANSFERT,
         PERMISSIONS.STOCK_AJUSTEMENT,
@@ -108,6 +113,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
     comptable: [
         PERMISSIONS.PRODUITS_VOIR,
         PERMISSIONS.PRODUITS_PRIX_MODIFIER,
+        PERMISSIONS.PRODUITS_COUT_VOIR,
         PERMISSIONS.STOCK_VOIR,
         PERMISSIONS.VENTES_VOIR,
         PERMISSIONS.FACTURES_VOIR,
@@ -129,4 +135,5 @@ export const EXTENSIONS_VENDEUR: string[] = [
     PERMISSIONS.FOURNISSEURS_CREER,
     PERMISSIONS.RAPPORTS_GENERER,
     PERMISSIONS.CLIENTS_ACCES_COMPLET,
+    PERMISSIONS.PRODUITS_COUT_VOIR,
 ]

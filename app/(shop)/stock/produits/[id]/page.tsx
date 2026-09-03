@@ -12,6 +12,8 @@ import CarteVariantesProduit from '@/components/shop/produits/CarteVariantesProd
 import CarteMouvementsProduit from '@/components/shop/produits/CarteMouvementsProduit'
 import CarteHistoriquePrix from '@/components/shop/produits/CarteHistoriquePrix'
 import { toggleActivationProduit } from '@/actions/produits'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Fiche produit' }
 
@@ -23,6 +25,11 @@ export default async function PageFicheProduit({ params }: Props) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.PRODUITS_VOIR)) redirect('/admin/dashboard')
+
+    // Prix d'achat, marge et historique des prix : réservés aux rôles
+    // qui ont explicitement le droit de voir les coûts.
+    const peutVoirCout = aPermission(user, PERMISSIONS.PRODUITS_COUT_VOIR)
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -133,7 +140,7 @@ export default async function PageFicheProduit({ params }: Props) {
                     {/* Colonne gauche */}
                     <div className="lg:col-span-2 space-y-5">
                         <CarteInfosProduit produit={produit} />
-                        <CartePrixProduit produit={produit} shopId={shopId} />
+                        <CartePrixProduit produit={produit} shopId={shopId} peutVoirCout={peutVoirCout} />
                         {(produit.product_variants as any[])?.length > 0 && (
                             <CarteVariantesProduit
                                 variantes={produit.product_variants as any[]}
@@ -151,7 +158,9 @@ export default async function PageFicheProduit({ params }: Props) {
                             seuilAlerte={produit.seuil_alerte}
                             unite={produit.unite}
                         />
-                        <CarteHistoriquePrix historique={historiquePrix ?? []} />
+                        {peutVoirCout && (
+                            <CarteHistoriquePrix historique={historiquePrix ?? []} />
+                        )}
 
                         {/* Actions rapides */}
                         <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
