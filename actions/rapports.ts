@@ -395,7 +395,8 @@ export async function getDonneesRapportMouvements(
         .from('stock_movements')
         .select(`
       public_id, type_mouvement, quantite, quantite_avant, quantite_apres, created_at,
-      products(nom),
+      reference_public_id,
+      products(nom, prix_achat),
       warehouses(nom)
     `)
         .eq('shop_id', shopId)
@@ -407,23 +408,47 @@ export async function getDonneesRapportMouvements(
     const sorties    = ['vente','retour_fournisseur','transfert_sortie','ajustement_negatif']
     const transferts = ['transfert_sortie','transfert_entree']
 
-    return {
-        boutique:          boutique!,
-        periode:           `Du ${formatFR(debut)} au ${formatFR(fin)}`,
-        genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
-        total_entrees:     (mouvements ?? []).filter(m => entrees.includes(m.type_mouvement)).length,
-        total_sorties:     (mouvements ?? []).filter(m => sorties.includes(m.type_mouvement)).length,
-        total_transferts:  (mouvements ?? []).filter(m => transferts.includes(m.type_mouvement)).length,
-        mouvements: (mouvements ?? []).map(m => ({
+    // Le sens d'un mouvement vient de son type. Le type « inventaire »
+    // va dans les deux sens : on le tranche sur la variation réelle du
+    // stock. Avant, il n'était dans aucune liste — les écarts
+    // d'inventaire s'affichaient sans jamais entrer dans les totaux.
+    function sensDe(m: { type_mouvement: string; quantite_avant: number; quantite_apres: number }) {
+        if (entrees.includes(m.type_mouvement)) return 1
+        if (sorties.includes(m.type_mouvement)) return -1
+        return Math.sign(m.quantite_apres - m.quantite_avant)
+    }
+
+    const lignes = (mouvements ?? []).map(m => {
+        const sens = sensDe(m)
+        const prix = (m.products as any)?.prix_achat ?? 0
+        return {
             public_id:      m.public_id,
+            reference:      m.reference_public_id ?? m.public_id,
             type_mouvement: m.type_mouvement,
             produit_nom:    (m.products as any)?.nom ?? 'Inconnu',
             entrepot_nom:   (m.warehouses as any)?.nom ?? 'Inconnu',
             quantite:       m.quantite,
             quantite_avant: m.quantite_avant,
             quantite_apres: m.quantite_apres,
+            sens,
+            valeur:         sens * m.quantite * prix,
             date:           format(new Date(m.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
-        })),
+        }
+    })
+
+    return {
+        boutique:          boutique!,
+        periode:           `Du ${formatFR(debut)} au ${formatFR(fin)}`,
+        genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        total_entrees:     lignes.filter(l => l.sens > 0).length,
+        total_sorties:     lignes.filter(l => l.sens < 0).length,
+        total_transferts:  lignes.filter(l => transferts.includes(l.type_mouvement)).length,
+        // Quantités et valorisation, pour que les totaux du rapport
+        // soient rapprochables du stock.
+        quantite_entree:   lignes.filter(l => l.sens > 0).reduce((a, l) => a + l.quantite, 0),
+        quantite_sortie:   lignes.filter(l => l.sens < 0).reduce((a, l) => a + l.quantite, 0),
+        valeur_nette:      lignes.reduce((a, l) => a + l.valeur, 0),
+        mouvements:        lignes,
     }
 }
 

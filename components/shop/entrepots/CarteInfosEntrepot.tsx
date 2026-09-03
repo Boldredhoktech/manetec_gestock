@@ -5,6 +5,8 @@ import { Warehouse, MapPin, FileText, TrendingUp,
     AlertTriangle, Package, Lock, Unlock, CheckCircle } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 import { modifierEntrepot } from '@/actions/produits'
+import { definirEntrepotDefaut, toggleActivationEntrepot } from '@/actions/stock'
+import { useRouter } from 'next/navigation'
 
 interface Entrepot {
     id:          string
@@ -28,12 +30,33 @@ interface Props {
 export default function CarteInfosEntrepot({
                                                entrepot, totalProduits, enAlerte, enRupture, valeurStock,
                                            }: Props) {
+    const router = useRouter()
     const [editable, setEditable]   = useState(false)
     const [nom, setNom]             = useState(entrepot.nom)
     const [description, setDesc]    = useState(entrepot.description ?? '')
     const [adresse, setAdresse]     = useState(entrepot.adresse ?? '')
     const [enAttente, setEnAttente] = useState(false)
     const [succes, setSucces]       = useState(false)
+    const [statutEnAttente, setStatutEnAttente] = useState(false)
+    const [erreurStatut, setErreurStatut]       = useState<string>()
+
+    async function handleDefaut() {
+        setStatutEnAttente(true)
+        setErreurStatut(undefined)
+        const res = await definirEntrepotDefaut(entrepot.id)
+        setStatutEnAttente(false)
+        if (res?.erreur) { setErreurStatut(res.erreur); return }
+        router.refresh()
+    }
+
+    async function handleToggleActif() {
+        setStatutEnAttente(true)
+        setErreurStatut(undefined)
+        const res = await toggleActivationEntrepot(entrepot.id, !entrepot.est_actif)
+        setStatutEnAttente(false)
+        if (res?.erreur) { setErreurStatut(res.erreur); return }
+        router.refresh()
+    }
 
     async function handleSauvegarder() {
         setEnAttente(true)
@@ -51,6 +74,66 @@ export default function CarteInfosEntrepot({
 
     return (
         <div className="space-y-4">
+
+            {/* Statut de l'entrepôt — aucun de ces réglages n'était
+                modifiable après la création. L'entrepôt par défaut est
+                celui présélectionné à la caisse, en réception et à
+                l'inventaire. */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <h2 className="text-sm font-bold text-gray-900">Statut</h2>
+
+                {erreurStatut && (
+                    <div className="p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
+                        {erreurStatut}
+                    </div>
+                )}
+
+                <div className="flex items-center justify-between gap-3">
+                    <div>
+                        <p className="text-xs font-medium text-gray-700">Entrepôt par défaut</p>
+                        <p className="text-xs text-gray-400">
+                            Présélectionné à la caisse, en réception et à l&apos;inventaire
+                        </p>
+                    </div>
+                    {entrepot.est_defaut ? (
+                        <span className="px-2.5 py-1 text-xs font-bold text-green-700 bg-green-50 border border-green-200 rounded-full shrink-0">
+                            Par défaut
+                        </span>
+                    ) : (
+                        <button
+                            onClick={handleDefaut}
+                            disabled={statutEnAttente}
+                            className="px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 disabled:opacity-50 shrink-0"
+                        >
+                            Définir par défaut
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-gray-100">
+                    <div>
+                        <p className="text-xs font-medium text-gray-700">
+                            {entrepot.est_actif ? 'Entrepôt actif' : 'Entrepôt désactivé'}
+                        </p>
+                        <p className="text-xs text-gray-400">
+                            {entrepot.est_actif
+                                ? 'Disponible dans les écrans de vente, réception et transfert'
+                                : 'Masqué des écrans, son stock reste consultable ici'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={handleToggleActif}
+                        disabled={statutEnAttente}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg border disabled:opacity-50 shrink-0 ${
+                            entrepot.est_actif
+                                ? 'text-red-600 border-red-200 hover:bg-red-50'
+                                : 'text-green-700 border-green-200 hover:bg-green-50'
+                        }`}
+                    >
+                        {entrepot.est_actif ? 'Désactiver' : 'Réactiver'}
+                    </button>
+                </div>
+            </div>
 
             {/* Carte infos */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">

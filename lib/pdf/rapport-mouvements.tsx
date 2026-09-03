@@ -70,6 +70,8 @@ interface DonneesRapportMouvements {
     total_entrees:   number
     total_sorties:   number
     total_transferts: number
+    quantite_entree?: number
+    quantite_sortie?: number
     mouvements:      Mouvement[]
 }
 
@@ -82,11 +84,15 @@ export function RapportMouvementsPDF({ donnees }: { donnees: DonneesRapportMouve
 
                 <View style={styles.statsRow}>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.statLabel}>Entrées</Text>
+                        <Text style={styles.statLabel}>
+                            Entrées{donnees.quantite_entree !== undefined ? ` (${donnees.quantite_entree} u.)` : ''}
+                        </Text>
                         <Text style={[styles.statVal, { color: couleurs.vert }]}>{donnees.total_entrees}</Text>
                     </View>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.rouge }]}>
-                        <Text style={styles.statLabel}>Sorties</Text>
+                        <Text style={styles.statLabel}>
+                            Sorties{donnees.quantite_sortie !== undefined ? ` (${donnees.quantite_sortie} u.)` : ''}
+                        </Text>
                         <Text style={[styles.statVal, { color: couleurs.rouge }]}>{donnees.total_sorties}</Text>
                     </View>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.orange }]}>
