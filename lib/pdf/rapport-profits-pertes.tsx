@@ -83,6 +83,12 @@ interface DonneesRapportPP {
         total:            number
     }
     resultat:         number
+    variation_stock?: {
+        pertes: number
+        gains:  number
+        net:    number
+    }
+    resultat_economique?: number
     detail_depenses:  { categorie: string; montant: number }[]
     evolution_mois:   { mois: string; ca: number; depenses: number; resultat: number }[]
 }
@@ -112,7 +118,50 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                     <Text style={[styles.resultatVal, { color: positif ? couleurs.vert : couleurs.rouge }]}>
                         {positif ? '+' : '-'}{fmt(Math.abs(donnees.resultat), d)}
                     </Text>
+                    <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 4 }}>
+                        Base trésorerie : encaissements et décaissements de la période
+                    </Text>
                 </View>
+
+                {/* VARIATION DE VALEUR DU STOCK — hors trésorerie */}
+                {donnees.variation_stock &&
+                 (donnees.variation_stock.pertes > 0 || donnees.variation_stock.gains > 0) && (
+                    <View style={{
+                        borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 4,
+                        padding: 10, marginBottom: 14,
+                    }}>
+                        <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', marginBottom: 6 }}>
+                            Variation de la valeur du stock (hors trésorerie)
+                        </Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <Text style={{ fontSize: 9 }}>Pertes constatées aux inventaires</Text>
+                            <Text style={{ fontSize: 9, color: couleurs.rouge }}>
+                                −{fmt(donnees.variation_stock.pertes, d)}
+                            </Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                            <Text style={{ fontSize: 9 }}>Gains constatés aux inventaires</Text>
+                            <Text style={{ fontSize: 9, color: couleurs.vert }}>
+                                +{fmt(donnees.variation_stock.gains, d)}
+                            </Text>
+                        </View>
+                        <View style={{
+                            flexDirection: 'row', justifyContent: 'space-between',
+                            borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 4, marginTop: 3,
+                        }}>
+                            <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold' }}>
+                                Résultat économique (résultat de caisse + variation de stock)
+                            </Text>
+                            <Text style={{
+                                fontSize: 9, fontFamily: 'Helvetica-Bold',
+                                color: (donnees.resultat_economique ?? 0) >= 0 ? couleurs.vert : couleurs.rouge,
+                            }}>
+                                {(donnees.resultat_economique ?? 0) >= 0 ? '+' : '−'}
+                                {fmt(Math.abs(donnees.resultat_economique ?? 0), d)}
+                            </Text>
+                        </View>
+                    </View>
+                )}
 
                 {/* ENTRÉES / SORTIES */}
                 <View style={styles.colonnes}>

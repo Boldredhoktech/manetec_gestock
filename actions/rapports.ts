@@ -558,6 +558,20 @@ export async function getDonneesRapportPP(
             .lte('created_at', fin + 'T23:59:59'),
     ])
 
+    // Écarts d'inventaire validés sur la période. Ce ne sont PAS des
+    // mouvements de trésorerie : ils sont présentés à part, pertes et
+    // gains traités symétriquement, sous le résultat de caisse.
+    const { data: inventaires } = await adminClient
+        .from('inventories')
+        .select('valeur_pertes, valeur_gains')
+        .eq('shop_id', shopId)
+        .eq('statut', 'valide')
+        .gte('valide_le', debut + 'T00:00:00')
+        .lte('valide_le', fin + 'T23:59:59')
+
+    const pertesStock = inventaires?.reduce((a, i) => a + (i.valeur_pertes ?? 0), 0) ?? 0
+    const gainsStock  = inventaires?.reduce((a, i) => a + (i.valeur_gains  ?? 0), 0) ?? 0
+
     const totalVentes      = ventes?.reduce((a, v) => a + v.montant_total, 0) ?? 0
     const totalFactures    = paiementsFact?.reduce((a, p) => a + p.montant, 0) ?? 0
     const totalDepenses    = depenses?.reduce((a, d) => a + d.montant, 0) ?? 0
@@ -609,6 +623,14 @@ export async function getDonneesRapportPP(
         entrees:         { ventes_pos: totalVentes, paiements_factures: totalFactures, total: totalEntrees },
         sorties:         { depenses: totalDepenses, salaires: totalSalaires, fournisseurs: totalFournisseurs, total: totalSorties },
         resultat:        totalEntrees - totalSorties,
+        // Hors trésorerie : variation de la valeur du stock constatée
+        // aux inventaires validés sur la période.
+        variation_stock: {
+            pertes: pertesStock,
+            gains:  gainsStock,
+            net:    gainsStock - pertesStock,
+        },
+        resultat_economique: (totalEntrees - totalSorties) + (gainsStock - pertesStock),
         detail_depenses: Object.entries(parCategorie)
             .map(([categorie, montant]) => ({ categorie, montant }))
             .sort((a, b) => b.montant - a.montant),

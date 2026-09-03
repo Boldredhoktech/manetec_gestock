@@ -3,12 +3,12 @@
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import {
-    creerInventaire, saisirQuantiteReelle, validerInventaire,
+    creerInventaire, saisirQuantiteReelle, validerInventaire, annulerInventaire,
 } from '@/actions/comptabilite'
 import {
     ClipboardCheck, Plus, Search, CheckCircle, AlertTriangle,
     TrendingDown, TrendingUp, Loader2, AlertCircle, BarChart3,
-    Package, History, Printer, FileText,
+    Package, History, Printer, FileText, X,
 } from 'lucide-react'
 import { formatMontant, formatDate } from '@/lib/utils'
 
@@ -57,8 +57,12 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
     const [filtre, setFiltre]             = useState<'tous'|'non_comptes'|'ecart'|'ok'>('tous')
     const [recherche, setRecherche]       = useState('')
     const [valEnAttente, setValEnAttente] = useState(false)
+    const [modeValidation, setModeValidation] = useState<'ecart' | 'absolu'>('ecart')
+    const [annulEnAttente, setAnnulEnAttente] = useState(false)
     const [resultatVal, setResultatVal]   = useState<{
-        valeurPertes: number; valeurGains: number; nbNegatifs: number
+        valeurPertes: number; valeurGains: number; valeurNette: number
+        nbNegatifs: number; mode: 'ecart' | 'absolu'
+        derives: { produit: string; theorique: number; actuel: number; compte: number }[]
     } | null>(null)
     const [inventaireValideId, setInventaireValideId] = useState<string | null>(null)
 
@@ -158,15 +162,30 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
         setValEnAttente(true)
         setErreur(undefined)
         const idValide = inventaireEnCours.id
-        const res = await validerInventaire(idValide)
+        const res = await validerInventaire(idValide, modeValidation)
         setValEnAttente(false)
         if (res?.erreur) { setErreur(res.erreur); return }
         setInventaireValideId(idValide)
         setResultatVal({
             valeurPertes: res.valeurPertes ?? 0,
             valeurGains:  res.valeurGains  ?? 0,
+            valeurNette:  res.valeurNette  ?? 0,
             nbNegatifs:   res.nbNegatifs   ?? 0,
+            mode:         res.mode ?? 'ecart',
+            derives:      res.derives ?? [],
         })
+        router.refresh()
+    }
+
+    // ── Annuler l'inventaire en cours ──────────────────────────
+    async function handleAnnuler() {
+        if (!inventaireEnCours) return
+        setAnnulEnAttente(true)
+        setErreur(undefined)
+        const res = await annulerInventaire(inventaireEnCours.id)
+        setAnnulEnAttente(false)
+        if (res?.erreur) { setErreur(res.erreur); return }
+        setQuantites({})
         router.refresh()
     }
 
@@ -203,23 +222,23 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {resultatVal.valeurPertes > 0 && (
                             <div className="p-3 bg-red-50 border border-red-200 rounded-xl">
-                                <p className="text-xs text-red-500 mb-1">Pertes constatées (règle C5)</p>
+                                <p className="text-xs text-red-500 mb-1">Pertes constatées</p>
                                 <p className="text-lg font-black text-red-600">
                                     -{formatMontant(resultatVal.valeurPertes, devise)}
                                 </p>
                                 <p className="text-xs text-red-400 mt-1">
-                                    Dépense automatique créée dans "Pertes inventaire"
+                                    Variation de valeur du stock, sans sortie de caisse
                                 </p>
                             </div>
                         )}
                         {resultatVal.valeurGains > 0 && (
                             <div className="p-3 bg-green-50 border border-green-200 rounded-xl">
-                                <p className="text-xs text-green-600 mb-1">Gains constatés (règle C6)</p>
+                                <p className="text-xs text-green-600 mb-1">Gains constatés</p>
                                 <p className="text-lg font-black text-green-700">
                                     +{formatMontant(resultatVal.valeurGains, devise)}
                                 </p>
                                 <p className="text-xs text-green-500 mt-1">
-                                    Stock ajusté à la hausse sans impact caisse
+                                    Variation de valeur du stock, sans entrée de caisse
                                 </p>
                             </div>
                         )}
@@ -228,7 +247,38 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 <p className="text-sm font-bold text-green-700">✓ Aucun écart — stock parfait !</p>
                             </div>
                         )}
+                        {(resultatVal.valeurPertes > 0 || resultatVal.valeurGains > 0) && (
+                            <div className="p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl col-span-full flex items-center justify-between">
+                                <span className="text-xs font-bold text-[#15335a]">Variation nette de la valeur du stock</span>
+                                <span className={`text-base font-black ${
+                                    resultatVal.valeurNette < 0 ? 'text-red-600' : 'text-green-700'
+                                }`}>
+                                    {resultatVal.valeurNette > 0 ? '+' : ''}
+                                    {formatMontant(resultatVal.valeurNette, devise)}
+                                </span>
+                            </div>
+                        )}
                     </div>
+
+                    {resultatVal.derives.length > 0 && (
+                        <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                            <p className="text-xs font-bold text-amber-800">
+                                {resultatVal.derives.length} article(s) ont bougé pendant le comptage
+                            </p>
+                            <p className="text-xs text-amber-700">
+                                {resultatVal.mode === 'ecart'
+                                    ? 'L\'écart constaté a été appliqué au stock réel : les mouvements de la période de comptage sont conservés.'
+                                    : 'La quantité comptée a été imposée : les mouvements survenus pendant le comptage ont été écrasés.'}
+                            </p>
+                            <ul className="text-xs text-amber-700 font-mono space-y-0.5">
+                                {resultatVal.derives.map((d, i) => (
+                                    <li key={i}>
+                                        {d.produit} — théorique {d.theorique} · stock au moment de la validation {d.actuel} · compté {d.compte}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -319,6 +369,17 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     <Printer className="w-3.5 h-3.5" />
                                     Feuille de comptage
                                 </a>
+                                <button
+                                    onClick={handleAnnuler}
+                                    disabled={annulEnAttente}
+                                    title="Annule le comptage en cours. Aucun stock n'a encore été modifié."
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-50 transition-colors"
+                                >
+                                    {annulEnAttente
+                                        ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Annulation...</>
+                                        : <><X className="w-3.5 h-3.5" />Annuler l'inventaire</>
+                                    }
+                                </button>
                                 <span className="px-3 py-1 bg-amber-100 text-amber-700 text-xs font-bold rounded-full border border-amber-200">
                                     En cours
                                 </span>
@@ -621,7 +682,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                             −{formatMontant(stats.valPertes, devise)}
                                         </p>
                                         <p className="text-xs text-red-400 mt-1">
-                                            Règle C5 : dépense auto créée
+                                            Valeur de stock perdue, pas une sortie de caisse
                                         </p>
                                     </div>
                                     <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
@@ -633,11 +694,48 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                             +{formatMontant(stats.valGains, devise)}
                                         </p>
                                         <p className="text-xs text-green-400 mt-1">
-                                            Règle C6 : gain sans impact caisse
+                                            Valeur de stock retrouvée, pas une entrée de caisse
                                         </p>
                                     </div>
                                 </div>
                             )}
+
+                            {/* Mode d'application : par défaut on applique
+                                l'écart, ce qui préserve les ventes faites
+                                pendant le comptage. */}
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-gray-600">Comment appliquer le comptage ?</p>
+                                <label className="flex items-start gap-2.5 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio" name="modeValidation" value="ecart"
+                                        checked={modeValidation === 'ecart'}
+                                        onChange={() => setModeValidation('ecart')}
+                                        className="mt-0.5"
+                                    />
+                                    <span className="text-xs">
+                                        <span className="font-bold text-gray-800 block">Appliquer l'écart constaté (recommandé)</span>
+                                        <span className="text-gray-500">
+                                            La différence entre le stock théorique et votre comptage est ajoutée au stock actuel.
+                                            Les ventes et réceptions faites pendant le comptage restent prises en compte.
+                                        </span>
+                                    </span>
+                                </label>
+                                <label className="flex items-start gap-2.5 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                                    <input
+                                        type="radio" name="modeValidation" value="absolu"
+                                        checked={modeValidation === 'absolu'}
+                                        onChange={() => setModeValidation('absolu')}
+                                        className="mt-0.5"
+                                    />
+                                    <span className="text-xs">
+                                        <span className="font-bold text-gray-800 block">Imposer la quantité comptée</span>
+                                        <span className="text-gray-500">
+                                            Le stock devient exactement la quantité comptée. Tout mouvement survenu
+                                            pendant le comptage est écrasé — à réserver aux comptages faits boutique fermée.
+                                        </span>
+                                    </span>
+                                </label>
+                            </div>
 
                             <button
                                 onClick={handleValider}

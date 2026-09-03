@@ -170,14 +170,19 @@ export async function creerInventaire(
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    // Vérifier qu'il n'y a pas d'inventaire en cours sur cet entrepôt
-    const { data: enCours } = await adminClient
+    // Vérifier qu'il n'y a pas d'inventaire en cours sur cet entrepôt.
+    // maybeSingle() et non single() : avec single(), deux inventaires en
+    // cours faisaient échouer la requête, donc renvoyaient « aucun » — le
+    // garde-fou sautait exactement dans le cas qu'il devait empêcher.
+    const { data: enCoursListe } = await adminClient
         .from('inventories')
         .select('id, nom')
         .eq('shop_id', shopId)
         .eq('warehouse_id', warehouseId)
         .eq('statut', 'en_cours')
-        .single()
+        .limit(1)
+
+    const enCours = enCoursListe?.[0] ?? null
 
     if (enCours) {
         return {
@@ -213,27 +218,41 @@ export async function creerInventaire(
 
     if (error || !inventaire) return { erreur: 'Erreur lors de la création.' }
 
-    // Charger tous les produits avec leur stock actuel
-    const { data: stocks } = await adminClient
-        .from('stock_levels')
-        .select(`
-      product_id, quantite,
-      products(nom, unite, prix_achat, seuil_alerte, categories(nom))
-    `)
-        .eq('shop_id', shopId)
-        .eq('warehouse_id', warehouseId)
+    // La feuille de comptage couvre TOUS les produits actifs du
+    // catalogue, pas seulement ceux qui ont déjà eu du stock dans cet
+    // entrepôt : sans cela, impossible de déclarer une quantité trouvée
+    // pour un produit jamais reçu ici.
+    const [{ data: produits }, { data: stocks }] = await Promise.all([
+        adminClient.from('products')
+            .select('id')
+            .eq('shop_id', shopId)
+            .eq('est_actif', true),
+        adminClient.from('stock_levels')
+            .select('product_id, quantite')
+            .eq('shop_id', shopId)
+            .eq('warehouse_id', warehouseId),
+    ])
 
-    if (stocks && stocks.length > 0) {
-        await adminClient.from('inventory_items').insert(
-            stocks.map(s => ({
+    const stockParProduit = new Map<string, number>(
+        (stocks ?? []).map(s => [s.product_id as string, s.quantite as number])
+    )
+
+    if (produits && produits.length > 0) {
+        const { error: erreurLignes } = await adminClient.from('inventory_items').insert(
+            produits.map(p => ({
                 shop_id:             shopId,
                 inventory_id:        inventaire.id,
-                product_id:          s.product_id,
-                quantite_theorique:  s.quantite,
+                product_id:          p.id,
+                quantite_theorique:  stockParProduit.get(p.id) ?? 0,
                 quantite_reelle:     null,
                 ecart:               null,
             }))
         )
+
+        if (erreurLignes) {
+            await adminClient.from('inventories').delete().eq('id', inventaire.id)
+            return { erreur: 'Erreur lors de la préparation de la feuille de comptage.' }
+        }
     }
 
     revalidatePath('/compta/inventaire')
@@ -250,12 +269,19 @@ export async function saisirQuantiteReelle(
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
     if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
+    const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
+    if (!Number.isFinite(quantiteReelle) || quantiteReelle < 0) {
+        return { erreur: 'Quantité comptée invalide.' }
+    }
+
+    // Cloisonnement : la ligne d'inventaire doit appartenir à la boutique.
     const { data: item } = await adminClient
         .from('inventory_items')
         .select('quantite_theorique')
         .eq('id', inventoryItemId)
+        .eq('shop_id', shopId)
         .single()
 
     if (!item) return { erreur: 'Article introuvable.' }
@@ -263,14 +289,24 @@ export async function saisirQuantiteReelle(
     await adminClient.from('inventory_items').update({
         quantite_reelle: quantiteReelle,
         ecart:           quantiteReelle - item.quantite_theorique,
-    }).eq('id', inventoryItemId)
+    }).eq('id', inventoryItemId).eq('shop_id', shopId)
 
     revalidatePath('/compta/inventaire')
     return { succes: true }
 }
 
-// ── Valider un inventaire (avec règle C5) ─────────────────────
-export async function validerInventaire(inventoryId: string) {
+// ── Valider un inventaire ───────────────────────────
+// mode 'ecart' (défaut) : on applique la différence constatée au
+//   comptage, donc les ventes faites pendant le comptage restent
+//   déduites. mode 'absolu' : on impose la quantité comptée.
+// Toute la validation (stock, valorisation, statut) tient dans une
+// seule transaction SQL. Les écarts ne génèrent plus de dépense de
+// caisse : ils sont valorisés symétriquement, pertes ET gains, sur
+// l'inventaire lui-même.
+export async function validerInventaire(
+    inventoryId: string,
+    mode: 'ecart' | 'absolu' = 'ecart'
+) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -279,111 +315,63 @@ export async function validerInventaire(inventoryId: string) {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    // Vérifier que tous les articles ont été comptés
-    const { data: nonComptes } = await adminClient
-        .from('inventory_items')
-        .select('id')
-        .eq('inventory_id', inventoryId)
-        .is('quantite_reelle', null)
-
-    if (nonComptes && nonComptes.length > 0) {
-        return {
-            erreur: `${nonComptes.length} article(s) n'ont pas encore été comptés. Complétez le comptage avant de valider.`,
-        }
-    }
-
-    // Appliquer les ajustements SQL
-    const { data: result } = await adminClient.rpc('valider_inventaire', {
+    const { data: result, error } = await adminClient.rpc('valider_inventaire', {
         p_inventory_id: inventoryId,
         p_shop_id:      shopId,
         p_user_id:      user.user_metadata.user_id,
+        p_mode:         mode,
     })
 
+    if (error) {
+        console.error('ERREUR VALIDATION INVENTAIRE:', error)
+        return { erreur: 'Erreur lors de la validation.' }
+    }
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la validation.' }
 
-    // Règle C5 : écarts négatifs → dépense automatique "Pertes inventaire"
-    const { data: items } = await adminClient
-        .from('inventory_items')
-        .select(`
-      ecart, quantite_theorique, quantite_reelle,
-      products(nom, prix_achat)
-    `)
-        .eq('inventory_id', inventoryId)
-        .lt('ecart', 0)
+    revalidatePath('/compta/inventaire')
+    revalidatePath('/stock/produits')
+    revalidatePath('/stock/mouvements')
 
-    let valeurPertes = 0
-    let valeurGains  = 0
-    let nbNegatifs   = 0
-    let nbPositifs   = 0
+    return {
+        succes:       true,
+        mode:         result.mode as 'ecart' | 'absolu',
+        valeurPertes: Number(result.valeur_pertes ?? 0),
+        valeurGains:  Number(result.valeur_gains ?? 0),
+        valeurNette:  Number(result.valeur_nette ?? 0),
+        nbNegatifs:   Number(result.nb_negatifs ?? 0),
+        nbPositifs:   Number(result.nb_positifs ?? 0),
+        derives:      (result.derives ?? []) as {
+            produit: string; theorique: number; actuel: number; compte: number
+        }[],
+    }
+}
 
-    // Calculer les gains (écarts positifs)
-    const { data: itemsPositifs } = await adminClient
-        .from('inventory_items')
-        .select('ecart, products(prix_achat)')
-        .eq('inventory_id', inventoryId)
-        .gt('ecart', 0)
+// ── Annuler un inventaire en cours ───────────────────
+// Aucun mouvement de stock n'a été appliqué tant que l'inventaire
+// n'est pas validé : l'annulation n'a rien à défaire.
+export async function annulerInventaire(inventoryId: string, motif?: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_VALIDER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
-    itemsPositifs?.forEach(item => {
-        valeurGains += Math.abs(item.ecart ?? 0) * ((item.products as any)?.prix_achat ?? 0)
-        nbPositifs++
+    const adminClient = createAdminClient()
+
+    const { data: result, error } = await adminClient.rpc('annuler_inventaire', {
+        p_inventory_id: inventoryId,
+        p_shop_id:      user.user_metadata.shop_id,
+        p_user_id:      user.user_metadata.user_id,
+        p_motif:        motif || null,
     })
 
-    if (items && items.length > 0) {
-        nbNegatifs = items.length
-
-        for (const item of items) {
-            const prixAchat   = (item.products as any)?.prix_achat ?? 0
-            const nomProduit  = (item.products as any)?.nom ?? 'Produit'
-            const valeurPerte = Math.abs(item.ecart ?? 0) * prixAchat
-            valeurPertes += valeurPerte
-
-            if (valeurPerte > 0) {
-                // Créer une catégorie "Pertes inventaire" si elle n'existe pas
-                let { data: cat } = await adminClient
-                    .from('expense_categories')
-                    .select('id')
-                    .eq('shop_id', shopId)
-                    .eq('nom', 'Pertes inventaire')
-                    .single()
-
-                if (!cat) {
-                    const { data: nouvelleCat } = await adminClient
-                        .from('expense_categories')
-                        .insert({ shop_id: shopId, nom: 'Pertes inventaire', est_actif: true })
-                        .select('id').single()
-                    cat = nouvelleCat
-                }
-
-                // Créer la dépense automatique
-                const { data: publicId } = await adminClient
-                    .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'EXP' })
-
-                await adminClient.from('expenses').insert({
-                    public_id:      publicId,
-                    shop_id:        shopId,
-                    category_id:    cat?.id ?? null,
-                    libelle:        `Perte inventaire — ${nomProduit} (écart: ${item.ecart})`,
-                    montant:        valeurPerte,
-                    moyen_paiement: 'cash',
-                    date_depense:   new Date().toISOString().split('T')[0],
-                    note:           `Généré automatiquement lors de la validation de l'inventaire ${inventoryId}`,
-                    created_by:     user.user_metadata.user_id,
-                })
-            }
-        }
+    if (error) {
+        console.error('ERREUR ANNULATION INVENTAIRE:', error)
+        return { erreur: 'Erreur lors de l\'annulation.' }
     }
-
-    // Mettre à jour les stats de l'inventaire
-    await adminClient.from('inventories').update({
-        valeur_pertes:       valeurPertes,
-        valeur_gains:        valeurGains,
-        nb_ecarts_negatifs:  nbNegatifs,
-        nb_ecarts_positifs:  nbPositifs,
-    }).eq('id', inventoryId)
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de l\'annulation.' }
 
     revalidatePath('/compta/inventaire')
-    revalidatePath('/compta/depenses')
-    return { succes: true, valeurPertes, valeurGains, nbNegatifs }
+    return { succes: true }
 }
 
 // ── Tableau de bord comptable ─────────────────────────────────
