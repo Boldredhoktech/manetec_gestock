@@ -9,6 +9,7 @@ import {
 import { formatMontant } from '@/lib/utils'
 import type { PaiementVente } from '@/actions/ventes'
 import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Client {
     id: string; nom: string
@@ -44,12 +45,35 @@ export default function PaiementPOS({
     const [creditAccorde, setCreditAccorde]   = useState(0)
     const [advanceUtilise, setAdvanceUtilise] = useState(0)
     const [changeUtilise, setChangeUtilise]   = useState(0)
+    // Remboursement d'ardoise encaissé avec la vente. `credit_utilise`
+    // traversait toute la chaîne en valant zéro : le composant le
+    // passait en dur, et la base ne l'appliquait à aucun solde.
+    const [creditRembourse, setCreditRembourse] = useState(0)
     const [garderMonnaie, setGarderMonnaie]   = useState(false)
 
     const totalPaiements = paiements.reduce((a, p) => a + p.montant, 0)
-    const resteAPayer    = montantTotal - totalPaiements - advanceUtilise - changeUtilise
-    const montantRendu   = Math.max(0, totalPaiements - (montantTotal - advanceUtilise - changeUtilise))
-    const peutValider    = resteAPayer <= 0.001 || creditAccorde >= resteAPayer
+
+    // Ce que la vente doit couvrir après les soldes utilisés, puis ce
+    // qui reste une fois le crédit accordé retiré.
+    const aCouvrir     = Math.max(0, montantTotal - advanceUtilise - changeUtilise)
+    const aEncaisser   = Math.max(0, aCouvrir - creditAccorde) + creditRembourse
+    const resteAPayer  = aEncaisser - totalPaiements
+    const montantRendu = Math.max(0, totalPaiements - aEncaisser)
+
+    // Le crédit accordé ne peut pas dépasser ce qui reste à payer :
+    // rien n'empêchait d'en saisir un sur une vente déjà réglée, et la
+    // base comptait alors comme encaissé de l'argent jamais reçu.
+    const creditMax = aCouvrir
+
+    // La référence est obligatoire pour six moyens sur huit ; la règle
+    // vivait dans MOYENS_PAIEMENT sans être appliquée au comptoir.
+    const referenceManquante = paiements.some(p => {
+        const m = MOYENS_PAIEMENT.find(x => x.code === p.moyen_paiement)
+        return p.montant > 0 && m?.reference_requise && !p.reference?.trim()
+    })
+
+    const creditDepasse = creditAccorde > creditMax + 0.001
+    const peutValider   = resteAPayer <= 0.001 && !referenceManquante && !creditDepasse
 
     function ajouterPaiement() {
         setPaiements(prev => [...prev, { moyen_paiement: 'cash', montant: 0, reference: '' }])
@@ -65,7 +89,7 @@ export default function PaiementPOS({
             creditAccorde,
             advanceUtilise,
             changeUtilise,
-            0,
+            creditRembourse,
             garderMonnaie,
             totalPaiements,
             montantRendu,
@@ -128,15 +152,20 @@ export default function PaiementPOS({
                                     <input type="text" placeholder="Référence de transaction *"
                                            value={p.reference}
                                            onChange={e => modifierPaiement(i, 'reference', e.target.value)}
-                                           className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 font-mono"
+                                           className={`w-full px-3 py-2 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 font-mono ${
+                                               p.montant > 0 && !p.reference?.trim()
+                                                   ? 'border-red-300'
+                                                   : 'border-gray-200'
+                                           }`}
                                     />
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
-                                <input type="number" min="0" step="0.01"
-                                       value={p.montant}
-                                       onChange={e => modifierPaiement(i, 'montant', parseFloat(e.target.value) || 0)}
-                                       className="w-28 px-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                <ChampNombre
+                                    value={p.montant}
+                                    onChange={v => modifierPaiement(i, 'montant', v)}
+                                    aria-label="Montant de ce règlement"
+                                    className="w-28 px-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
                                 />
                                 {paiements.length > 1 && (
                                     <button type="button" onClick={() => setPaiements(prev => prev.filter((_, idx) => idx !== i))}
@@ -170,11 +199,10 @@ export default function PaiementPOS({
                                         {formatMontant(client.advance_balance, devise)}
                                     </p>
                                 </div>
-                                <input type="number" min="0"
-                                       max={Math.min(client.advance_balance, montantTotal)}
-                                       step="0.01" value={advanceUtilise}
-                                       onChange={e => setAdvanceUtilise(parseFloat(e.target.value) || 0)}
-                                       className="w-28 px-2 py-2 bg-white border border-green-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-green-400"
+                                <ChampNombre
+                                    value={advanceUtilise} onChange={setAdvanceUtilise}
+                                    aria-label="Avance utilisée"
+                                    className="w-28 px-2 py-2 bg-white border border-green-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-green-400"
                                 />
                             </div>
                         )}
@@ -187,24 +215,54 @@ export default function PaiementPOS({
                                         {formatMontant(client.change_balance, devise)}
                                     </p>
                                 </div>
-                                <input type="number" min="0"
-                                       max={Math.min(client.change_balance, montantTotal)}
-                                       step="0.01" value={changeUtilise}
-                                       onChange={e => setChangeUtilise(parseFloat(e.target.value) || 0)}
-                                       className="w-28 px-2 py-2 bg-white border border-blue-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                <ChampNombre
+                                    value={changeUtilise} onChange={setChangeUtilise}
+                                    aria-label="Monnaie utilisée"
+                                    className="w-28 px-2 py-2 bg-white border border-blue-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-blue-400"
                                 />
                             </div>
                         )}
 
-                        <div className="flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+                        {/* Rembourser l'ardoise au comptoir : le client
+                            paie ses achats ET une part de ce qu'il doit. */}
+                        {client.credit_balance > 0 && (
+                            <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-xl">
+                                <div className="flex-1">
+                                    <p className="text-xs font-bold text-red-700">Ardoise à régler</p>
+                                    <p className="text-lg font-black text-red-600">
+                                        {formatMontant(client.credit_balance, devise)}
+                                    </p>
+                                    <p className="text-xs text-red-400">
+                                        S&apos;ajoute au total à encaisser
+                                    </p>
+                                </div>
+                                <ChampNombre
+                                    value={creditRembourse} onChange={setCreditRembourse}
+                                    aria-label="Ardoise remboursée"
+                                    className="w-28 px-2 py-2 bg-white border border-red-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-red-400"
+                                />
+                            </div>
+                        )}
+
+                        <div className={`flex items-center gap-3 p-3 rounded-xl border ${
+                            creditDepasse ? 'bg-red-50 border-red-300' : 'bg-amber-50 border-amber-200'
+                        }`}>
                             <div className="flex-1">
                                 <p className="text-xs font-bold text-amber-700">Accorder un crédit</p>
-                                <p className="text-xs text-amber-500">Montant que le client paiera plus tard</p>
+                                <p className="text-xs text-amber-500">
+                                    Montant que le client paiera plus tard
+                                    {creditMax > 0 && ` · maximum ${formatMontant(creditMax, devise)}`}
+                                </p>
+                                {creditDepasse && (
+                                    <p className="text-xs font-bold text-red-600 mt-0.5">
+                                        Un crédit ne peut pas dépasser ce qui reste à payer.
+                                    </p>
+                                )}
                             </div>
-                            <input type="number" min="0" step="0.01"
-                                   value={creditAccorde}
-                                   onChange={e => setCreditAccorde(parseFloat(e.target.value) || 0)}
-                                   className="w-28 px-2 py-2 bg-white border border-amber-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-amber-400"
+                            <ChampNombre
+                                value={creditAccorde} onChange={setCreditAccorde}
+                                aria-label="Crédit accordé"
+                                className="w-28 px-2 py-2 bg-white border border-amber-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-amber-400"
                             />
                         </div>
                     </div>
@@ -216,10 +274,13 @@ export default function PaiementPOS({
 
                     <div className="space-y-1.5">
                         {[
-                            { label: 'Total à payer',    val: formatMontant(montantTotal, devise),   couleur: 'text-gray-700' },
-                            { label: 'Espèces/Mobile',   val: formatMontant(totalPaiements, devise), couleur: 'text-gray-600' },
+                            { label: 'Total des articles', val: formatMontant(montantTotal, devise),  couleur: 'text-gray-700' },
                             advanceUtilise > 0 && { label: 'Avance utilisée', val: formatMontant(advanceUtilise, devise), couleur: 'text-green-600' },
                             changeUtilise > 0  && { label: 'Monnaie utilisée', val: formatMontant(changeUtilise, devise), couleur: 'text-blue-600'  },
+                            creditAccorde > 0  && { label: 'Accordé à crédit', val: formatMontant(creditAccorde, devise), couleur: 'text-amber-600' },
+                            creditRembourse > 0 && { label: 'Ardoise réglée',  val: formatMontant(creditRembourse, devise), couleur: 'text-red-600' },
+                            { label: 'À encaisser',       val: formatMontant(aEncaisser, devise),     couleur: 'text-gray-900 font-black' },
+                            { label: 'Reçu du client',    val: formatMontant(totalPaiements, devise), couleur: 'text-gray-600' },
                         ].filter(Boolean).map((item: any, i) => (
                             <div key={i} className="flex justify-between text-sm">
                                 <span className="text-gray-500">{item.label}</span>
@@ -228,7 +289,7 @@ export default function PaiementPOS({
                         ))}
 
                         <div className="border-t border-gray-100 pt-2 mt-2">
-                            {resteAPayer > 0.001 && creditAccorde < resteAPayer ? (
+                            {resteAPayer > 0.001 ? (
                                 <div className="flex justify-between text-sm">
                                     <span className="font-bold text-red-600">Reste à payer</span>
                                     <span className="font-black text-red-600">{formatMontant(resteAPayer, devise)}</span>
@@ -266,6 +327,18 @@ export default function PaiementPOS({
                         <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                         {erreur}
                     </div>
+                )}
+
+                {/* Pourquoi le bouton refuse : un bouton grisé sans
+                    explication laisse le caissier chercher devant le client. */}
+                {!peutValider && !enAttente && (
+                    <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
+                        {referenceManquante
+                            ? 'Saisissez la référence de transaction du règlement.'
+                            : creditDepasse
+                                ? 'Le crédit accordé dépasse ce qui reste à payer.'
+                                : `Il manque ${formatMontant(resteAPayer, devise)} pour atteindre le montant à encaisser.`}
+                    </p>
                 )}
 
                 {/* Bouton confirmer */}

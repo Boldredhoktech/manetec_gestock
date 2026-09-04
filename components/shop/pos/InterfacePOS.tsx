@@ -10,7 +10,7 @@ import RecuPOS from '@/components/shop/pos/RecuPOS'
 import Link from 'next/link'
 import {
     Store, ShoppingCart, ArrowLeft,
-    ChevronRight, LayoutDashboard,
+    ChevronRight, LayoutDashboard, AlertTriangle,
 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 
@@ -47,6 +47,10 @@ export default function InterfacePOS({
         sale_id: string; public_id: string
     } | null>(null)
     const [enAttente,         setEnAttente]          = useState(false)
+    // Le plafond de credit avertit sans bloquer (decision D2 du module
+    // Facturation) : la fonction SQL renvoyait deja ces messages, le
+    // comptoir ne les lisait pas.
+    const [avertissements,    setAvertissements]     = useState<string[]>([])
 
     // ── Calculs ───────────────────────────────────────────────
     const montantBrut      = panier.reduce((acc, l) => acc + l.quantite * l.prix_unitaire, 0)
@@ -166,6 +170,7 @@ export default function InterfacePOS({
 
         if (res.erreur) { setErreur(res.erreur); return }
 
+        setAvertissements(res.avertissements ?? [])
         setVenteResultat({ sale_id: res.sale_id!, public_id: res.public_id! })
         setEtape('recu')
     }
@@ -177,6 +182,7 @@ export default function InterfacePOS({
         setRemiseGlobalePct(0)
         setNoteVente('')
         setErreur(undefined)
+        setAvertissements([])
         setVenteResultat(null)
         setEtape('caisse')
     }
@@ -319,12 +325,25 @@ export default function InterfacePOS({
             )}
 
             {etape === 'recu' && venteResultat && (
-                <RecuPOS
-                    saleId={venteResultat.sale_id}
-                    publicId={venteResultat.public_id}
-                    boutique={boutique}
-                    onNouvelleVente={nouvelleVente}
-                />
+                <div className="flex-1 flex flex-col overflow-auto">
+                    {avertissements.length > 0 && (
+                        <div className="max-w-lg mx-auto w-full px-4 pt-4">
+                            {avertissements.map((a, i) => (
+                                <div key={i}
+                                     className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-300 rounded-2xl text-sm text-amber-800">
+                                    <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
+                                    <span>{a}</span>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    <RecuPOS
+                        saleId={venteResultat.sale_id}
+                        publicId={venteResultat.public_id}
+                        boutique={boutique}
+                        onNouvelleVente={nouvelleVente}
+                    />
+                </div>
             )}
         </div>
     )

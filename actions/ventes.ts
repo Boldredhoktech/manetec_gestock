@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 import { revalidatePath } from 'next/cache'
 
 export interface LigneVente {
@@ -87,11 +88,33 @@ export async function enregistrerVente(donnees: DonneesVente) {
 
     const remiseMax = boutique?.remise_max_pct ?? 15
 
-    // Vérifier règle prix minimum par ligne
+    // Le plafond de remise PAR PRODUIT est déclaré sur le produit et
+    // n'était jamais comparé : seule la remise globale était contrôlée,
+    // si bien qu'on pouvait accorder 80 % sur une ligne tant que la
+    // moyenne tenait. On le lit en base, jamais dans ce que le
+    // navigateur a envoyé.
+    const { data: produits } = await adminClient
+        .from('products')
+        .select('id, nom, prix_minimum, remise_max_pct')
+        .eq('shop_id', shopId)
+        .in('id', donnees.items.map(i => i.product_id))
+
+    const parId = new Map((produits ?? []).map(p => [p.id, p]))
+
     for (const item of donnees.items) {
-        if (item.prix_minimum !== null && item.prix_unitaire < item.prix_minimum) {
+        const produit = parId.get(item.product_id)
+        if (!produit) {
+            return { erreur: `Le produit "${item.nom}" n'appartient pas à cette boutique.` }
+        }
+        if (produit.prix_minimum !== null && item.prix_unitaire < produit.prix_minimum) {
             return {
-                erreur: `Prix de "${item.nom}" (${item.prix_unitaire}) inférieur au prix minimum (${item.prix_minimum}).`,
+                erreur: `Prix de "${produit.nom}" (${item.prix_unitaire}) inférieur au prix minimum (${produit.prix_minimum}).`,
+            }
+        }
+        const plafondLigne = produit.remise_max_pct
+        if (plafondLigne !== null && item.remise_pct > plafondLigne) {
+            return {
+                erreur: `La remise sur "${produit.nom}" (${item.remise_pct}%) dépasse le maximum autorisé pour ce produit (${plafondLigne}%).`,
             }
         }
     }
@@ -100,6 +123,17 @@ export async function enregistrerVente(donnees: DonneesVente) {
     if (donnees.remise_globale_pct > remiseMax) {
         return {
             erreur: `La remise globale (${donnees.remise_globale_pct}%) dépasse le maximum autorisé (${remiseMax}%).`,
+        }
+    }
+
+    // La référence est obligatoire pour les moyens qui l'exigent : la
+    // règle vivait dans MOYENS_PAIEMENT et n'était appliquée nulle part
+    // au comptoir.
+    for (const p of donnees.paiements) {
+        const moyen = MOYENS_PAIEMENT.find(m => m.code === p.moyen_paiement)
+        if (!moyen) return { erreur: `Moyen de paiement inconnu : ${p.moyen_paiement}.` }
+        if (moyen.reference_requise && !p.reference?.trim()) {
+            return { erreur: `Une référence de transaction est obligatoire pour ${moyen.label}.` }
         }
     }
 
@@ -128,6 +162,12 @@ export async function enregistrerVente(donnees: DonneesVente) {
         succes:    true,
         sale_id:   result.sale_id,
         public_id: result.public_id,
+        // Le plafond de crédit avertit sans bloquer (décision D2 du
+        // module Facturation). La fonction SQL renvoyait déjà ces
+        // messages ; le comptoir ne les lisait pas.
+        avertissements: (result.avertissements ?? []) as string[],
+        encaisse:       Number(result.encaisse ?? 0),
+        creditAccorde:  Number(result.credit_accorde ?? 0),
     }
 }
 
