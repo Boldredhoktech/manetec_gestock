@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useCallback } from 'react'
-import { enregistrerVente, rechercherProduitsPOS } from '@/actions/ventes'
+import { enregistrerVente } from '@/actions/ventes'
 import type { LigneVente, PaiementVente } from '@/actions/ventes'
 import PanierPOS from '@/components/shop/pos/PanierPOS'
 import RechercheProduitPOS from '@/components/shop/pos/RechercheProduitPOS'
@@ -275,7 +275,6 @@ export default function InterfacePOS({
                         style={{ background: '#f0f4ff' }}
                     >
                         <RechercheProduitPOS
-                            shopId={shopId}
                             warehouseId={warehouseId}
                             onAjouter={ajouterAuPanier}
                         />

@@ -19,12 +19,11 @@ interface Produit {
 }
 
 interface Props {
-    shopId:      string
     warehouseId: string
     onAjouter:   (produit: Produit) => void
 }
 
-export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: Props) {
+export default function RechercheProduitPOS({ warehouseId, onAjouter }: Props) {
     const [terme,       setTerme]       = useState('')
     const [resultats,   setResultats]   = useState<Produit[]>([])
     const [chargement,  setChargement]  = useState(false)
@@ -34,10 +33,11 @@ export default function RechercheProduitPOS({ shopId, warehouseId, onAjouter }: 
     const rechercher = useCallback(async (valeur: string) => {
         if (valeur.trim().length < 2) { setResultats([]); return }
         setChargement(true)
-        const data = await rechercherProduitsPOS(valeur, shopId, warehouseId)
+        // shopId n'est plus un argument : il vient de la session.
+        const data = await rechercherProduitsPOS(valeur, warehouseId)
         setResultats(data as Produit[])
         setChargement(false)
-    }, [shopId, warehouseId])
+    }, [warehouseId])
 
     useDebounce(terme, 250, rechercher)
 

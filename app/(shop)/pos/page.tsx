@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import { redirect } from 'next/navigation'
 import InterfacePOS from '@/components/shop/pos/InterfacePOS'
 import { AlertTriangle } from 'lucide-react'
@@ -12,6 +14,9 @@ export default async function PagePOS() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    // La permission n'etait appliquee qu'a l'enregistrement : un
+    // comptable composait un panier entier avant de se le voir refuser.
+    if (!aPermission(user, PERMISSIONS.VENTES_CREER)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

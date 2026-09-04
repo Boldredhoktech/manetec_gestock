@@ -113,7 +113,10 @@ export async function enregistrerVente(donnees: DonneesVente) {
     })
 
     if (error) {
-        return { erreur: error.message }
+        // Le message brut de la base — en anglais, technique — n'aide
+        // pas un vendeur devant un client qui attend.
+        console.error('ERREUR ENREGISTREMENT VENTE:', error)
+        return { erreur: 'La vente n\'a pas pu être enregistrée. Réessayez ; si le problème persiste, prévenez votre responsable.' }
     }
 
     if (!result.succes) {
@@ -129,12 +132,38 @@ export async function enregistrerVente(donnees: DonneesVente) {
 }
 
 // ── Rechercher des produits pour le POS ───────────────────────
-export async function rechercherProduitsPOS(
-    terme: string,
-    shopId: string,
-    warehouseId: string
-) {
+// La boutique est lue DANS LA SESSION, jamais reçue en argument : ce
+// fichier porte 'use server', donc cette fonction est publiée comme
+// Server Action et reste appelable par requête directe. Tant que
+// `shopId` était un paramètre et qu'aucune vérification n'était faite,
+// le catalogue, les prix de vente et les niveaux de stock d'une boutique
+// se lisaient depuis une autre.
+export async function rechercherProduitsPOS(terme: string, warehouseId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return []
+    if (!aPermission(user, PERMISSIONS.PRODUITS_VOIR)) return []
+
+    const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
+
+    // L'entrepôt doit appartenir à la boutique : sans ce contrôle, on
+    // choisissait librement dans quel stock regarder.
+    const { data: entrepot } = await adminClient
+        .from('warehouses')
+        .select('id')
+        .eq('id', warehouseId)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!entrepot) return []
+
+    // Le terme était interpolé tel quel dans le filtre : une virgule ou
+    // une parenthèse modifiait la structure de la clause au lieu d'être
+    // cherchée. On retire ce que PostgREST interprète, et les jokers de
+    // `ilike` qu'un utilisateur n'a pas à piloter.
+    const propre = terme.replace(/[%_,().*:"'\\]/g, '').trim()
+    if (propre.length < 2) return []
 
     const { data } = await adminClient
         .from('products')
@@ -147,14 +176,23 @@ export async function rechercherProduitsPOS(
         .eq('shop_id', shopId)
         .eq('est_actif', true)
         .eq('stock_levels.warehouse_id', warehouseId)
-        .or(`nom.ilike.%${terme}%,sku.ilike.%${terme}%,code_barres.eq.${terme}`)
+        .or(`nom.ilike.%${propre}%,sku.ilike.%${propre}%,code_barres.eq.${propre}`)
         .limit(10)
 
     return data ?? []
 }
 
 // ── Récupérer le détail d'une vente ───────────────────────────
+// Lisait la vente par son seul identifiant, sans `shop_id` ni
+// vérification de l'appelant : les lignes, les prix, le client et les
+// règlements d'une vente appartenant à une autre boutique étaient
+// lisibles. Même faille que celle corrigée dans `getDonneesRecu`.
 export async function getDetailVente(saleId: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return null
+    if (!aPermission(user, PERMISSIONS.VENTES_VOIR)) return null
+
     const adminClient = createAdminClient()
 
     const { data: vente } = await adminClient
@@ -171,7 +209,8 @@ export async function getDetailVente(saleId: string) {
       sale_payments(moyen_paiement, montant, reference)
     `)
         .eq('id', saleId)
-        .single()
+        .eq('shop_id', user.user_metadata.shop_id)
+        .maybeSingle()
 
     return vente
 }
