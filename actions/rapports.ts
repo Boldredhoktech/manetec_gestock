@@ -17,6 +17,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import {
     bornesDuMois, bornesInstant, MOIS_FR, MOIS_FR_COURT,
 } from '@/lib/dates/periode'
+import { etatFacture } from '@/lib/facturation/etat-facture'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -50,6 +51,7 @@ export async function getDonneesRapportVentes(
         .from('sales')
         .select(`
       id, public_id, statut, montant_total, created_at,
+      credit_accorde, credit_utilise, advance_utilise, change_utilise,
       clients(nom),
       shop_users(nom_complet),
       sale_items(id),
@@ -69,6 +71,8 @@ export async function getDonneesRapportVentes(
       factures(public_id, clients(nom))
     `)
         .eq('shop_id', shopId)
+        // Un reglement annule n'a jamais ete encaisse (Lot 2 Facturation).
+        .eq('est_annule', false)
         .gte('date_paiement', debut)
         .lte('date_paiement', fin)
         .order('date_paiement', { ascending: false })
@@ -114,13 +118,32 @@ export async function getDonneesRapportVentes(
         if (!parMoyen[moyen]) parMoyen[moyen] = { moyen, montant: 0 }
         parMoyen[moyen].montant += montant
     }
-    ventes?.forEach(v => {
+    const ventesCompletees = ventes?.filter(v => v.statut === 'completee') ?? []
+
+    // Une vente annulee n'a rien encaisse : elle sort de la ventilation
+    // comme elle sortait deja du chiffre d'affaires trois lignes plus bas.
+    // Le total des moyens depassait donc le CA annonce sur la meme page.
+    ventesCompletees.forEach(v => {
         (v.sale_payments as any[])?.forEach((p: any) => ajouterMoyen(p.moyen_paiement, p.montant))
     })
     paiementsFacture?.forEach((p: any) => ajouterMoyen(p.moyen_paiement, p.montant))
 
-    const ventesCompletees = ventes?.filter(v => v.statut === 'completee') ?? []
-    const caPos = ventesCompletees.reduce((a, v) => a + v.montant_total, 0)
+    // Decision D1 : le rapport dit les DEUX chiffres, cote a cote.
+    // « Facture » = ce que la boutique a vendu ; « encaisse » = ce qui est
+    // reellement entre. Depuis le Lot 2 POS, sale_payments ne contient que
+    // l'argent recu : ni le credit accorde, ni les soldes clients utilises.
+    // L'ecart entre les deux s'explique exactement par :
+    //     facture - encaisse = credit accorde + soldes utilises - remboursement d'ardoise
+    const somme = (t: any[] | null | undefined, champ: string) =>
+        (t ?? []).reduce((a: number, x: any) => a + Number(x[champ] ?? 0), 0)
+
+    const caPosFacture   = somme(ventesCompletees, 'montant_total')
+    const encaissePos    = ventesCompletees.reduce(
+        (a, v) => a + somme(v.sale_payments as any[], 'montant'), 0)
+    const creditAccorde  = somme(ventesCompletees, 'credit_accorde')
+    const soldesUtilises = somme(ventesCompletees, 'advance_utilise')
+                         + somme(ventesCompletees, 'change_utilise')
+    const rembArdoise    = somme(ventesCompletees, 'credit_utilise')
 
     // Ventes sur facture (encaissements)
     const ventesFacture = (paiementsFacture ?? []).map((p: any) => ({
@@ -131,17 +154,22 @@ export async function getDonneesRapportVentes(
         montant:           p.montant,
     }))
     const caFactures = ventesFacture.reduce((a, v) => a + v.montant, 0)
-    const caTotal    = caPos + caFactures
 
     return {
         boutique: boutique!,
         periode:  `Du ${formatFR(debut)} au ${formatFR(fin)}`,
         genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         total_ventes: ventesCompletees.length,
-        ca_total:     caTotal,   // POS + factures encaissées
-        ca_pos:       caPos,
-        ca_factures:  caFactures,
-        ca_moyen:     ventesCompletees.length > 0 ? caPos / ventesCompletees.length : 0,
+        // Ce que la boutique a vendu
+        ca_pos_facture:  caPosFacture,
+        // Ce qui est reellement entre, et ce qui explique la difference
+        encaisse_pos:    encaissePos,
+        credit_accorde:  creditAccorde,
+        soldes_utilises: soldesUtilises,
+        remb_ardoise:    rembArdoise,
+        ca_factures:     caFactures,
+        encaisse_total:  encaissePos + caFactures,
+        ca_moyen:        ventesCompletees.length > 0 ? caPosFacture / ventesCompletees.length : 0,
         nb_paiements_factures: ventesFacture.length,
         ventes: (ventes ?? []).map(v => ({
             public_id:     v.public_id,
@@ -169,7 +197,7 @@ export async function getDonneesRapportClients(shopId: string) {
     const { data: clients } = await adminClient
         .from('clients')
         .select(`
-      public_id, nom, telephone,
+      id, public_id, nom, telephone,
       credit_balance, advance_balance, change_balance
     `)
         .eq('shop_id', shopId)
@@ -192,10 +220,14 @@ export async function getDonneesRapportClients(shopId: string) {
         statsClient[v.client_id].ca += v.montant_total
     })
 
-    const clientsAvecStats = (clients ?? []).map(c => ({
+    // Les ventes sont regroupees sur `client_id` (un UUID) et la fiche
+    // etait relue sur `public_id` (CLI-00001) : aucune cle ne se
+    // rencontrait jamais, et le rapport annoncait 0 achat et 0 F a
+    // TOUS les clients, y compris a ceux qui doivent de l'argent.
+    const clientsAvecStats = (clients ?? []).map(({ id, ...c }) => ({
         ...c,
-        nb_achats: statsClient[c.public_id]?.nb ?? 0,
-        ca_total:  statsClient[c.public_id]?.ca ?? 0,
+        nb_achats: statsClient[id]?.nb ?? 0,
+        ca_total:  statsClient[id]?.ca ?? 0,
     }))
 
     return {
@@ -751,7 +783,11 @@ export async function getDonneesRapportPP(
         { data: paiementsFourn },
         { data: paiementsFact },
     ] = await Promise.all([
-        adminClient.from('sales').select('montant_total')
+        // Ce rapport est un releve de tresorerie : il compte l'argent
+        // ENTRE, pas le montant facture. Depuis le Lot 2 POS, la part
+        // vendue a credit n'entre pas en caisse et sale_payments ne la
+        // porte plus ; le montant facture reste lisible a cote.
+        adminClient.from('sales').select('montant_total, sale_payments(montant)')
             .eq('shop_id', shopId).eq('statut', 'completee')
             .gte('created_at', instants.de)
             .lt('created_at', instants.avant),
@@ -774,6 +810,8 @@ export async function getDonneesRapportPP(
         // meme regle que les salaires depuis la migration 020.
         adminClient.from('facture_payments').select('montant')
             .eq('shop_id', shopId)
+            // Un reglement annule n'a jamais ete encaisse (Lot 2 Facturation).
+            .eq('est_annule', false)
             .gte('date_paiement', debut).lte('date_paiement', fin),
     ])
 
@@ -791,7 +829,10 @@ export async function getDonneesRapportPP(
     const pertesStock = inventaires?.reduce((a, i) => a + (i.valeur_pertes ?? 0), 0) ?? 0
     const gainsStock  = inventaires?.reduce((a, i) => a + (i.valeur_gains  ?? 0), 0) ?? 0
 
-    const totalVentes      = ventes?.reduce((a, v) => a + v.montant_total, 0) ?? 0
+    const totalVentes      = ventes?.reduce(
+        (a, v) => a + ((v.sale_payments as any[]) ?? [])
+            .reduce((t: number, p: any) => t + Number(p.montant ?? 0), 0), 0) ?? 0
+    const ventesFacturees  = ventes?.reduce((a, v) => a + Number(v.montant_total), 0) ?? 0
     const totalFactures    = paiementsFact?.reduce((a, p) => a + p.montant, 0) ?? 0
     const totalDepenses    = depenses?.reduce((a, d) => a + d.montant, 0) ?? 0
     const totalSalaires    = salaires?.reduce((a, s) => a + s.montant_net, 0) ?? 0
@@ -831,7 +872,16 @@ export async function getDonneesRapportPP(
         boutique:        boutique!,
         periode:         `${MOIS_FR[mois]} ${annee}`,
         genere_le:       format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
-        entrees:         { ventes_pos: totalVentes, paiements_factures: totalFactures, total: totalEntrees },
+        entrees:         {
+            ventes_pos:         totalVentes,
+            paiements_factures: totalFactures,
+            total:              totalEntrees,
+        },
+        // Ce que la boutique a vendu au comptoir sur la periode, et la
+        // part qui n'est pas entree en caisse : le rapprochement entre
+        // le facture et l'encaisse (decision D1).
+        ventes_facturees:  ventesFacturees,
+        non_encaisse_pos:  ventesFacturees - totalVentes,
         sorties:         { depenses: totalDepenses, salaires: totalSalaires, fournisseurs: totalFournisseurs, total: totalSorties },
         resultat:        totalEntrees - totalSorties,
         // Hors trésorerie : variation de la valeur du stock constatée
@@ -920,7 +970,7 @@ export async function getDonneesFacturesImpayees(shopId: string) {
     const { data: factures } = await adminClient
         .from('factures')
         .select(`
-      public_id, statut, date_facture, date_echeance,
+      id, public_id, statut, date_facture, date_echeance,
       montant_ttc, montant_restant,
       clients(nom)
     `)
@@ -928,13 +978,33 @@ export async function getDonneesFacturesImpayees(shopId: string) {
         .in('statut', ['emise', 'partiellement_payee'])
         .order('date_echeance', { ascending: true, nullsFirst: false })
 
-    const maintenant = new Date()
+    // Un avoir vient en deduction de la facture depuis le Lot 2
+    // Facturation : le montant restant en tient deja compte. Mais rien
+    // ne le montrait, si bien que le client recevait une relance sur un
+    // montant dont une partie lui avait deja ete rendue, sans un mot
+    // pour l'expliquer.
+    const idsFactures = (factures ?? []).map(f => f.id)
+    const { data: avoirs } = idsFactures.length > 0
+        ? await adminClient
+            .from('avoirs')
+            .select('facture_id, public_id, montant, motif, created_at')
+            .eq('shop_id', shopId)
+            .in('facture_id', idsFactures)
+        : { data: [] as any[] }
+
+    const avoirsParFacture: Record<string, { nb: number; montant: number; refs: string[] }> = {}
+    ;(avoirs ?? []).forEach((a: any) => {
+        const e = avoirsParFacture[a.facture_id] ??= { nb: 0, montant: 0, refs: [] }
+        e.nb++
+        e.montant += Number(a.montant ?? 0)
+        e.refs.push(a.public_id)
+    })
 
     const facturesFormatees = (factures ?? []).map(f => {
-        const echeance = f.date_echeance ? new Date(f.date_echeance) : null
-        const joursRetard = echeance
-            ? Math.max(0, Math.floor((maintenant.getTime() - echeance.getTime()) / 86400000))
-            : 0
+        // Le retard se calcule en JOURS, jamais en instants, et au seul
+        // endroit ou la regle est ecrite (lib/facturation/etat-facture).
+        const etat  = etatFacture(f as any)
+        const avoir = avoirsParFacture[f.id]
 
         return {
             public_id:       f.public_id,
@@ -945,7 +1015,10 @@ export async function getDonneesFacturesImpayees(shopId: string) {
                 : null,
             montant_ttc:     f.montant_ttc,
             montant_restant: f.montant_restant,
-            jours_retard:    joursRetard,
+            montant_avoirs:  avoir?.montant ?? 0,
+            avoirs_refs:     avoir?.refs.join(', ') ?? null,
+            jours_retard:    etat.joursRetard,
+            etat:            etat.libelle,
             statut:          f.statut,
         }
     })
@@ -957,8 +1030,10 @@ export async function getDonneesFacturesImpayees(shopId: string) {
         genere_le:          format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         total_factures:     facturesFormatees.length,
         total_en_retard:    enRetard.length,
+        total_avec_avoir:   facturesFormatees.filter(f => f.montant_avoirs > 0).length,
         montant_total_du:   facturesFormatees.reduce((a, f) => a + f.montant_restant, 0),
         montant_en_retard:  enRetard.reduce((a, f) => a + f.montant_restant, 0),
+        montant_avoirs:     facturesFormatees.reduce((a, f) => a + f.montant_avoirs, 0),
         factures:           facturesFormatees,
     }
 }

@@ -142,10 +142,16 @@ interface DonneesRapportVentes {
     periode:       string
     genere_le:     string
     total_ventes:  number
-    ca_total:      number   // POS + factures encaissées
-    ca_pos:        number
-    ca_factures:   number
-    ca_moyen:      number
+    // Ce que la boutique a VENDU au comptoir
+    ca_pos_facture:  number
+    // Ce qui est reellement ENTRE, et ce qui explique la difference
+    encaisse_pos:    number
+    credit_accorde:  number
+    soldes_utilises: number
+    remb_ardoise:    number
+    ca_factures:     number
+    encaisse_total:  number
+    ca_moyen:        number
     nb_paiements_factures: number
     ventes:        VenteLigne[]
     ventes_facture: PaiementFactureLigne[]
@@ -162,6 +168,9 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
     const { boutique, ventes, ventes_facture, top_produits, par_vendeur, par_moyen } = donnees
     const d = boutique.devise
 
+    // Facture - encaisse = credit accorde + soldes utilises - ardoise remboursee
+    const ecartPos = donnees.ca_pos_facture - donnees.encaisse_pos
+
     const MOYENS_LABELS: Record<string, string> = {
         cash: 'Espèces', wave: 'Wave', mtn_momo: 'MTN MoMo',
         celtiis_cash: 'Celtiis', moov_money: 'Moov', bank_card: 'Carte', bank_transfer: 'Virement',
@@ -174,25 +183,51 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                 {/* EN-TÊTE */}
                 <EnteteRapportPDF boutique={boutique} titre="RAPPORT DE VENTES" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
 
-                {/* STATISTIQUES */}
+                {/* STATISTIQUES — le facture et l'encaisse, cote a cote.
+                    Les deux chiffres sont vrais et repondent a deux questions
+                    differentes : ce que la boutique a vendu, ce qu'elle a touche. */}
                 <View style={styles.cartesStat}>
+                    <View style={styles.carte}>
+                        <Text style={styles.carteLabel}>
+                            Facture — ventes POS ({donnees.total_ventes})
+                        </Text>
+                        <Text style={styles.carteValeur}>{fmt(donnees.ca_pos_facture, d)}</Text>
+                    </View>
                     <View style={[styles.carte, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.carteLabel}>CA total (POS + factures)</Text>
+                        <Text style={styles.carteLabel}>Encaisse — POS + factures</Text>
                         <Text style={[styles.carteValeur, { color: couleurs.vert }]}>
-                            {fmt(donnees.ca_total, d)}
+                            {fmt(donnees.encaisse_total, d)}
                         </Text>
                     </View>
-                    <View style={styles.carte}>
-                        <Text style={styles.carteLabel}>dont ventes POS ({donnees.total_ventes})</Text>
-                        <Text style={styles.carteValeur}>{fmt(donnees.ca_pos, d)}</Text>
-                    </View>
                     <View style={[styles.carte, { borderLeftColor: couleurs.orange }]}>
-                        <Text style={styles.carteLabel}>dont sur facture ({donnees.nb_paiements_factures})</Text>
+                        <Text style={styles.carteLabel}>
+                            dont sur facture ({donnees.nb_paiements_factures})
+                        </Text>
                         <Text style={[styles.carteValeur, { color: couleurs.orange }]}>
                             {fmt(donnees.ca_factures, d)}
                         </Text>
                     </View>
                 </View>
+
+                {/* Le rapprochement : pourquoi les deux chiffres different */}
+                {ecartPos !== 0 && (
+                    <View style={{
+                        marginBottom: 10, paddingVertical: 6, paddingHorizontal: 8,
+                        backgroundColor: '#F7F8FA',
+                        borderLeftWidth: 2, borderLeftColor: couleurs.bordure,
+                    }}>
+                        <Text style={{ fontSize: 7.5, color: couleurs.texteFaible, marginBottom: 3 }}>
+                            Du facture a l'encaisse au comptoir
+                        </Text>
+                        <Text style={{ fontSize: 8, color: couleurs.texte }}>
+                            {fmt(donnees.ca_pos_facture, d)} facture
+                            {donnees.credit_accorde > 0 && ` \u2212 ${fmt(donnees.credit_accorde, d)} accorde a credit`}
+                            {donnees.soldes_utilises > 0 && ` \u2212 ${fmt(donnees.soldes_utilises, d)} regle sur solde client`}
+                            {donnees.remb_ardoise > 0 && ` + ${fmt(donnees.remb_ardoise, d)} d'ardoise remboursee`}
+                            {`  =  ${fmt(donnees.encaisse_pos, d)} entres en caisse`}
+                        </Text>
+                    </View>
+                )}
 
                 {/* TABLEAU DES VENTES POS */}
                 <Text style={styles.sectionTitre}>Ventes POS (caisse)</Text>

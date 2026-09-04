@@ -50,7 +50,10 @@ interface FactureImpayee {
     date_echeance:   string | null
     montant_ttc:     number
     montant_restant: number
+    montant_avoirs:  number
+    avoirs_refs:     string | null
     jours_retard:    number
+    etat:            string
     statut:          string
 }
 
@@ -59,8 +62,10 @@ interface DonneesFacturesImpayees {
     genere_le:         string
     total_factures:    number
     total_en_retard:   number
+    total_avec_avoir:  number
     montant_total_du:  number
     montant_en_retard: number
+    montant_avoirs:    number
     factures:          FactureImpayee[]
 }
 
@@ -98,7 +103,24 @@ export function RapportFacturesImpayeesPDF({ donnees }: { donnees: DonneesFactur
                         <Text style={styles.statLabel}>Dont en retard</Text>
                         <Text style={styles.statVal}>{fmt(donnees.montant_en_retard, d)}</Text>
                     </View>
+                    {donnees.montant_avoirs > 0 && (
+                        <View style={[styles.statCard, { flex: 2, borderLeftColor: couleurs.vert }]}>
+                            <Text style={styles.statLabel}>
+                                Avoirs deduits ({donnees.total_avec_avoir})
+                            </Text>
+                            <Text style={[styles.statVal, { color: couleurs.vert }]}>
+                                {fmt(donnees.montant_avoirs, d)}
+                            </Text>
+                        </View>
+                    )}
                 </View>
+
+                {donnees.montant_avoirs > 0 && (
+                    <Text style={{ fontSize: 7.5, color: couleurs.texteFaible, marginBottom: 8 }}>
+                        Les montants restants sont nets des avoirs emis : ce qui figure ci-dessous
+                        est ce qui reste reellement du apres deduction.
+                    </Text>
+                )}
 
                 {enRetard.length > 0 && (
                     <>
@@ -110,35 +132,42 @@ export function RapportFacturesImpayeesPDF({ donnees }: { donnees: DonneesFactur
                             ⚠ Factures en retard ({enRetard.length})
                         </Text>
                         <View style={styles.tableauEntete}>
-                            <Text style={[styles.cellEnt, { width: '14%' }]}>N° Facture</Text>
-                            <Text style={[styles.cellEnt, { width: '22%' }]}>Client</Text>
-                            <Text style={[styles.cellEnt, { width: '13%' }]}>Émise le</Text>
-                            <Text style={[styles.cellEnt, { width: '13%' }]}>Échéance</Text>
-                            <Text style={[styles.cellEnt, { width: '10%', textAlign: 'center' }]}>Retard</Text>
-                            <Text style={[styles.cellEnt, { width: '14%', textAlign: 'right' }]}>Total</Text>
-                            <Text style={[styles.cellEnt, { width: '14%', textAlign: 'right' }]}>Restant</Text>
+                            <Text style={[styles.cellEnt, { width: '13%' }]}>N° Facture</Text>
+                            <Text style={[styles.cellEnt, { width: '19%' }]}>Client</Text>
+                            <Text style={[styles.cellEnt, { width: '12%' }]}>Émise le</Text>
+                            <Text style={[styles.cellEnt, { width: '12%' }]}>Échéance</Text>
+                            <Text style={[styles.cellEnt, { width: '9%', textAlign: 'center' }]}>Retard</Text>
+                            <Text style={[styles.cellEnt, { width: '12%', textAlign: 'right' }]}>Total</Text>
+                            <Text style={[styles.cellEnt, { width: '11%', textAlign: 'right' }]}>Avoir</Text>
+                            <Text style={[styles.cellEnt, { width: '12%', textAlign: 'right' }]}>Restant</Text>
                         </View>
                         {enRetard.map((f, i) => (
                             <View key={f.public_id} style={[styles.ligne, styles.ligneRetard]}>
-                                <Text style={[styles.cell, { width: '14%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
+                                <Text style={[styles.cell, { width: '13%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
                                     {f.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '22%', maxLines: 1 }]}>{f.client_nom}</Text>
-                                <Text style={[styles.cell, { width: '13%' }]}>{f.date_facture}</Text>
-                                <Text style={[styles.cell, { width: '13%', color: couleurs.rouge }]}>
+                                <Text style={[styles.cell, { width: '19%', maxLines: 1 }]}>{f.client_nom}</Text>
+                                <Text style={[styles.cell, { width: '12%' }]}>{f.date_facture}</Text>
+                                <Text style={[styles.cell, { width: '12%', color: couleurs.rouge }]}>
                                     {f.date_echeance ?? '—'}
                                 </Text>
                                 <Text style={[styles.cell, {
-                                    width: '10%', textAlign: 'center',
+                                    width: '9%', textAlign: 'center',
                                     fontFamily: 'Helvetica-Bold', color: couleurs.rouge,
                                 }]}>
                                     {f.jours_retard}j
                                 </Text>
-                                <Text style={[styles.cell, { width: '14%', textAlign: 'right' }]}>
+                                <Text style={[styles.cell, { width: '12%', textAlign: 'right' }]}>
                                     {fmt(f.montant_ttc, d)}
                                 </Text>
                                 <Text style={[styles.cell, {
-                                    width: '14%', textAlign: 'right',
+                                    width: '11%', textAlign: 'right',
+                                    color: f.montant_avoirs > 0 ? couleurs.vert : couleurs.texteFaible,
+                                }]}>
+                                    {f.montant_avoirs > 0 ? '- ' + fmt(f.montant_avoirs, d) : '—'}
+                                </Text>
+                                <Text style={[styles.cell, {
+                                    width: '12%', textAlign: 'right',
                                     fontFamily: 'Helvetica-Bold', color: couleurs.rouge,
                                 }]}>
                                     {fmt(f.montant_restant, d)}
@@ -158,22 +187,29 @@ export function RapportFacturesImpayeesPDF({ donnees }: { donnees: DonneesFactur
                             Factures non encore échues ({nonEchus.length})
                         </Text>
                         <View style={styles.tableauEntete}>
-                            <Text style={[styles.cellEnt, { width: '16%' }]}>N° Facture</Text>
-                            <Text style={[styles.cellEnt, { width: '26%' }]}>Client</Text>
-                            <Text style={[styles.cellEnt, { width: '16%' }]}>Émise le</Text>
-                            <Text style={[styles.cellEnt, { width: '16%' }]}>Échéance</Text>
-                            <Text style={[styles.cellEnt, { width: '26%', textAlign: 'right' }]}>Restant dû</Text>
+                            <Text style={[styles.cellEnt, { width: '15%' }]}>N° Facture</Text>
+                            <Text style={[styles.cellEnt, { width: '23%' }]}>Client</Text>
+                            <Text style={[styles.cellEnt, { width: '14%' }]}>Émise le</Text>
+                            <Text style={[styles.cellEnt, { width: '14%' }]}>Échéance</Text>
+                            <Text style={[styles.cellEnt, { width: '15%', textAlign: 'right' }]}>Avoir</Text>
+                            <Text style={[styles.cellEnt, { width: '19%', textAlign: 'right' }]}>Restant dû</Text>
                         </View>
                         {nonEchus.map((f, i) => (
                             <View key={f.public_id} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                                <Text style={[styles.cell, { width: '16%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
+                                <Text style={[styles.cell, { width: '15%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
                                     {f.public_id}
                                 </Text>
-                                <Text style={[styles.cell, { width: '26%', maxLines: 1 }]}>{f.client_nom}</Text>
-                                <Text style={[styles.cell, { width: '16%' }]}>{f.date_facture}</Text>
-                                <Text style={[styles.cell, { width: '16%' }]}>{f.date_echeance ?? '—'}</Text>
+                                <Text style={[styles.cell, { width: '23%', maxLines: 1 }]}>{f.client_nom}</Text>
+                                <Text style={[styles.cell, { width: '14%' }]}>{f.date_facture}</Text>
+                                <Text style={[styles.cell, { width: '14%' }]}>{f.date_echeance ?? '—'}</Text>
                                 <Text style={[styles.cell, {
-                                    width: '26%', textAlign: 'right',
+                                    width: '15%', textAlign: 'right',
+                                    color: f.montant_avoirs > 0 ? couleurs.vert : couleurs.texteFaible,
+                                }]}>
+                                    {f.montant_avoirs > 0 ? '- ' + fmt(f.montant_avoirs, d) : '—'}
+                                </Text>
+                                <Text style={[styles.cell, {
+                                    width: '19%', textAlign: 'right',
                                     fontFamily: 'Helvetica-Bold', color: couleurs.orange,
                                 }]}>
                                     {fmt(f.montant_restant, d)}

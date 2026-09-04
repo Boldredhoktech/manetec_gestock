@@ -138,6 +138,7 @@ export default function CentreRapports() {
     const { peutFaire } = usePermission()
     const rapports      = RAPPORTS.filter(r => peutFaire(r.permission))
     const [enAttente, setEnAttente] = useState<string | null>(null)
+    const [erreur, setErreur]       = useState<{ rapport: string; message: string } | null>(null)
     const [params, setParams]       = useState<Record<string, Record<string, string>>>({})
 
     const today = new Date().toISOString().split('T')[0]
@@ -156,22 +157,44 @@ export default function CentreRapports() {
         }))
     }
 
+    // La route refuse en texte clair : permission manquante, plan
+    // insuffisant, période invalide. Le message était écrit dans la
+    // console du navigateur et le bouton reprenait son état normal —
+    // on cliquait, rien ne se passait, et rien ne disait pourquoi.
+    async function messageDErreur(resp: Response): Promise<string> {
+        if (resp.status === 401) return 'Votre session a expiré. Reconnectez-vous.'
+        try {
+            const texte = (await resp.text()).trim()
+            // Une erreur serveur renvoie une page HTML : illisible ici.
+            if (texte && texte.length <= 300 && !texte.startsWith('<')) return texte
+        } catch { /* corps illisible : on retombe sur le message générique */ }
+        return `Le rapport n'a pas pu être généré (erreur ${resp.status}).`
+    }
+
     async function handleTelecharger(rapport: Rapport) {
         setEnAttente(rapport.id)
+        setErreur(null)
         try {
             const paramValues = Object.fromEntries(
                 (rapport.params ?? []).map(p => [p.key, getParam(rapport.id, p.key)])
             )
             const url  = rapport.getUrl(paramValues)
             const resp = await fetch(url)
-            if (!resp.ok) throw new Error('Erreur génération PDF')
+            if (!resp.ok) {
+                setErreur({ rapport: rapport.id, message: await messageDErreur(resp) })
+                return
+            }
             const blob = await resp.blob()
-            const link = document.createElement('a')
-            link.href  = URL.createObjectURL(blob)
-            link.download = `${rapport.id}-${today}.pdf`
-            link.click()
-        } catch (e) {
-            console.error(e)
+            const lien = document.createElement('a')
+            lien.href  = URL.createObjectURL(blob)
+            lien.download = `${rapport.id}-${today}.pdf`
+            lien.click()
+            URL.revokeObjectURL(lien.href)
+        } catch {
+            setErreur({
+                rapport: rapport.id,
+                message: 'Connexion interrompue : le rapport n\u2019a pas pu être téléchargé.',
+            })
         } finally {
             setEnAttente(null)
         }
@@ -241,6 +264,14 @@ export default function CentreRapports() {
                                     <><Download className="w-3.5 h-3.5 mr-2" />Télécharger PDF</>
                                 )}
                             </Button>
+
+                            {erreur?.rapport === rapport.id && (
+                                <p role="alert"
+                                   className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                    <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
+                                    <span>{erreur.message}</span>
+                                </p>
+                            )}
                         </div>
                     )
                 })}

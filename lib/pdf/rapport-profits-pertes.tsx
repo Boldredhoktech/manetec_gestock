@@ -71,6 +71,8 @@ interface DonneesRapportPP {
     boutique: BoutiqueEntete & { devise: string }
     periode:          string
     genere_le:        string
+    ventes_facturees: number
+    non_encaisse_pos: number
     entrees: {
         ventes_pos:       number
         paiements_factures: number
@@ -172,8 +174,8 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                             PRODUITS (ENTRÉES)
                         </Text>
                         {[
-                            { label: 'Ventes POS',           val: donnees.entrees.ventes_pos },
-                            { label: 'Paiements factures',   val: donnees.entrees.paiements_factures },
+                            { label: 'Ventes POS encaissées', val: donnees.entrees.ventes_pos },
+                            { label: 'Paiements factures',    val: donnees.entrees.paiements_factures },
                         ].map((ligne, i) => (
                             <View key={i} style={[styles.ligneCompte, i % 2 !== 0 ? styles.ligneCompteImp : {}]}>
                                 <Text style={styles.ligneLabel}>{ligne.label}</Text>
@@ -188,6 +190,20 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                                 {fmt(donnees.entrees.total, d)}
                             </Text>
                         </View>
+                        {/* Ce releve compte l'argent ENTRE. Ce qui a ete
+                            vendu sans entrer en caisse est rappele ici, pour
+                            qu'aucun chiffre ne disparaisse en silence. */}
+                        {(donnees.non_encaisse_pos ?? 0) > 0 && (
+                            <Text style={{
+                                fontSize: 7, color: couleurs.texteFaible,
+                                marginTop: 5, lineHeight: 1.4,
+                            }}>
+                                Facturé au comptoir sur la période :{' '}
+                                {fmt(donnees.ventes_facturees ?? 0, d)} — dont{' '}
+                                {fmt(donnees.non_encaisse_pos ?? 0, d)} non encaissés
+                                (crédit accordé, soldes clients).
+                            </Text>
+                        )}
                     </View>
 
                     {/* SORTIES */}
