@@ -11,6 +11,9 @@ import { ArrowLeft } from 'lucide-react'
 import CarteDetailFacture from '@/components/shop/facturation/CarteDetailFacture'
 import CartePaiementFacture from '@/components/shop/facturation/CartePaiementFacture'
 import CarteAvoir from '@/components/shop/facturation/CarteAvoir'
+import CarteAnnulationFacture from '@/components/shop/facturation/CarteAnnulationFacture'
+import HistoriqueReglements from '@/components/shop/facturation/HistoriqueReglements'
+import { etatFacture, CLASSES_TON_SOMBRE } from '@/lib/facturation/etat-facture'
 
 export const metadata: Metadata = { title: 'Détail facture' }
 
@@ -41,6 +44,10 @@ export default async function PageDetailFacture({ params }: Props) {
 
     if (!facture) notFound()
 
+    // Le retard n'est pas stocké : il se lit sur la date d'échéance au
+    // moment de l'affichage (décision D1).
+    const etat = etatFacture(facture)
+
     const { data: boutique } = await adminClient
         .from('shops')
         .select('nom, adresse, ville, telephone_1, telephone_2, email, devise, ifu, rccm, logo_url, message_pied_facture')
@@ -66,23 +73,8 @@ export default async function PageDetailFacture({ params }: Props) {
                         </p>
                     </div>
                     <div className="ml-auto">
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${
-                            facture.statut === 'payee'
-                                ? 'bg-green-500/20 text-green-300 border-green-400/40'
-                                : facture.statut === 'partiellement_payee'
-                                    ? 'bg-amber-500/20 text-amber-300 border-amber-400/40'
-                                    : facture.statut === 'en_retard'
-                                        ? 'bg-red-500/20 text-red-300 border-red-400/40'
-                                        : facture.statut === 'annulee'
-                                            ? 'bg-gray-500/20 text-gray-300 border-gray-400/40'
-                                            : 'bg-blue-500/20 text-blue-300 border-blue-400/40'
-                        }`}>
-                            {facture.statut === 'emise'              ? 'Émise'
-                                : facture.statut === 'partiellement_payee' ? 'Partiellement payée'
-                                    : facture.statut === 'payee'              ? 'Payée'
-                                        : facture.statut === 'en_retard'          ? 'En retard'
-                                            : facture.statut === 'annulee'            ? 'Annulée'
-                                                : facture.statut}
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${CLASSES_TON_SOMBRE[etat.ton]}`}>
+                            {etat.libelle}
                         </span>
                     </div>
                 </div>
@@ -93,9 +85,30 @@ export default async function PageDetailFacture({ params }: Props) {
                 {facture.statut !== 'payee' && facture.statut !== 'annulee' && (
                     <CartePaiementFacture facture={facture} />
                 )}
+                <HistoriqueReglements
+                    factureId={facture.id}
+                    reglements={((facture.facture_payments as any[]) ?? [])
+                        .slice()
+                        .sort((a, b) => (a.date_paiement < b.date_paiement ? 1 : -1))}
+                    peutCorriger={aPermission(user, PERMISSIONS.FACTURES_PAIEMENT)}
+                />
                 {facture.statut !== 'annulee' && (
-                    <CarteAvoir factureId={facture.id} avoirs={(facture.avoirs as any[]) ?? []} />
+                    <CarteAvoir
+                        factureId={facture.id}
+                        avoirs={(facture.avoirs as any[]) ?? []}
+                        resteAPayer={facture.montant_restant}
+                        montantTtc={facture.montant_ttc}
+                        aUnClient={Boolean(facture.client_id)}
+                    />
                 )}
+                <CarteAnnulationFacture
+                    factureId={facture.id}
+                    statut={facture.statut}
+                    montantPaye={facture.montant_paye}
+                    annuleLe={facture.annule_le}
+                    motifAnnulation={facture.motif_annulation}
+                    peutAnnuler={aPermission(user, PERMISSIONS.FACTURES_CREER)}
+                />
             </main>
         </div>
     )

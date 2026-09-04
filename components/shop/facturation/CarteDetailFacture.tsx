@@ -183,22 +183,10 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
                 </p>
             </div>
 
-            {/* Paiements reçus */}
-            {facture.facture_payments?.length > 0 && (
-                <div className="border-t border-border pt-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                        Paiements reçus
-                    </p>
-                    <div className="space-y-1.5">
-                        {facture.facture_payments.map((p: any) => (
-                            <div key={p.id} className="flex justify-between text-xs text-muted-foreground">
-                                <span>{p.moyen_paiement} · {formatDate(p.created_at)}</span>
-                                <span className="font-medium text-green-600">{formatMontant(p.montant)}</span>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            )}
+            {/* Les reglements sont detailles par HistoriqueReglements,
+                qui les date sur date_paiement et permet de les corriger.
+                Ce bloc les listait sur created_at, sans distinguer les
+                annules : deux affichages du meme fait, dont un faux. */}
         </div>
     )
 }
