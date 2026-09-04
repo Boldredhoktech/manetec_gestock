@@ -175,6 +175,10 @@ export async function creerBonCommande(
 }
 
 // ── Enregistrer une réception ──────────────────────────────────
+// factureId : réception qui accompagne une facture déjà saisie —
+// la dette existe déjà, on ne la crée pas une seconde fois.
+// Sans facture, la réception en crée une « à compléter » : la dette
+// est constatée une fois, et le document est signalé comme incomplet.
 export async function enregistrerReception(
     supplierId: string,
     warehouseId: string,
@@ -186,7 +190,8 @@ export async function enregistrerReception(
         designation: string
         quantite: number
         prix_unitaire: number
-    }[]
+    }[],
+    factureId?: string | null
 ) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -204,6 +209,7 @@ export async function enregistrerReception(
             supplier_id:   supplierId,
             warehouse_id:  warehouseId,
             po_id:         poId ?? '',
+            facture_id:    factureId ?? '',
             user_id:       user.user_metadata.user_id,
             montant_total: montantTotal,
             notes:         notes ?? '',
@@ -221,7 +227,18 @@ export async function enregistrerReception(
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la réception.' }
 
     revalidatePath('/stock/fournisseurs')
-    return { succes: true, reception_id: result.reception_id, public_id: result.public_id }
+    revalidatePath('/stock/receptions')
+    revalidatePath('/stock/mouvements')
+    revalidatePath('/stock/factures-fournisseurs')
+    return {
+        succes:        true,
+        reception_id:  result.reception_id as string,
+        public_id:     result.public_id as string,
+        facture_id:    result.facture_id as string,
+        // true = une facture « à compléter » vient d'être créée pour
+        // porter la dette de cette réception.
+        factureCreee:  Boolean(result.facture_creee),
+    }
 }
 
 // ── Payer un fournisseur ───────────────────────────────────────
@@ -276,7 +293,12 @@ export async function creerFactureFournisseur(
     referenceFourn:  string,
     dateEcheance:    string | null,
     notes:           string,
-    lignes:          LigneFactureFourn[]
+    lignes:          LigneFactureFourn[],
+    // Marchandise pas encore entrée en stock : on génère la réception
+    // qui accompagne cette facture. C'est la seule voie qui journalise
+    // l'entrée, et elle ne recrée pas la dette puisque la facture la
+    // porte déjà.
+    genererReception = false
 ) {
     console.log('[FACT FOURN] Début création')
 
@@ -411,10 +433,64 @@ export async function creerFactureFournisseur(
         .eq('id', supplierId)
         .eq('shop_id', shopId)
 
+    // Entrée en stock, si demandée : elle passe par la réception,
+    // donc par appliquer_mouvement_stock(), et se rattache à cette
+    // facture — pas de seconde dette.
+    let receptionPublicId: string | null = null
+
+    if (genererReception && warehouseId) {
+        const lignesStock = lignesCalc.filter(l => l.product_id)
+
+        if (lignesStock.length > 0) {
+            const { data: rec } = await adminClient.rpc('enregistrer_reception', {
+                p_data: {
+                    shop_id:       shopId,
+                    supplier_id:   supplierId,
+                    warehouse_id:  warehouseId,
+                    po_id:         '',
+                    facture_id:    facture.id,
+                    user_id:       user.user_metadata.user_id,
+                    montant_total: montantTTC,
+                    notes:         `Réception générée par la facture ${facture.public_id}`,
+                    items:         lignesStock.map(l => ({
+                        product_id:    l.product_id,
+                        poi_id:        '',
+                        designation:   l.designation,
+                        quantite:      l.quantite,
+                        prix_unitaire: l.prix_unitaire,
+                    })),
+                },
+            })
+
+            if (!rec?.succes) {
+                // La facture reste valide : seule l'entrée en stock a
+                // échoué, et on le dit au lieu de le taire.
+                return {
+                    succes:     true,
+                    facture_id: facture.id,
+                    public_id:  facture.public_id,
+                    avertissement: `Facture enregistrée, mais l'entrée en stock a échoué : ${rec?.erreur ?? 'erreur inconnue'}`,
+                }
+            }
+
+            receptionPublicId = rec.public_id as string
+        }
+    }
+
     console.log('[FACT FOURN] ✅ Facture fournisseur créée :', facture.id)
 
     revalidatePath(`/stock/fournisseurs/${supplierId}`)
-    return { succes: true, facture_id: facture.id, public_id: facture.public_id }
+    revalidatePath('/stock/factures-fournisseurs')
+    if (receptionPublicId) {
+        revalidatePath('/stock/receptions')
+        revalidatePath('/stock/mouvements')
+    }
+    return {
+        succes:     true,
+        facture_id: facture.id,
+        public_id:  facture.public_id,
+        reception:  receptionPublicId,
+    }
 }
 
 // ── Payer une facture fournisseur ──────────────────────────────
@@ -434,50 +510,31 @@ export async function payerFactureFournisseur(formData: FormData) {
 
     if (!factureId || isNaN(montant) || montant <= 0) return { erreur: 'Données invalides.' }
 
-    const { data: facture } = await adminClient
-        .from('factures_fournisseurs')
-        .select('montant_restant, montant_paye, supplier_id')
-        .eq('id', factureId)
-        .eq('shop_id', shopId)
-        .single()
-
-    if (!facture) return { erreur: 'Facture introuvable.' }
-    if (montant > facture.montant_restant) {
-        return { erreur: `Le montant dépasse le restant dû (${facture.montant_restant}).` }
-    }
-
-    const nouveauPaye    = facture.montant_paye + montant
-    const nouveauRestant = facture.montant_restant - montant
-    const nouveauStatut  = nouveauRestant <= 0 ? 'payee' : 'partiellement_payee'
-
-    // Enregistrer le paiement
-    await adminClient.from('facture_fournisseur_payments').insert({
-        shop_id:        shopId,
-        facture_id:     factureId,
-        montant,
-        moyen_paiement: moyen,
-        reference:      reference || null,
-        created_by:     user.user_metadata.user_id,
+    // Un seul appel : la RPC verrouille la facture, ecrit le paiement
+    // dans la table unique supplier_payments avec le lettrage, met a
+    // jour la facture et le solde du fournisseur, le tout dans une
+    // seule transaction. Avant, c'etaient quatre requetes separees :
+    // deux paiements simultanes passaient tous les deux le controle
+    // du restant du.
+    const { data: result, error } = await adminClient.rpc('payer_facture_fournisseur', {
+        p_shop_id:    shopId,
+        p_facture_id: factureId,
+        p_montant:    montant,
+        p_moyen:      moyen,
+        p_reference:  reference,
+        p_note:       '',
+        p_user_id:    user.user_metadata.user_id,
     })
 
-    // Mettre à jour la facture
-    await adminClient.from('factures_fournisseurs').update({
-        montant_paye:    nouveauPaye,
-        montant_restant: nouveauRestant,
-        statut:          nouveauStatut,
-    }).eq('id', factureId)
+    if (error) {
+        console.error('ERREUR PAIEMENT FACTURE FOURNISSEUR:', error)
+        return { erreur: 'Erreur lors du paiement.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors du paiement.' }
 
-    // Réduire le solde fournisseur
-    const { data: sup } = await adminClient
-        .from('suppliers')
-        .select('solde_dû')
-        .eq('id', (facture as any).supplier_id)
-        .single()
+    revalidatePath('/stock/fournisseurs')
+    revalidatePath('/stock/factures-fournisseurs')
+    revalidatePath(`/stock/factures-fournisseurs/${factureId}`)
+    return { succes: true, statut: result.statut as string, montantRestant: Number(result.montant_restant ?? 0) }
 
-    await adminClient.from('suppliers').update({
-        solde_dû: Math.max(0, ((sup as any)?.['solde_dû'] ?? 0) - montant),
-    }).eq('id', (facture as any).supplier_id)
-
-    revalidatePath(`/stock/fournisseurs`)
-    return { succes: true, statut: nouveauStatut }
 }

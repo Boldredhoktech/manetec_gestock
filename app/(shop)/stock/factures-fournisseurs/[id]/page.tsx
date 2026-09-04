@@ -41,7 +41,7 @@ export default async function PageDetailFactureFournisseur({ params }: Props) {
                 suppliers(nom, telephone, email, adresse, ville, ifu, rccm),
                 warehouses(nom),
                 facture_fournisseur_items(*),
-                facture_fournisseur_payments(*)
+                supplier_payments(*)
             `)
             .eq('id', id)
             .eq('shop_id', shopId)

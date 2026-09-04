@@ -22,7 +22,9 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
     const devise    = boutique?.devise ?? 'FCFA'
     const fournisseur = facture.suppliers as any
     const items     = (facture.facture_fournisseur_items as any[]) ?? []
-    const paiements = (facture.facture_fournisseur_payments as any[]) ?? []
+    // Les paiements vivent désormais dans la table unique
+    // supplier_payments, rattachés à la facture par facture_id.
+    const paiements = (facture.supplier_payments as any[]) ?? []
 
     const [montantPaiement, setMontantPaiement] = useState('')
     const [moyen,           setMoyen]           = useState('cash')

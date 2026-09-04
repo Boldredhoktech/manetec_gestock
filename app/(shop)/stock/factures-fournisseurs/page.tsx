@@ -34,7 +34,7 @@ export default async function PageFacturesFournisseurs() {
             .select(`
                 id, public_id, statut, date_facture, date_echeance,
                 reference_fourn, montant_ttc, montant_paye, montant_restant,
-                supplier_id,
+                supplier_id, a_completer,
                 suppliers(nom)
             `)
             .eq('shop_id', shopId)
@@ -143,6 +143,11 @@ export default async function PageFacturesFournisseurs() {
                                             </p>
                                             {f.reference_fourn && (
                                                 <p className="text-xs text-gray-400 mt-0.5 truncate">{f.reference_fourn}</p>
+                                            )}
+                                            {f.a_completer && (
+                                                <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 border border-amber-200">
+                                                    À compléter
+                                                </span>
                                             )}
                                         </div>
                                         <div className="col-span-2">

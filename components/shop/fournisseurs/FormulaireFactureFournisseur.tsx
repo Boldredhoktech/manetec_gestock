@@ -17,6 +17,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
     const router = useRouter()
 
     const [warehouseId,    setWarehouseId]    = useState(entrepots[0]?.id ?? '')
+    const [genererReception, setGenererReception] = useState(false)
     const [referenceFourn, setReferenceFourn] = useState('')
     const [dateEcheance,   setDateEcheance]   = useState('')
     const [notes,          setNotes]          = useState('')
@@ -61,7 +62,8 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
 
         const res = await creerFactureFournisseur(
             supplierId, warehouseId || null, referenceFourn,
-            dateEcheance || null, notes, lignesValides
+            dateEcheance || null, notes, lignesValides,
+            genererReception
         )
         setEnAttente(false)
 
@@ -92,7 +94,8 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
                     Cette facture enregistre la dette envers le fournisseur et met à jour les prix d&apos;achat.
-                    Elle <strong>ne modifie pas le stock</strong> : pour faire entrer la marchandise, passez par{' '}
+                    Elle <strong>ne modifie pas le stock par elle-même</strong> : cochez « faire entrer la marchandise »
+                    ci-dessous, ou passez par{' '}
                     <Link href={`/stock/fournisseurs/${supplierId}/reception`} className="underline font-bold">
                         Nouvelle réception
                     </Link>.
@@ -125,6 +128,26 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                                placeholder="Remarques..." className={ic} />
                     </div>
                 </div>
+
+                    <label className="flex items-start gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={genererReception}
+                            onChange={e => setGenererReception(e.target.checked)}
+                            className="mt-0.5"
+                            disabled={!warehouseId}
+                        />
+                        <span className="text-xs">
+                            <span className="font-bold text-gray-800 block">
+                                Faire entrer la marchandise en stock
+                            </span>
+                            <span className="text-gray-500">
+                                {warehouseId
+                                    ? "Une réception est créée avec cette facture : le stock augmente et l'entrée apparaît dans le journal des mouvements. La dette, elle, reste comptée une seule fois."
+                                    : "Choisissez un entrepôt destinataire pour activer cette option."}
+                            </span>
+                        </span>
+                    </label>
             </div>
 
             {/* Lignes */}

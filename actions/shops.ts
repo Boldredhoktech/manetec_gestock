@@ -545,13 +545,14 @@ const PHRASE_SUPPRESSION_BOUTIQUES = 'SUPPRIMER TOUTES LES BOUTIQUES'
 const TABLES_BOUTIQUE = [
     'brands', 'purchase_order_items', 'avoirs', 'sale_payments', 'reception_items',
     'stock_adjustment_items', 'supplier_return_items', 'facture_fournisseur_items',
+    'sale_return_items', 'sale_returns',
     'clients', 'price_history', 'expense_categories', 'facture_payments', 'employees',
     'salary_payments', 'inventories', 'product_variants', 'supplier_returns',
     'inventory_items', 'products', 'stock_levels', 'shop_user_permissions', 'suppliers',
     'receptions', 'public_id_counters', 'supplier_payments', 'stock_transfers',
     'warehouses', 'sale_items', 'facture_items', 'sales', 'factures_fournisseurs',
     'shop_users', 'stock_adjustments', 'stock_movements', 'devis_items', 'devis',
-    'expenses', 'factures', 'facture_fournisseur_payments', 'stock_transfer_items',
+    'expenses', 'factures', 'stock_transfer_items',
     'client_balance_operations', 'purchase_orders', 'categories', 'business_clients',
     'shop_sessions', 'shops',
 ]
