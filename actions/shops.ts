@@ -285,6 +285,8 @@ export async function modifierParametresBoutique(formData: FormData) {
     const rccm                  = (formData.get('rccm') as string)?.trim() || null
     const devise                = (formData.get('devise') as string)?.trim() || 'FCFA'
     const remise_max_pct        = parseFloat(formData.get('remise_max_pct') as string) || 15
+    // Decision D3 du module POS : bloque par defaut, la boutique choisit.
+    const autoriser_stock_negatif = formData.get('autoriser_stock_negatif') === '1'
     const message_pied_facture  = (formData.get('message_pied_facture') as string)?.trim() || null
     const message_recu_thermique = (formData.get('message_recu_thermique') as string)?.trim() || null
 
@@ -308,6 +310,7 @@ export async function modifierParametresBoutique(formData: FormData) {
             rccm,
             devise,
             remise_max_pct,
+            autoriser_stock_negatif,
             message_pied_facture,
             message_recu_thermique,
         })

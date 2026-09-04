@@ -35,6 +35,8 @@ export default function ParametresBoutique({ boutique }: Props) {
     const [rccm,         setRccm]         = useState(boutique.rccm ?? '')
     const [devise,       setDevise]       = useState(boutique.devise ?? 'FCFA')
     const [remiseMax,    setRemiseMax]    = useState(boutique.remise_max_pct ?? 15)
+    // Decision D3 du module POS : bloque par defaut.
+    const [stockNegatif, setStockNegatif] = useState(boutique.autoriser_stock_negatif ?? false)
     const [msgFacture,   setMsgFacture]   = useState(boutique.message_pied_facture ?? '')
     const [msgRecu,      setMsgRecu]      = useState(boutique.message_recu_thermique ?? '')
 
@@ -65,6 +67,7 @@ export default function ParametresBoutique({ boutique }: Props) {
         formData.set('rccm',                  rccm)
         formData.set('devise',                devise)
         formData.set('remise_max_pct',        String(remiseMax))
+        formData.set('autoriser_stock_negatif', stockNegatif ? '1' : '')
         formData.set('message_pied_facture',  msgFacture)
         formData.set('message_recu_thermique', msgRecu)
 
@@ -318,6 +321,24 @@ export default function ParametresBoutique({ boutique }: Props) {
                             }`}>
                                 Vos vendeurs peuvent accorder jusqu'à <strong>{remiseMax}%</strong> de remise par vente.
                             </p>
+                        </div>
+
+                        <div className="pt-4 border-t border-gray-100 space-y-2">
+                            <label className="flex items-start gap-3 cursor-pointer">
+                                <input type="checkbox" checked={stockNegatif}
+                                       onChange={e => setStockNegatif(e.target.checked)}
+                                       className="mt-1 rounded accent-[#15335a] w-4 h-4" />
+                                <span>
+                                    <span className="block text-sm font-medium text-gray-900">
+                                        Autoriser la vente au-delà du stock disponible
+                                    </span>
+                                    <span className="block text-xs text-gray-500 mt-0.5">
+                                        {stockNegatif
+                                            ? 'La caisse laisse passer une vente même si le stock tombe sous zéro. L’écart devient visible à l’inventaire, et le mouvement porte une note.'
+                                            : 'La caisse refuse de vendre un article dont le stock est épuisé. À décocher seulement si votre inventaire de départ est incomplet.'}
+                                    </span>
+                                </span>
+                            </label>
                         </div>
                     </Section>
 

@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import {
     LayoutDashboard, Receipt, Users, FileText,
-    ClipboardCheck, LogOut, BarChart3,
+    ClipboardCheck, LogOut, BarChart3, Wallet,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
@@ -15,6 +15,7 @@ import SidebarDrawer from '@/components/shared/SidebarDrawer'
 const NAVIGATION = [
     { label: 'Dashboard admin', href: '/admin/dashboard',  icone: LayoutDashboard },
     { label: 'Tableau de bord', href: '/compta/dashboard', icone: LayoutDashboard },
+    { label: 'Caisse',          href: '/compta/caisse',    icone: Wallet          },
     { label: 'Dépenses',        href: '/compta/depenses',  icone: Receipt         },
     { label: 'Salaires',        href: '/compta/salaires',  icone: Users           },
     { label: 'Factures',        href: '/admin/factures',   icone: FileText        },

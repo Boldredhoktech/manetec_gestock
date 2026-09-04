@@ -13,6 +13,8 @@ import {
     ChevronRight, LayoutDashboard, AlertTriangle,
 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
+import { useEtatPersistant, usePaniersEnAttente } from '@/hooks/usePanierPersistant'
+import PaniersEnAttente from '@/components/shop/pos/PaniersEnAttente'
 
 interface Client {
     id: string; public_id: string; nom: string
@@ -38,10 +40,20 @@ export default function InterfacePOS({
                                      }: Props) {
     const [etape,             setEtape]             = useState<EtapePOS>('caisse')
     const [warehouseId,       setWarehouseId]        = useState(entrepotDefautId)
-    const [clientSelectionne, setClientSelectionne]  = useState<Client | null>(null)
-    const [panier,            setPanier]             = useState<LigneVente[]>([])
-    const [remiseGlobalePct,  setRemiseGlobalePct]   = useState(0)
-    const [noteVente,         setNoteVente]          = useState('')
+
+    // Decision D4 : le panier vit dans le navigateur, jamais en base —
+    // il n'engage rien tant qu'il n'est pas encaisse. Une coupure de
+    // courant, frequente, ne l'efface plus.
+    const [panier, setPanier, viderPanier] =
+        useEtatPersistant<LigneVente[]>(`manetec:pos:panier:${shopId}`, [])
+    const [clientSelectionne, setClientSelectionne] =
+        useEtatPersistant<Client | null>(`manetec:pos:client:${shopId}`, null)
+    const [remiseGlobalePct, setRemiseGlobalePct] =
+        useEtatPersistant<number>(`manetec:pos:remise:${shopId}`, 0)
+    const [noteVente, setNoteVente] =
+        useEtatPersistant<string>(`manetec:pos:note:${shopId}`, '')
+
+    const enAttenteStore = usePaniersEnAttente<LigneVente>(shopId)
     const [erreur,            setErreur]             = useState<string>()
     const [venteResultat,     setVenteResultat]      = useState<{
         sale_id: string; public_id: string
@@ -175,9 +187,43 @@ export default function InterfacePOS({
         setEtape('recu')
     }
 
+    // ── Mettre de côté / reprendre ─────────────────────────────
+    // Servir un second client sans perdre le premier : le geste le plus
+    // courant d'un comptoir, et il n'existait pas.
+    function mettreDeCote() {
+        if (panier.length === 0) return
+        enAttenteStore.mettreEnAttente({
+            libelle:   `${panier.length} article(s) · ${formatMontant(montantTotal)}`,
+            lignes:    panier,
+            clientId:  clientSelectionne?.id ?? null,
+            clientNom: clientSelectionne?.nom ?? null,
+            remisePct: remiseGlobalePct,
+            note:      noteVente,
+        })
+        viderPanier()
+        setClientSelectionne(null)
+        setRemiseGlobalePct(0)
+        setNoteVente('')
+        setErreur(undefined)
+    }
+
+    function reprendrePanier(id: string) {
+        const repris = enAttenteStore.reprendre(id)
+        if (!repris) return
+        setPanier(repris.lignes)
+        setRemiseGlobalePct(repris.remisePct)
+        setNoteVente(repris.note)
+        setClientSelectionne(
+            repris.clientId
+                ? clients.find(c => c.id === repris.clientId) ?? null
+                : null
+        )
+        setEtape('caisse')
+    }
+
     // ── Nouvelle vente ─────────────────────────────────────────
     function nouvelleVente() {
-        setPanier([])
+        viderPanier()
         setClientSelectionne(null)
         setRemiseGlobalePct(0)
         setNoteVente('')
@@ -280,6 +326,13 @@ export default function InterfacePOS({
                         className="lg:flex-1 flex flex-col min-h-[55vh] lg:min-h-0 overflow-hidden"
                         style={{ background: '#f0f4ff' }}
                     >
+                        <PaniersEnAttente
+                            paniers={enAttenteStore.paniers}
+                            onReprendre={reprendrePanier}
+                            onRetirer={enAttenteStore.retirer}
+                            onMettreDeCote={mettreDeCote}
+                            panierCourantVide={panier.length === 0}
+                        />
                         <RechercheProduitPOS
                             warehouseId={warehouseId}
                             onAjouter={ajouterAuPanier}

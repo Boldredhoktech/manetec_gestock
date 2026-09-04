@@ -101,6 +101,41 @@ export async function enregistrerVente(donnees: DonneesVente) {
 
     const parId = new Map((produits ?? []).map(p => [p.id, p]))
 
+    // Le stock affiche au panier date du moment ou le produit y est
+    // entre : entre-temps, un autre vendeur a pu ecouler les memes
+    // articles. On le relit AVANT d'annoncer un total, plutot que de
+    // laisser le refus tomber apres l'encaissement.
+    const { data: stocks } = await adminClient
+        .from('stock_levels')
+        .select('product_id, quantite')
+        .eq('shop_id', shopId)
+        .eq('warehouse_id', donnees.warehouse_id)
+        .in('product_id', donnees.items.map(i => i.product_id))
+
+    const stockParProduit = new Map((stocks ?? []).map(s => [s.product_id, Number(s.quantite)]))
+
+    // Le stock negatif est un parametre par boutique (decision D3) : la
+    // vente n'est refusee que si la boutique l'a choisi.
+    const { data: reglages } = await adminClient
+        .from('shops')
+        .select('autoriser_stock_negatif')
+        .eq('id', shopId)
+        .single()
+
+    if (!reglages?.autoriser_stock_negatif) {
+        for (const item of donnees.items) {
+            const dispo = stockParProduit.get(item.product_id) ?? 0
+            if (item.quantite > dispo) {
+                const nom = parId.get(item.product_id)?.nom ?? item.nom
+                return {
+                    erreur: dispo <= 0
+                        ? `"${nom}" n'est plus en stock dans cet entrepôt.`
+                        : `Il ne reste que ${dispo} "${nom}" en stock (${item.quantite} demandés).`,
+                }
+            }
+        }
+    }
+
     for (const item of donnees.items) {
         const produit = parId.get(item.product_id)
         if (!produit) {
@@ -334,4 +369,114 @@ export async function reglerRetourVente(
     revalidatePath('/admin/clients')
     revalidatePath('/compta/dashboard')
     return { succes: true, message: result.message }
+}
+
+// ══════════════════════════════════════════════════════════════
+// SESSION DE CAISSE (decision D1)
+//
+// Le module Finances avait renvoye la question ici : sans comptage du
+// tiroir, le solde de la ventilation reste theorique. Une session par
+// journee et par entrepot — pas par caissier : une boutique de quartier
+// a un tiroir, pas un caissier attitre.
+// ══════════════════════════════════════════════════════════════
+
+export async function ouvrirSessionCaisse(
+    warehouseId: string,
+    fond: number,
+    note: string,
+): Promise<ResultatVente & { sessionId?: string }> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.VENTES_CREER)) {
+        return { erreur: 'Permission insuffisante pour ouvrir la caisse.' }
+    }
+
+    const adminClient = createAdminClient()
+
+    const { data: result, error } = await adminClient.rpc('ouvrir_session_caisse', {
+        p_shop_id:      user.user_metadata.shop_id,
+        p_warehouse_id: warehouseId,
+        p_fond:         fond,
+        p_note:         note ?? '',
+        p_user_id:      user.user_metadata.user_id,
+    })
+
+    if (error) {
+        console.error('ERREUR OUVERTURE CAISSE:', error)
+        return { erreur: 'Erreur lors de l\'ouverture de la caisse.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de l\'ouverture.' }
+
+    revalidatePath('/pos')
+    revalidatePath('/compta/caisse')
+    return { succes: true, sessionId: result.session_id }
+}
+
+export async function fermerSessionCaisse(
+    sessionId: string,
+    compte: number,
+    note: string,
+): Promise<ResultatVente & { attendu?: number; compte?: number; ecart?: number }> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    // Compter le tiroir et constater l'ecart releve de la comptabilite,
+    // pas de la vente.
+    if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) {
+        return { erreur: 'Permission insuffisante pour fermer la caisse.' }
+    }
+
+    const adminClient = createAdminClient()
+
+    const { data: result, error } = await adminClient.rpc('fermer_session_caisse', {
+        p_shop_id:    user.user_metadata.shop_id,
+        p_session_id: sessionId,
+        p_compte:     compte,
+        p_note:       note ?? '',
+        p_user_id:    user.user_metadata.user_id,
+    })
+
+    if (error) {
+        console.error('ERREUR FERMETURE CAISSE:', error)
+        return { erreur: 'Erreur lors de la fermeture de la caisse.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la fermeture.' }
+
+    revalidatePath('/pos')
+    revalidatePath('/compta/caisse')
+    return {
+        succes:  true,
+        attendu: Number(result.attendu),
+        compte:  Number(result.compte),
+        ecart:   Number(result.ecart),
+    }
+}
+
+// ── Rechercher un client au comptoir ───────────────────────────
+// La liste etait chargee d'un bloc au demarrage, plafonnee a 200, puis
+// cherchee en memoire : au-dela, le client existait mais restait
+// introuvable au comptoir.
+export async function rechercherClientsPOS(terme: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return []
+    if (!aPermission(user, PERMISSIONS.CLIENTS_VOIR)) return []
+
+    const propre = terme.replace(/[%_,().*:"'\\]/g, '').trim()
+    if (propre.length < 2) return []
+
+    const adminClient = createAdminClient()
+
+    const { data } = await adminClient
+        .from('clients')
+        .select('id, public_id, nom, telephone, credit_balance, advance_balance, change_balance, plafond_credit')
+        .eq('shop_id', user.user_metadata.shop_id)
+        .eq('est_actif', true)
+        .eq('est_anonyme', false)
+        .or(`nom.ilike.%${propre}%,telephone.ilike.%${propre}%,public_id.ilike.%${propre}%`)
+        .order('nom')
+        .limit(15)
+
+    return data ?? []
 }

@@ -7,6 +7,7 @@ import {
     FileText, CheckCircle,
 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
+import ChampNombre from '@/components/ui/ChampNombre'
 import type { LigneVente } from '@/actions/ventes'
 
 interface Client {
@@ -192,11 +193,13 @@ export default function PanierPOS({
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
                                                     Remise (%)
                                                 </label>
-                                                <input type="number" min="0" max="100" step="0.5"
+                                                <ChampNombre
                                                        value={ligne.remise_pct}
-                                                       onChange={e => onModifierLigne(ligne.product_id, 'remise_pct', parseInt(e.target.value) || 0)}
-                                                       className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                                />
+                                                       onChange={v => onModifierLigne(ligne.product_id, 'remise_pct', v)}
+                                                       entier
+                                                       aria-label="Remise en pourcentage"
+                                                       className=""
+                                                    />
                                             </div>
                                         </div>
 
