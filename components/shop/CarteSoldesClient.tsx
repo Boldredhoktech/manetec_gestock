@@ -1,10 +1,11 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { operationSoldeClient } from '@/actions/clients'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import { formatMontant } from '@/lib/utils'
-import { Loader2, AlertCircle, CheckCircle, Wallet } from 'lucide-react'
+import { Loader2, AlertCircle, CheckCircle, Wallet , AlertTriangle } from 'lucide-react'
 
 interface Props {
     client: {
@@ -13,17 +14,20 @@ interface Props {
         credit_balance: number
         advance_balance: number
         change_balance: number
+        plafond_credit?: number
     }
 }
 
-interface EtatAction { erreur?: string; succes?: boolean }
+interface EtatAction { erreur?: string; succes?: boolean; avertissement?: string | null }
 
 export default function CarteSoldesClient({ client }: Props) {
+    const [montant, setMontant] = useState(0)
+
     const [etat, action, enAttente] = useActionState(
         async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => {
             const res = await operationSoldeClient(formData)
             if (res?.erreur) return { erreur: res.erreur }
-            return { succes: true }
+            return { succes: true, avertissement: res?.avertissement ?? null }
         },
         {}
     )
@@ -44,6 +48,16 @@ export default function CarteSoldesClient({ client }: Props) {
                     <p className={`text-sm font-bold ${client.credit_balance > 0 ? 'text-destructive' : 'text-foreground'}`}>
                         {formatMontant(client.credit_balance)}
                     </p>
+                    {/* Un plafond nul vaut « pas de limite » (décision D2). */}
+                    {(client.plafond_credit ?? 0) > 0 && (
+                        <p className={`text-xs mt-1 ${
+                            client.credit_balance > (client.plafond_credit ?? 0)
+                                ? 'text-amber-700 font-medium'
+                                : 'text-muted-foreground'
+                        }`}>
+                            plafond {formatMontant(client.plafond_credit ?? 0)}
+                        </p>
+                    )}
                 </div>
                 <div className="bg-muted/40 rounded-lg p-3 text-center">
                     <p className="text-xs text-muted-foreground mb-1">Avance</p>
@@ -72,6 +86,12 @@ export default function CarteSoldesClient({ client }: Props) {
                     Opération enregistrée avec succès.
                 </div>
             )}
+            {etat.avertissement && (
+                <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg px-3 py-2 text-xs">
+                    <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>{etat.avertissement}</span>
+                </div>
+            )}
 
             {/* Formulaire opération */}
             <form action={action} className="space-y-3">
@@ -93,10 +113,10 @@ export default function CarteSoldesClient({ client }: Props) {
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-foreground">Montant</label>
-                        <input name="montant" type="number" min="0.01" step="0.01"
-                               required disabled={enAttente}
-                               placeholder="0.00"
-                               className="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                        <ChampNombre
+                            name="montant" value={montant} onChange={setMontant}
+                            required disabled={enAttente}
+                            className="w-full px-3 py-2 bg-background border border-input rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
                 </div>
 

@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { creerClient } from '@/actions/clients'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import { Loader2, AlertCircle } from 'lucide-react'
 
 const etatInitial = { erreur: undefined as string | undefined }
@@ -13,6 +14,8 @@ const PAYS = [
 ]
 
 export default function FormulaireClient() {
+    const [plafond, setPlafond] = useState(0)
+
     const [etat, action, enAttente] = useActionState(
         async (_prev: typeof etatInitial, formData: FormData) => {
             const res = await creerClient(formData)
@@ -115,6 +118,21 @@ export default function FormulaireClient() {
             {/* Notes */}
             <div className="bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Notes internes</h2>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">
+                        Plafond de crédit
+                    </label>
+                    <ChampNombre
+                        name="plafondCredit" value={plafond} onChange={setPlafond}
+                        disabled={enAttente}
+                        className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                    <p className="text-xs text-muted-foreground">
+                        Au-delà de ce montant de crédit, la vente affiche un avertissement —
+                        elle n&apos;est jamais bloquée. Laissez vide pour ne fixer aucune limite.
+                    </p>
+                </div>
+
                 <textarea name="notes" rows={3}
                           placeholder="Informations supplémentaires (non visibles par le client)..."
                           disabled={enAttente}

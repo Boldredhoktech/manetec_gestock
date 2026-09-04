@@ -43,6 +43,8 @@ export async function creerClient(formData: FormData) {
     const ifu      = (formData.get('ifu') as string)?.trim() || null
     const rccm     = (formData.get('rccm') as string)?.trim() || null
     const notes    = (formData.get('notes') as string)?.trim() || null
+    // Décision D2 : 0 vaut « pas de limite ».
+    const plafond  = Math.max(0, parseFloat(formData.get('plafondCredit') as string) || 0)
 
     if (!nom) return { erreur: 'Le nom est obligatoire.' }
 
@@ -62,6 +64,7 @@ export async function creerClient(formData: FormData) {
         ifu,
         rccm,
         notes,
+        plafond_credit: plafond,
         est_anonyme: false,
         est_actif:   true,
         created_by:  user.user_metadata.user_id,
@@ -74,6 +77,12 @@ export async function creerClient(formData: FormData) {
 }
 
 // ── Opération sur solde client ────────────────────────────────
+// L'action lisait le solde, calculait en JavaScript, puis écrivait :
+// deux opérations simultanées sur le même client et la seconde écrasait
+// la première. Elle délègue maintenant à `operation_solde_client`
+// (migration 026), qui verrouille la ligne et écrit le solde ET son
+// opération dans la même transaction — la vente au comptoir passe par
+// le même chemin.
 export async function operationSoldeClient(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -81,9 +90,10 @@ export async function operationSoldeClient(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
-    if (!aPermission(user, PERMISSIONS.CLIENTS_ACCES_COMPLET)) return { erreur: 'Permission insuffisante pour cette action.' }
+    if (!aPermission(user, PERMISSIONS.CLIENTS_ACCES_COMPLET)) {
+        return { erreur: 'Permission insuffisante pour cette action.' }
+    }
 
-    const shopId        = user.user_metadata.shop_id as string
     const adminClient   = createAdminClient()
     const clientId      = formData.get('clientId') as string
     const typeOperation = formData.get('typeOperation') as string
@@ -94,85 +104,26 @@ export async function operationSoldeClient(formData: FormData) {
         return { erreur: 'Données invalides.' }
     }
 
-    // Récupérer le client
-    const { data: client } = await adminClient
-        .from('clients')
-        .select('id, est_anonyme, credit_balance, advance_balance, change_balance')
-        .eq('id', clientId)
-        .eq('shop_id', shopId)
-        .single()
-
-    if (!client) return { erreur: 'Client introuvable.' }
-
-    // Règle F2 : client anonyme
-    if (client.est_anonyme &&
-        ['credit_remboursement', 'advance_depot'].includes(typeOperation)) {
-        return { erreur: 'Un client anonyme ne peut pas avoir de solde (règle F2).' }
-    }
-
-    // Calculer le nouveau solde
-    let champSolde: 'credit_balance' | 'advance_balance' | 'change_balance'
-    let soldeAvant: number
-    let soldeApres: number
-
-    switch (typeOperation) {
-        case 'credit_remboursement':
-            champSolde = 'credit_balance'
-            soldeAvant = client.credit_balance
-            soldeApres = soldeAvant - montant
-            if (soldeApres < 0) return { erreur: 'Le remboursement dépasse le solde crédit.' }
-            break
-        case 'credit_utilisation':
-            champSolde = 'credit_balance'
-            soldeAvant = client.credit_balance
-            soldeApres = soldeAvant + montant
-            break
-        case 'advance_depot':
-            champSolde = 'advance_balance'
-            soldeAvant = client.advance_balance
-            soldeApres = soldeAvant + montant
-            break
-        case 'advance_utilisation':
-            champSolde = 'advance_balance'
-            soldeAvant = client.advance_balance
-            soldeApres = soldeAvant - montant
-            if (soldeApres < 0) return { erreur: 'Solde avance insuffisant.' }
-            break
-        case 'change_depot':
-            champSolde = 'change_balance'
-            soldeAvant = client.change_balance
-            soldeApres = soldeAvant + montant
-            break
-        case 'change_utilisation':
-            champSolde = 'change_balance'
-            soldeAvant = client.change_balance
-            soldeApres = soldeAvant - montant
-            if (soldeApres < 0) return { erreur: 'Solde monnaie insuffisant.' }
-            break
-        default:
-            return { erreur: 'Type d\'opération invalide.' }
-    }
-
-    // Mettre à jour le solde
-    await adminClient
-        .from('clients')
-        .update({ [champSolde]: soldeApres })
-        .eq('id', clientId)
-
-    // Enregistrer l'opération
-    await adminClient.from('client_balance_operations').insert({
-        shop_id:        shopId,
-        client_id:      clientId,
-        type_operation: typeOperation,
-        montant,
-        solde_avant:    soldeAvant,
-        solde_apres:    soldeApres,
-        note,
-        created_by:     user.user_metadata.user_id,
+    const { data: result, error } = await adminClient.rpc('operation_solde_client', {
+        p_shop_id:   user.user_metadata.shop_id,
+        p_client_id: clientId,
+        p_type:      typeOperation,
+        p_montant:   montant,
+        p_note:      note,
+        p_user_id:   user.user_metadata.user_id,
     })
 
+    if (error) {
+        console.error('ERREUR OPERATION SOLDE CLIENT:', error)
+        return { erreur: 'Erreur lors de l\'opération.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de l\'opération.' }
+
     revalidatePath('/admin/clients')
-    return { succes: true }
+    revalidatePath(`/admin/clients/${clientId}`)
+
+    // Le plafond avertit, il ne bloque pas (décision D2).
+    return { succes: true, avertissement: result.avertissement ?? null }
 }
 
 // ── Modifier un client ────────────────────────────────────────
@@ -196,12 +147,16 @@ export async function modifierClient(formData: FormData) {
     const ifu         = (formData.get('ifu') as string)?.trim() || null
     const rccm        = (formData.get('rccm') as string)?.trim() || null
     const notes       = (formData.get('notes') as string)?.trim() || null
+    const plafond     = Math.max(0, parseFloat(formData.get('plafondCredit') as string) || 0)
 
     if (!nom) return { erreur: 'Le nom est obligatoire.' }
 
     const { error } = await adminClient
         .from('clients')
-        .update({ nom, telephone, email, adresse, ville, pays, site_web, ifu, rccm, notes })
+        .update({
+            nom, telephone, email, adresse, ville, pays, site_web, ifu, rccm, notes,
+            plafond_credit: plafond,
+        })
         .eq('id', clientId)
         .eq('shop_id', user.user_metadata.shop_id)
 

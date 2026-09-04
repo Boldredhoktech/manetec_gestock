@@ -1,8 +1,9 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { modifierClient } from '@/actions/clients'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 
 const PAYS = [
@@ -16,6 +17,7 @@ interface Client {
     ville: string | null; pays: string | null
     site_web: string | null; ifu: string | null
     rccm: string | null; notes: string | null
+    plafond_credit: number
 }
 
 interface Props { client: Client }
@@ -23,6 +25,8 @@ interface Props { client: Client }
 interface EtatAction { erreur?: string; succes?: boolean }
 
 export default function FormulaireModifierClient({ client }: Props) {
+    const [plafond, setPlafond] = useState(client.plafond_credit ?? 0)
+
     const [etat, action, enAttente] = useActionState(
         async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => {
             formData.set('clientId', client.id)
@@ -130,6 +134,21 @@ export default function FormulaireModifierClient({ client }: Props) {
             {/* Notes */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3 shadow-sm">
                 <h2 className="text-sm font-bold text-[#15335a]">Notes internes</h2>
+
+                <div className="space-y-1.5">
+                    <label className="text-sm font-medium text-foreground">
+                        Plafond de crédit
+                    </label>
+                    <ChampNombre
+                        name="plafondCredit" value={plafond} onChange={setPlafond}
+                        disabled={enAttente}
+                        className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                    <p className="text-xs text-muted-foreground">
+                        Au-delà de ce montant de crédit, la vente affiche un avertissement —
+                        elle n&apos;est jamais bloquée. Laissez vide pour ne fixer aucune limite.
+                    </p>
+                </div>
+
                 <textarea name="notes" rows={3} defaultValue={client.notes ?? ''}
                           placeholder="Notes non visibles par le client..."
                           disabled={enAttente}
