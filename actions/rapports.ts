@@ -15,11 +15,15 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
-    bornesDuMois, bornesInstant, MOIS_FR, MOIS_FR_COURT,
+    bornesDuMois, bornesInstant, horodatageBoutique,
+    DECALAGE_BOUTIQUE_HEURES, MOIS_FR, MOIS_FR_COURT,
 } from '@/lib/dates/periode'
 import { etatFacture } from '@/lib/facturation/etat-facture'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
+
+// Le décalage de la boutique, tel que les fonctions SQL l'attendent.
+const DECALAGE_SQL = `${DECALAGE_BOUTIQUE_HEURES} hours`
 
 // Formate une date ISO (AAAA-MM-JJ) en JJ/MM/AAAA pour les périodes de rapport
 function formatFR(iso: string): string {
@@ -130,20 +134,24 @@ export async function getDonneesRapportVentes(
 
     // Decision D1 : le rapport dit les DEUX chiffres, cote a cote.
     // « Facture » = ce que la boutique a vendu ; « encaisse » = ce qui est
-    // reellement entre. Depuis le Lot 2 POS, sale_payments ne contient que
-    // l'argent recu : ni le credit accorde, ni les soldes clients utilises.
-    // L'ecart entre les deux s'explique exactement par :
-    //     facture - encaisse = credit accorde + soldes utilises - remboursement d'ardoise
-    const somme = (t: any[] | null | undefined, champ: string) =>
-        (t ?? []).reduce((a: number, x: any) => a + Number(x[champ] ?? 0), 0)
+    // reellement entre. La regle qui les relie n'est PAS ecrite ici : elle
+    // est ecrite une seule fois, dans ca_periode() (migration 031), et le
+    // tableau de bord comme le compte de resultat lisent la meme.
+    const { data: agregat } = await adminClient
+        .rpc('ca_periode', {
+            p_shop_id:  shopId,
+            p_debut:    debut,
+            p_fin:      fin,
+            p_decalage: DECALAGE_SQL,
+        })
+        .single()
 
-    const caPosFacture   = somme(ventesCompletees, 'montant_total')
-    const encaissePos    = ventesCompletees.reduce(
-        (a, v) => a + somme(v.sale_payments as any[], 'montant'), 0)
-    const creditAccorde  = somme(ventesCompletees, 'credit_accorde')
-    const soldesUtilises = somme(ventesCompletees, 'advance_utilise')
-                         + somme(ventesCompletees, 'change_utilise')
-    const rembArdoise    = somme(ventesCompletees, 'credit_utilise')
+    const ca = (agregat ?? {}) as Record<string, number>
+    const caPosFacture   = Number(ca.ca_facture      ?? 0)
+    const encaissePos    = Number(ca.encaisse_pos    ?? 0)
+    const creditAccorde  = Number(ca.credit_accorde  ?? 0)
+    const soldesUtilises = Number(ca.soldes_utilises ?? 0)
+    const rembArdoise    = Number(ca.remb_ardoise    ?? 0)
 
     // Ventes sur facture (encaissements)
     const ventesFacture = (paiementsFacture ?? []).map((p: any) => ({
@@ -158,7 +166,7 @@ export async function getDonneesRapportVentes(
     return {
         boutique: boutique!,
         periode:  `Du ${formatFR(debut)} au ${formatFR(fin)}`,
-        genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le: horodatageBoutique(),
         total_ventes: ventesCompletees.length,
         // Ce que la boutique a vendu
         ca_pos_facture:  caPosFacture,
@@ -194,48 +202,36 @@ export async function getDonneesRapportClients(shopId: string) {
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
-    const { data: clients } = await adminClient
-        .from('clients')
-        .select(`
-      id, public_id, nom, telephone,
-      credit_balance, advance_balance, change_balance
-    `)
-        .eq('shop_id', shopId)
-        .eq('est_actif', true)
-        .eq('est_anonyme', false)
-        .order('nom')
+    // L'encours d'un client — son solde, SON PLAFOND, ses achats et son
+    // historique d'operations — se lit a un seul endroit : clients_encours()
+    // (migration 031). Le rapport affichait le credit du sans jamais le
+    // situer face a la limite creee au Lot 3 Facturation, alors que c'est
+    // la question qu'on se pose en ouvrant ce document.
+    const { data: encours } = await adminClient
+        .rpc('clients_encours', { p_shop_id: shopId })
 
-    // Nb achats et CA par client
-    const { data: ventesParClient } = await adminClient
-        .from('sales')
-        .select('client_id, montant_total')
-        .eq('shop_id', shopId)
-        .eq('statut', 'completee')
-        .not('client_id', 'is', null)
-
-    const statsClient: Record<string, { nb: number; ca: number }> = {}
-    ventesParClient?.forEach(v => {
-        if (!statsClient[v.client_id]) statsClient[v.client_id] = { nb: 0, ca: 0 }
-        statsClient[v.client_id].nb++
-        statsClient[v.client_id].ca += v.montant_total
-    })
-
-    // Les ventes sont regroupees sur `client_id` (un UUID) et la fiche
-    // etait relue sur `public_id` (CLI-00001) : aucune cle ne se
-    // rencontrait jamais, et le rapport annoncait 0 achat et 0 F a
-    // TOUS les clients, y compris a ceux qui doivent de l'argent.
-    const clientsAvecStats = (clients ?? []).map(({ id, ...c }) => ({
-        ...c,
-        nb_achats: statsClient[id]?.nb ?? 0,
-        ca_total:  statsClient[id]?.ca ?? 0,
+    const clientsAvecStats = ((encours ?? []) as any[]).map(c => ({
+        public_id:       c.public_id,
+        nom:             c.nom,
+        telephone:       c.telephone,
+        credit_balance:  Number(c.credit_balance  ?? 0),
+        advance_balance: Number(c.advance_balance ?? 0),
+        change_balance:  Number(c.change_balance  ?? 0),
+        plafond_credit:  Number(c.plafond_credit  ?? 0),
+        depasse_plafond: Boolean(c.depasse_plafond),
+        nb_achats:       Number(c.nb_achats     ?? 0),
+        ca_total:        Number(c.ca_total      ?? 0),
+        nb_operations:   Number(c.nb_operations ?? 0),
     }))
 
     return {
         boutique:          boutique!,
-        genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:         horodatageBoutique(),
         total_clients:     clientsAvecStats.length,
         clients_en_credit: clientsAvecStats.filter(c => c.credit_balance > 0).length,
+        clients_hors_plafond: clientsAvecStats.filter(c => c.depasse_plafond).length,
         total_credit_du:   clientsAvecStats.reduce((a, c) => a + c.credit_balance, 0),
+        total_avances:     clientsAvecStats.reduce((a, c) => a + c.advance_balance, 0),
         clients:           clientsAvecStats,
     }
 }
@@ -360,7 +356,7 @@ export async function getDonneesFacturePDF(factureId: string, shopId: string) {
         },
         client: (facture.clients as any) ?? null,
         lignes: ((facture.facture_items as any[]) ?? []),
-        genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le: horodatageBoutique(),
     }
 }
 
@@ -377,18 +373,36 @@ export async function getDonneesRapportStock(
     const { data: entrepots } = await adminClient
         .from('warehouses').select('id, nom').eq('shop_id', shopId)
 
-    let query = adminClient
-        .from('products')
-        .select(`
+    const [{ data: produits }, { data: valorisation }] = await Promise.all([
+        adminClient
+            .from('products')
+            .select(`
       id, public_id, nom, unite, prix_achat, prix_vente, seuil_alerte,
       categories(nom),
       stock_levels(quantite, warehouse_id, warehouses(nom))
     `)
-        .eq('shop_id', shopId)
-        .eq('est_actif', true)
-        .order('nom')
+            .eq('shop_id', shopId)
+            .eq('est_actif', true)
+            .order('nom'),
+        // La valeur du stock multipliait les quantites par le prix
+        // d'achat COURANT : apres une hausse fournisseur, elle bondissait
+        // sans qu'un seul article soit entre. valeur_stock() (migration
+        // 031) retient le dernier prix reellement paye a la reception, et
+        // dit sur quelle base chaque ligne est valorisee.
+        adminClient.rpc('valeur_stock', {
+            p_shop_id:      shopId,
+            p_warehouse_id: warehouseId,
+        }),
+    ])
 
-    const { data: produits } = await query
+    const prixReel: Record<string, { prix: number; base: string; valeur: number }> = {}
+    ;((valorisation ?? []) as any[]).forEach(l => {
+        prixReel[`${l.product_id}|${l.warehouse_id}`] = {
+            prix:   Number(l.prix_unitaire ?? 0),
+            base:   String(l.base_prix ?? 'courant'),
+            valeur: Number(l.valeur ?? 0),
+        }
+    })
 
     const entrepotNom = warehouseId
         ? entrepots?.find(e => e.id === warehouseId)?.nom ?? 'Tous les entrepôts'
@@ -400,31 +414,38 @@ export async function getDonneesRapportStock(
             ? niveaux.filter((s: any) => s.warehouse_id === warehouseId)
             : niveaux
 
-        return niveauxFiltres.map((s: any) => ({
-            public_id:    p.public_id,
-            nom:          p.nom,
-            categorie:    (p.categories as any)?.nom ?? null,
-            unite:        p.unite,
-            prix_achat:   p.prix_achat,
-            prix_vente:   p.prix_vente,
-            stock:        s.quantite,
-            seuil_alerte: p.seuil_alerte,
-            en_alerte:    s.quantite <= p.seuil_alerte,
-            entrepot:     (s.warehouses as any)?.nom ?? 'Inconnu',
-        }))
+        return niveauxFiltres.map((s: any) => {
+            const val = prixReel[`${p.id}|${s.warehouse_id}`]
+            return {
+                public_id:    p.public_id,
+                nom:          p.nom,
+                categorie:    (p.categories as any)?.nom ?? null,
+                unite:        p.unite,
+                prix_achat:   val?.prix ?? p.prix_achat,
+                prix_courant: p.prix_achat,
+                base_prix:    val?.base ?? 'courant',
+                prix_vente:   p.prix_vente,
+                stock:        s.quantite,
+                valeur:       val?.valeur ?? s.quantite * p.prix_achat,
+                seuil_alerte: p.seuil_alerte,
+                en_alerte:    s.quantite <= p.seuil_alerte,
+                entrepot:     (s.warehouses as any)?.nom ?? 'Inconnu',
+            }
+        })
     })
 
-    const valeurStock = produitsFormates.reduce(
-        (acc, p) => acc + p.stock * p.prix_achat, 0
-    )
+    const valeurStock = produitsFormates.reduce((acc, p) => acc + p.valeur, 0)
 
     return {
         boutique:           boutique!,
         entrepot_filtre:    entrepotNom,
-        genere_le:          format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:          horodatageBoutique(),
         total_produits:     produitsFormates.length,
         produits_en_alerte: produitsFormates.filter(p => p.en_alerte).length,
         valeur_stock:       valeurStock,
+        // Combien de lignes sont valorisees au prix courant faute d'une
+        // reception connue : le document dit ce qu'il ne sait pas.
+        lignes_prix_courant: produitsFormates.filter(p => p.base_prix === 'courant').length,
         produits:           produitsFormates,
     }
 }
@@ -490,7 +511,7 @@ export async function getDonneesRapportMouvements(
     return {
         boutique:          boutique!,
         periode:           `Du ${formatFR(debut)} au ${formatFR(fin)}`,
-        genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:         horodatageBoutique(),
         total_entrees:     lignes.filter(l => l.sens > 0).length,
         total_sorties:     lignes.filter(l => l.sens < 0).length,
         total_transferts:  lignes.filter(l => transferts.includes(l.type_mouvement)).length,
@@ -608,7 +629,7 @@ export async function getDonneesRapportFournisseurs(
     return {
         boutique:                boutique!,
         periode:                 `Du ${formatFR(dateDebut)} au ${formatFR(dateFin)}`,
-        genere_le:               format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:               horodatageBoutique(),
         total_fournisseurs:      fournisseurs.length,
         fournisseurs_mouvementes: retenus.length,
         total_achats:            somme('achats'),
@@ -704,7 +725,7 @@ export async function getDonneesReleveFournisseur(
         boutique:        boutique!,
         fournisseur:     fournisseur!,
         periode:         `Du ${formatFR(dateDebut)} au ${formatFR(dateFin)}`,
-        genere_le:       format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:       horodatageBoutique(),
         solde_ouverture: soldeOuverture,
         total_achats:    lignes.reduce((a, l) => a + l.debit, 0),
         total_paiements: lignes.reduce((a, l) => a + l.credit, 0),
@@ -756,7 +777,7 @@ export async function getDonneesBonCommande(poId: string, shopId: string) {
             prix_unitaire: l.prix_unitaire,
             montant_ligne: l.montant_ligne,
         })),
-        genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le: horodatageBoutique(),
     }
 }
 
@@ -771,72 +792,44 @@ export async function getDonneesRapportPP(
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
-    // Bornes calculees sans dependre du fuseau du serveur, et instants
-    // ramenes a la journee vecue dans la boutique (voir lib/dates/periode).
+    // Bornes calculees sans dependre du fuseau du serveur. Le passage a
+    // la journee vecue dans la boutique se fait desormais cote SQL, dans
+    // tresorerie_periode, qui recoit le decalage en parametre.
     const { debut, fin } = bornesDuMois(mois, annee)
-    const instants       = bornesInstant(debut, fin)
 
+    // Les cinq postes de tresorerie et les ecarts d'inventaire sont
+    // calcules par tresorerie_periode() (migration 031) : le tableau de
+    // bord comptable lit exactement la meme ligne. Deux ecrans qui
+    // additionnaient les memes tables chacun de leur cote finissaient
+    // toujours par diverger — c'est ce qui vient d'arriver au credit.
     const [
-        { data: ventes },
+        { data: tresorerie },
         { data: depenses },
-        { data: salaires },
-        { data: paiementsFourn },
-        { data: paiementsFact },
     ] = await Promise.all([
-        // Ce rapport est un releve de tresorerie : il compte l'argent
-        // ENTRE, pas le montant facture. Depuis le Lot 2 POS, la part
-        // vendue a credit n'entre pas en caisse et sale_payments ne la
-        // porte plus ; le montant facture reste lisible a cote.
-        adminClient.from('sales').select('montant_total, sale_payments(montant)')
-            .eq('shop_id', shopId).eq('statut', 'completee')
-            .gte('created_at', instants.de)
-            .lt('created_at', instants.avant),
-        // Les ecritures annulees restent lisibles a l'ecran mais
-        // sortent de tous les totaux.
+        adminClient.rpc('tresorerie_periode', {
+            p_shop_id:  shopId,
+            p_debut:    debut,
+            p_fin:      fin,
+            p_decalage: DECALAGE_SQL,
+        }).single(),
+        // Le detail par categorie reste une lecture a part : c'est une
+        // ventilation d'affichage, pas un agregat de tresorerie.
         adminClient.from('expenses')
             .select('montant, expense_categories(nom)')
             .eq('shop_id', shopId)
             .eq('est_annule', false)
             .gte('date_depense', debut).lte('date_depense', fin),
-        // Sur la date de VERSEMENT, comme tous les autres postes.
-        adminClient.from('salary_payments').select('montant_net')
-            .eq('shop_id', shopId)
-            .eq('est_annule', false)
-            .gte('date_paiement', debut).lte('date_paiement', fin),
-        adminClient.from('supplier_payments').select('montant')
-            .eq('shop_id', shopId)
-            .gte('date_paiement', debut).lte('date_paiement', fin),
-        // date_paiement, et non created_at : la date reelle fait foi,
-        // meme regle que les salaires depuis la migration 020.
-        adminClient.from('facture_payments').select('montant')
-            .eq('shop_id', shopId)
-            // Un reglement annule n'a jamais ete encaisse (Lot 2 Facturation).
-            .eq('est_annule', false)
-            .gte('date_paiement', debut).lte('date_paiement', fin),
     ])
 
-    // Écarts d'inventaire validés sur la période. Ce ne sont PAS des
-    // mouvements de trésorerie : ils sont présentés à part, pertes et
-    // gains traités symétriquement, sous le résultat de caisse.
-    const { data: inventaires } = await adminClient
-        .from('inventories')
-        .select('valeur_pertes, valeur_gains')
-        .eq('shop_id', shopId)
-        .eq('statut', 'valide')
-        .gte('valide_le', instants.de)
-        .lt('valide_le', instants.avant)
-
-    const pertesStock = inventaires?.reduce((a, i) => a + (i.valeur_pertes ?? 0), 0) ?? 0
-    const gainsStock  = inventaires?.reduce((a, i) => a + (i.valeur_gains  ?? 0), 0) ?? 0
-
-    const totalVentes      = ventes?.reduce(
-        (a, v) => a + ((v.sale_payments as any[]) ?? [])
-            .reduce((t: number, p: any) => t + Number(p.montant ?? 0), 0), 0) ?? 0
-    const ventesFacturees  = ventes?.reduce((a, v) => a + Number(v.montant_total), 0) ?? 0
-    const totalFactures    = paiementsFact?.reduce((a, p) => a + p.montant, 0) ?? 0
-    const totalDepenses    = depenses?.reduce((a, d) => a + d.montant, 0) ?? 0
-    const totalSalaires    = salaires?.reduce((a, s) => a + s.montant_net, 0) ?? 0
-    const totalFournisseurs = paiementsFourn?.reduce((a, p) => a + p.montant, 0) ?? 0
+    const t = (tresorerie ?? {}) as Record<string, number>
+    const totalVentes       = Number(t.entrees_pos          ?? 0)
+    const ventesFacturees   = Number(t.ventes_facturees     ?? 0)
+    const totalFactures     = Number(t.entrees_factures     ?? 0)
+    const totalDepenses     = Number(t.sorties_depenses     ?? 0)
+    const totalSalaires     = Number(t.sorties_salaires     ?? 0)
+    const totalFournisseurs = Number(t.sorties_fournisseurs ?? 0)
+    const pertesStock       = Number(t.stock_pertes         ?? 0)
+    const gainsStock        = Number(t.stock_gains          ?? 0)
 
     // Agréger dépenses par catégorie
     const parCategorie: Record<string, number> = {}
@@ -854,14 +847,15 @@ export async function getDonneesRapportPP(
         p_mois_fin:  mois,
         p_annee_fin: annee,
         p_nb_mois:   6,
+        p_decalage:  DECALAGE_SQL,
     })
 
     const evolution = ((serie ?? []) as {
-        mois: number; annee: number; ca: number; depenses: number; resultat: number
+        mois: number; annee: number; entrees: number; sorties: number; resultat: number
     }[]).map(l => ({
         mois:     `${MOIS_FR_COURT[l.mois]} ${l.annee}`,
-        ca:       Number(l.ca),
-        depenses: Number(l.depenses),
+        entrees:  Number(l.entrees),
+        sorties:  Number(l.sorties),
         resultat: Number(l.resultat),
     }))
 
@@ -871,7 +865,7 @@ export async function getDonneesRapportPP(
     return {
         boutique:        boutique!,
         periode:         `${MOIS_FR[mois]} ${annee}`,
-        genere_le:       format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:       horodatageBoutique(),
         entrees:         {
             ventes_pos:         totalVentes,
             paiements_factures: totalFactures,
@@ -939,7 +933,7 @@ export async function getDonneesRapportSalaires(
     return {
         boutique:          boutique!,
         periode:           `Versements de ${MOIS_FR[mois]} ${annee}`,
-        genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:         horodatageBoutique(),
         nb_employes:       employesPayes,
         nb_versements:     lignes.length,
         total_brut:        lignes.reduce((a, s) => a + s.salaire_base, 0),
@@ -1027,7 +1021,7 @@ export async function getDonneesFacturesImpayees(shopId: string) {
 
     return {
         boutique:           boutique!,
-        genere_le:          format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le:          horodatageBoutique(),
         total_factures:     facturesFormatees.length,
         total_en_retard:    enRetard.length,
         total_avec_avoir:   facturesFormatees.filter(f => f.montant_avoirs > 0).length,
@@ -1108,6 +1102,6 @@ export async function getDonneesBulletinPaie(versementId: string, shopId: string
             nb_versements: memeperiode?.length ?? 0,
             total_verse:   memeperiode?.reduce((a, v) => a + v.montant_net, 0) ?? 0,
         },
-        genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        genere_le: horodatageBoutique(),
     }
 }

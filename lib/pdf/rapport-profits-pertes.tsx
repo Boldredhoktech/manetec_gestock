@@ -92,7 +92,9 @@ interface DonneesRapportPP {
     }
     resultat_economique?: number
     detail_depenses:  { categorie: string; montant: number }[]
-    evolution_mois:   { mois: string; ca: number; depenses: number; resultat: number }[]
+    // La courbe et le total de la page viennent de la meme fonction
+    // SQL : ce sont des ENTREES et des SORTIES, pas un CA facture.
+    evolution_mois:   { mois: string; entrees: number; sorties: number; resultat: number }[]
 }
 
 function fmt(n: number, d: string) {
@@ -263,8 +265,8 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                         <Text style={styles.sectionTitre}>Évolution mensuelle</Text>
                         <View style={styles.tableauEntete}>
                             <Text style={[styles.cellEnt, { width: '28%' }]}>Mois</Text>
-                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>CA</Text>
-                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Charges</Text>
+                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Entrées</Text>
+                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Sorties</Text>
                             <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Résultat</Text>
                         </View>
                         {donnees.evolution_mois.map((m, i) => (
@@ -273,10 +275,10 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                                     {m.mois}
                                 </Text>
                                 <Text style={[styles.cell, { width: '24%', textAlign: 'right', color: couleurs.vert }]}>
-                                    {fmt(m.ca, d)}
+                                    {fmt(m.entrees, d)}
                                 </Text>
                                 <Text style={[styles.cell, { width: '24%', textAlign: 'right', color: couleurs.rouge }]}>
-                                    {fmt(m.depenses, d)}
+                                    {fmt(m.sorties, d)}
                                 </Text>
                                 <Text style={[styles.cell, {
                                     width: '24%', textAlign: 'right', fontFamily: 'Helvetica-Bold',

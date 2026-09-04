@@ -56,6 +56,10 @@ const styles = StyleSheet.create({
 interface ProduitStock {
     public_id: string; nom: string; categorie: string | null
     unite: string; prix_achat: number; prix_vente: number
+    // Le prix retenu pour valoriser la ligne est le dernier prix
+    // RÉELLEMENT payé à la réception. `prix_courant` reste lisible à
+    // côté, et `base_prix` dit laquelle des deux a servi.
+    prix_courant: number; base_prix: string; valeur: number
     stock: number; seuil_alerte: number; en_alerte: boolean
     entrepot: string
 }
@@ -67,6 +71,7 @@ interface DonneesRapportStock {
     total_produits:    number
     produits_en_alerte: number
     valeur_stock:      number
+    lignes_prix_courant: number
     produits:          ProduitStock[]
 }
 
@@ -104,12 +109,20 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                         </Text>
                     </View>
                     <View style={[styles.statCard, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.statLabel}>Valeur stock (prix achat)</Text>
+                        <Text style={styles.statLabel}>Valeur stock (prix payé)</Text>
                         <Text style={[styles.statVal, { color: couleurs.vert, fontSize: 10 }]}>
                             {fmt(donnees.valeur_stock, d)}
                         </Text>
                     </View>
                 </View>
+
+                {donnees.lignes_prix_courant > 0 && (
+                    <Text style={{ fontSize: 7.5, color: couleurs.texteFaible, marginBottom: 8 }}>
+                        {donnees.lignes_prix_courant} ligne(s) valorisée(s) au prix d'achat
+                        courant, faute d'une réception connue pour ce produit. Les autres
+                        le sont au dernier prix effectivement réglé au fournisseur.
+                    </Text>
+                )}
 
                 {/* ALERTES D'ABORD */}
                 {alertes.length > 0 && (
@@ -138,7 +151,7 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                                 </Text>
                                 <Text style={[styles.cell, { width: '12%', textAlign: 'center' }]}>{p.seuil_alerte}</Text>
                                 <Text style={[styles.cell, { width: '18%', textAlign: 'right' }]}>
-                                    {fmt(p.stock * p.prix_achat, d)}
+                                    {fmt(p.valeur, d)}
                                 </Text>
                             </View>
                         ))}
@@ -154,7 +167,7 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                     <Text style={[styles.cellEnt, { width: '23%' }]}>Produit</Text>
                     <Text style={[styles.cellEnt, { width: '14%' }]}>Catégorie</Text>
                     <Text style={[styles.cellEnt, { width: '12%', textAlign: 'center' }]}>Stock</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix achat</Text>
+                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix payé</Text>
                     <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix vente</Text>
                     <Text style={[styles.cellEnt, { width: '15%', textAlign: 'right' }]}>Val. stock</Text>
                 </View>
@@ -168,10 +181,15 @@ export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
                         <Text style={[styles.cell, { width: '12%', textAlign: 'center', fontFamily: 'Helvetica-Bold' }]}>
                             {p.stock} {p.unite}
                         </Text>
-                        <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>{fmt(p.prix_achat, d)}</Text>
+                        <Text style={[styles.cell, {
+                            width: '13%', textAlign: 'right',
+                            color: p.base_prix === 'courant' ? couleurs.texteFaible : couleurs.texte,
+                        }]}>
+                            {fmt(p.prix_achat, d)}{p.base_prix === 'courant' ? ' *' : ''}
+                        </Text>
                         <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>{fmt(p.prix_vente, d)}</Text>
                         <Text style={[styles.cell, { width: '15%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                            {fmt(p.stock * p.prix_achat, d)}
+                            {fmt(p.valeur, d)}
                         </Text>
                     </View>
                 ))}

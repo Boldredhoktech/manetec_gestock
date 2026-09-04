@@ -22,6 +22,7 @@ interface Props {
         totalVentes: number; totalFactures: number; totalEntrees: number
         totalDepenses: number; totalSalaires: number; totalFournisseurs: number
         totalSorties: number; resultat: number; nbVentes: number
+        ventesFacturees: number
         creditAccorde: number
         variationStock: { pertes: number; gains: number; net: number }
         resultatEconomique: number
@@ -235,16 +236,19 @@ export default function TableauBordComptable({ donnees }: Props) {
                             tout ce qui est entré et sorti par ce moyen. Les dépôts en banque et les
                             retraits d&apos;espèces ne sont enregistrés nulle part — un solde bancaire
                             négatif signifie le plus souvent que de l&apos;argent y a été versé sans être
-                            saisi. Le comptage réel du tiroir viendra avec la session de caisse.
+                            saisi. Pour le comptage réel du tiroir, ouvrez une session de caisse.
                         </span>
                     </p>
                     {donnees.creditAccorde > 0 && (
-                        <p className="text-xs text-amber-700 flex items-start gap-2">
+                        <p className="text-xs text-muted-foreground flex items-start gap-2">
                             <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span>
-                                Dont <strong>{formatMontant(donnees.creditAccorde)}</strong> accordé à crédit
-                                ce mois-ci : le point de vente enregistre la vente entière comme encaissée,
-                                donc les entrées ci-dessus sont surestimées d&apos;autant.
+                                Ce mois-ci, <strong className="text-foreground">
+                                {formatMontant(donnees.ventesFacturees)}</strong> ont été vendus au
+                                comptoir, dont <strong className="text-foreground">
+                                {formatMontant(donnees.creditAccorde)}</strong> accordés à crédit.
+                                Les entrées ci-dessus ne comptent que l&apos;argent réellement reçu :
+                                le crédit reste à encaisser.
                             </span>
                         </p>
                     )}

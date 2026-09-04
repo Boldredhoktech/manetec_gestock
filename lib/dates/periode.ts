@@ -58,6 +58,29 @@ export function bornesInstant(debut: string, fin: string): { de: string; avant: 
     return { de: debutJourBoutique(debut), avant: finJourBoutiqueExclue(fin) }
 }
 
+/**
+ * L'horodatage « généré le » d'un document, à l'heure de la BOUTIQUE.
+ *
+ * Les rapports imprimaient l'heure du serveur : un document sorti à
+ * 8 h du matin au Bénin s'annonçait généré à 7 h. Le décalage était
+ * déjà déclaré ici pour les bornes de période, mais pas pour la seule
+ * ligne que le lecteur du PDF regarde vraiment.
+ */
+export function horodatageBoutique(instant = new Date()): string {
+    const local = new Date(instant.getTime() + DECALAGE_BOUTIQUE_HEURES * 3600_000)
+    const deuxChiffres = (n: number) => String(n).padStart(2, '0')
+
+    return `${deuxChiffres(local.getUTCDate())}/${deuxChiffres(local.getUTCMonth() + 1)}/`
+         + `${local.getUTCFullYear()} à ${deuxChiffres(local.getUTCHours())}`
+         + `:${deuxChiffres(local.getUTCMinutes())}`
+}
+
+/** Le jour vécu dans la boutique à un instant donné, au format AAAA-MM-JJ. */
+export function jourBoutique(instant = new Date()): string {
+    return new Date(instant.getTime() + DECALAGE_BOUTIQUE_HEURES * 3600_000)
+        .toISOString().split('T')[0]
+}
+
 /** Les `nbMois` mois qui se terminent au mois demandé, du plus ancien au plus récent. */
 export function derniersMois(
     mois: number,

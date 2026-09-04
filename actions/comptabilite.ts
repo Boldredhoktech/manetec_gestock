@@ -5,7 +5,12 @@ import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { journaliserCorrection, champsModifies } from '@/lib/audit/journaliser'
-import { bornesDuMois, bornesInstant, MOIS_FR } from '@/lib/dates/periode'
+import {
+    bornesDuMois, DECALAGE_BOUTIQUE_HEURES, MOIS_FR,
+} from '@/lib/dates/periode'
+
+// Le décalage de la boutique, tel que les fonctions SQL l'attendent.
+const DECALAGE_SQL = `${DECALAGE_BOUTIQUE_HEURES} hours`
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -465,75 +470,60 @@ export async function getTableauBordComptable(mois: number, annee: number) {
     if (!Number.isInteger(annee) || annee < 2000 || annee > 2100) return null
 
     const { debut, fin } = bornesDuMois(mois, annee)
-    const instants       = bornesInstant(debut, fin)
 
     const [
-        { data: ventes },
+        { data: tresorerie },
+        { data: agregatVentes },
         { data: depenses },
-        { data: salaires },
-        { data: paiementsFournisseurs },
-        { data: paiementsFactures },
-        { data: inventaires },
         { data: ventilationBrute },
     ] = await Promise.all([
-        adminClient.from('sales')
-            .select('montant_total, credit_accorde, created_at')
-            .eq('shop_id', shopId).eq('statut', 'completee')
-            .gte('created_at', instants.de).lt('created_at', instants.avant),
-        // Les écritures annulées restent visibles à l'écran, barrées,
-        // mais sortent de tous les totaux.
+        // Les cinq postes de trésorerie et les écarts d'inventaire
+        // viennent de tresorerie_periode() (migration 031). Le rapport
+        // Profits & Pertes lit exactement la même ligne : deux écrans qui
+        // additionnaient les mêmes tables chacun de leur côté finissaient
+        // toujours par diverger, et c'est ce qui venait d'arriver.
+        adminClient.rpc('tresorerie_periode', {
+            p_shop_id:  shopId,
+            p_debut:    debut,
+            p_fin:      fin,
+            p_decalage: DECALAGE_SQL,
+        }).single(),
+        adminClient.rpc('ca_periode', {
+            p_shop_id:  shopId,
+            p_debut:    debut,
+            p_fin:      fin,
+            p_decalage: DECALAGE_SQL,
+        }).single(),
+        // Le détail par catégorie et les dernières écritures restent une
+        // lecture à part : c'est de l'affichage, pas un agrégat.
         adminClient.from('expenses')
             .select('montant, date_depense, libelle, expense_categories(nom)')
             .eq('shop_id', shopId)
             .eq('est_annule', false)
             .gte('date_depense', debut).lte('date_depense', fin),
-        // Sur la DATE DE VERSEMENT, comme les dépenses et les
-        // fournisseurs : un salaire de juin réglé en juillet sort de la
-        // caisse de juillet. La période travaillée n'est qu'une étiquette.
-        adminClient.from('salary_payments')
-            .select('montant_net')
-            .eq('shop_id', shopId)
-            .eq('est_annule', false)
-            .gte('date_paiement', debut).lte('date_paiement', fin),
-        adminClient.from('supplier_payments')
-            .select('montant, date_paiement')
-            .eq('shop_id', shopId)
-            .gte('date_paiement', debut).lte('date_paiement', fin),
-        // date_paiement, et non created_at : la colonne existait depuis
-        // l'origine sans qu'aucun filtre s'en serve.
-        adminClient.from('facture_payments')
-            .select('montant, date_paiement')
-            .eq('shop_id', shopId)
-            .gte('date_paiement', debut).lte('date_paiement', fin),
-        // Variation de la valeur du stock constatée aux inventaires
-        // validés : ce n'est PAS de la trésorerie, d'où sa présentation
-        // à part — mais le tableau de bord doit dire la même chose que
-        // le rapport Profits & Pertes, qui l'affiche depuis le Lot 3 Stock.
-        adminClient.from('inventories')
-            .select('valeur_pertes, valeur_gains')
-            .eq('shop_id', shopId)
-            .eq('statut', 'valide')
-            .gte('valide_le', instants.de)
-            .lt('valide_le', instants.avant),
         // Cinq sources d'argent agrégées par moyen de paiement en une
-        // seule requête, cumul compris (voir migration 022).
+        // seule requête, cumul compris (migration 022, reprise en 031).
         adminClient.rpc('ventilation_caisse', {
             p_shop_id: shopId, p_debut: debut, p_fin: fin,
+            p_decalage: DECALAGE_SQL,
         }),
     ])
 
-    const totalVentes       = ventes?.reduce((a, v) => a + v.montant_total, 0) ?? 0
-    const creditAccorde     = ventes?.reduce((a, v) => a + (v.credit_accorde ?? 0), 0) ?? 0
-    const totalDepenses     = depenses?.reduce((a, d) => a + d.montant, 0) ?? 0
-    const totalSalaires     = salaires?.reduce((a, s) => a + s.montant_net, 0) ?? 0
-    const totalFournisseurs = paiementsFournisseurs?.reduce((a, p) => a + p.montant, 0) ?? 0
-    const totalFactures     = paiementsFactures?.reduce((a, p) => a + p.montant, 0) ?? 0
-    const totalEntrees      = totalVentes + totalFactures
-    const totalSorties      = totalDepenses + totalSalaires + totalFournisseurs
-    const resultat          = totalEntrees - totalSorties
+    const t  = (tresorerie    ?? {}) as Record<string, number>
+    const ca = (agregatVentes ?? {}) as Record<string, number>
 
-    const pertesStock = inventaires?.reduce((a, i) => a + (i.valeur_pertes ?? 0), 0) ?? 0
-    const gainsStock  = inventaires?.reduce((a, i) => a + (i.valeur_gains  ?? 0), 0) ?? 0
+    const totalVentes       = Number(t.entrees_pos          ?? 0)
+    const totalFactures     = Number(t.entrees_factures     ?? 0)
+    const totalEntrees      = Number(t.total_entrees        ?? 0)
+    const totalDepenses     = Number(t.sorties_depenses     ?? 0)
+    const totalSalaires     = Number(t.sorties_salaires     ?? 0)
+    const totalFournisseurs = Number(t.sorties_fournisseurs ?? 0)
+    const totalSorties      = Number(t.total_sorties        ?? 0)
+    const resultat          = Number(t.resultat             ?? 0)
+    const ventesFacturees   = Number(t.ventes_facturees     ?? 0)
+    const creditAccorde     = Number(ca.credit_accorde      ?? 0)
+    const pertesStock       = Number(t.stock_pertes         ?? 0)
+    const gainsStock        = Number(t.stock_gains          ?? 0)
 
     type LigneVentilation = {
         moyen: string
@@ -561,15 +551,15 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         totalFournisseurs,
         totalSorties,
         resultat,
-        // Le POS enregistre la totalité de la vente comme encaissée même
-        // quand une part est accordée à crédit : tant que ce n'est pas
-        // repris au module POS, la ventilation surestime les entrées de
-        // ce montant. On l'affiche plutôt que de le taire.
+        // Le crédit accordé n'entre plus dans les entrées depuis le Lot 2
+        // POS : il n'est plus un avertissement mais une information —
+        // voilà ce qui a été vendu, voilà ce qui reste à encaisser.
+        ventesFacturees,
         creditAccorde,
         variationStock: { pertes: pertesStock, gains: gainsStock, net: gainsStock - pertesStock },
         resultatEconomique: resultat + (gainsStock - pertesStock),
         ventilation,
-        nbVentes: ventes?.length ?? 0,
+        nbVentes: Number(ca.nb_ventes ?? 0),
         depenses: depenses ?? [],
     }
 }

@@ -43,7 +43,11 @@ const styles = StyleSheet.create({
 interface ClientRapport {
     public_id: string; nom: string; telephone: string | null
     credit_balance: number; advance_balance: number; change_balance: number
-    nb_achats: number; ca_total: number
+    // Le plafond posé au Lot 3 Facturation : sans lui, impossible de
+    // repérer un client au-delà de sa limite — la question même qu'on
+    // se pose en ouvrant ce document.
+    plafond_credit: number; depasse_plafond: boolean
+    nb_achats: number; ca_total: number; nb_operations: number
 }
 
 interface DonneesRapportClients {
@@ -51,7 +55,9 @@ interface DonneesRapportClients {
     genere_le:    string
     total_clients: number
     clients_en_credit: number
+    clients_hors_plafond: number
     total_credit_du: number
+    total_avances: number
     clients:      ClientRapport[]
 }
 
@@ -73,6 +79,12 @@ export function RapportClientsPDF({ donnees }: { donnees: DonneesRapportClients 
                         { label: 'Total clients', valeur: donnees.total_clients.toString(), color: couleurs.accent },
                         { label: 'Clients avec crédit dû', valeur: donnees.clients_en_credit.toString(), color: couleurs.rouge },
                         { label: 'Total crédit dû', valeur: fmt(donnees.total_credit_du, d), color: couleurs.rouge },
+                        {
+                            label: 'Au-delà du plafond',
+                            valeur: donnees.clients_hors_plafond.toString(),
+                            color: donnees.clients_hors_plafond > 0 ? couleurs.rouge : couleurs.vert,
+                        },
+                        { label: 'Avances détenues', valeur: fmt(donnees.total_avances, d), color: couleurs.vert },
                     ].map((c, i) => (
                         <View key={i} style={{
                             flex: 1, backgroundColor: couleurs.fondClair, padding: 10,
@@ -86,21 +98,24 @@ export function RapportClientsPDF({ donnees }: { donnees: DonneesRapportClients 
 
                 <Text style={styles.sectionTitre}>Liste des clients</Text>
                 <View style={styles.tableauEntete}>
-                    <Text style={[styles.cellEnt, { width: '12%' }]}>ID</Text>
-                    <Text style={[styles.cellEnt, { width: '22%' }]}>Nom</Text>
-                    <Text style={[styles.cellEnt, { width: '14%' }]}>Téléphone</Text>
+                    <Text style={[styles.cellEnt, { width: '11%' }]}>ID</Text>
+                    <Text style={[styles.cellEnt, { width: '19%' }]}>Nom</Text>
+                    <Text style={[styles.cellEnt, { width: '13%' }]}>Téléphone</Text>
                     <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Crédit dû</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Avance</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'center' }]}>Achats</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>CA total</Text>
+                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Plafond</Text>
+                    <Text style={[styles.cellEnt, { width: '11%', textAlign: 'right' }]}>Avance</Text>
+                    <Text style={[styles.cellEnt, { width: '9%', textAlign: 'center' }]}>Achats</Text>
+                    <Text style={[styles.cellEnt, { width: '11%', textAlign: 'right' }]}>CA total</Text>
                 </View>
                 {donnees.clients.map((c, i) => (
                     <View key={c.public_id} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                        <Text style={[styles.cell, { width: '12%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
+                        <Text style={[styles.cell, { width: '11%', fontFamily: 'Helvetica-Bold', fontSize: 7 }]}>
                             {c.public_id}
                         </Text>
-                        <Text style={[styles.cell, { width: '22%', maxLines: 1 }]}>{c.nom}</Text>
-                        <Text style={[styles.cell, { width: '14%' }]}>{c.telephone ?? '—'}</Text>
+                        <Text style={[styles.cell, { width: '19%', maxLines: 1 }]}>
+                            {c.depasse_plafond ? '! ' : ''}{c.nom}
+                        </Text>
+                        <Text style={[styles.cell, { width: '13%' }]}>{c.telephone ?? '—'}</Text>
                         <Text style={[styles.cell, {
                             width: '13%', textAlign: 'right',
                             color: c.credit_balance > 0 ? couleurs.rouge : couleurs.texte,
@@ -110,16 +125,31 @@ export function RapportClientsPDF({ donnees }: { donnees: DonneesRapportClients 
                         </Text>
                         <Text style={[styles.cell, {
                             width: '13%', textAlign: 'right',
+                            color: c.depasse_plafond ? couleurs.rouge : couleurs.texteFaible,
+                            fontFamily: c.depasse_plafond ? 'Helvetica-Bold' : 'Helvetica',
+                        }]}>
+                            {c.plafond_credit > 0 ? fmt(c.plafond_credit, d) : 'aucun'}
+                        </Text>
+                        <Text style={[styles.cell, {
+                            width: '11%', textAlign: 'right',
                             color: c.advance_balance > 0 ? couleurs.vert : couleurs.texte,
                         }]}>
                             {c.advance_balance > 0 ? fmt(c.advance_balance, d) : '—'}
                         </Text>
-                        <Text style={[styles.cell, { width: '13%', textAlign: 'center' }]}>{c.nb_achats}</Text>
-                        <Text style={[styles.cell, { width: '13%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
+                        <Text style={[styles.cell, { width: '9%', textAlign: 'center' }]}>{c.nb_achats}</Text>
+                        <Text style={[styles.cell, { width: '11%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
                             {fmt(c.ca_total, d)}
                         </Text>
                     </View>
                 ))}
+
+                {donnees.clients_hors_plafond > 0 && (
+                    <Text style={{ fontSize: 7.5, color: couleurs.rouge, marginTop: 8 }}>
+                        ! {donnees.clients_hors_plafond} client(s) au-delà du plafond de crédit
+                        qui leur a été fixé. Un plafond à « aucun » signifie qu'aucune limite
+                        n'a été posée, pas que le crédit est interdit.
+                    </Text>
+                )}
 
                 <Text style={styles.pied}>
                     {donnees.boutique.nom} — Rapport clients — {donnees.genere_le} — Manetec Gestock
