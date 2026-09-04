@@ -1103,3 +1103,218 @@ export async function getDonneesBulletinPaie(versementId: string, shopId: string
         genere_le: horodatageBoutique(),
     }
 }
+
+// ── Données rapport de caisse ─────────────────────────────────
+// RAP-06. Le Lot 4 POS a créé la session de caisse — fond du matin,
+// comptage du soir, écart constaté — et rien ne la rapportait. Le
+// gérant qui voulait savoir combien de fois le tiroir avait manqué
+// ce mois-ci n'avait aucun document à sortir.
+//
+// Décision D4 : un seul document, deux niveaux. Le récapitulatif du
+// mois en tête, puis le détail de chaque journée à la suite. On
+// l'ouvre pour la synthèse, on descend pour comprendre une ligne.
+export async function getDonneesRapportCaisse(
+    shopId: string,
+    debut:  string,
+    fin:    string,
+) {
+    const adminClient = createAdminClient()
+
+    const [{ data: boutique }, { data: journees }, { data: mouvements }] = await Promise.all([
+        adminClient
+            .from('shops')
+            .select('nom, adresse, ville, telephone_1, ifu, devise, logo_url')
+            .eq('id', shopId).single(),
+        adminClient.rpc('journees_caisse', {
+            p_shop_id: shopId, p_debut: debut, p_fin: fin, p_decalage: DECALAGE_SQL,
+        }),
+        adminClient.rpc('mouvements_caisse_jour', {
+            p_shop_id: shopId, p_debut: debut, p_fin: fin, p_decalage: DECALAGE_SQL,
+        }),
+    ])
+
+    const lignes = ((journees ?? []) as any[]).map(j => ({
+        public_id:        j.public_id,
+        jour:             formatFR(j.jour),
+        jour_iso:         j.jour as string,
+        entrepot:         j.entrepot ?? '—',
+        statut:           j.statut as string,
+        fond_initial:     Number(j.fond_initial     ?? 0),
+        attendu:          j.attendu_especes === null ? null : Number(j.attendu_especes),
+        compte:           j.compte_especes  === null ? null : Number(j.compte_especes),
+        ecart:            j.ecart           === null ? null : Number(j.ecart),
+        ouverte_par:      j.ouverte_par ?? '—',
+        fermee_par:       j.fermee_par  ?? null,
+        note_ouverture:   j.note_ouverture ?? null,
+        note_fermeture:   j.note_fermeture ?? null,
+        encaisse_especes: Number(j.encaisse_especes ?? 0),
+        encaisse_autres:  Number(j.encaisse_autres  ?? 0),
+        sorties_especes:  Number(j.sorties_especes  ?? 0),
+        nb_ventes:        Number(j.nb_ventes        ?? 0),
+    }))
+
+    // Le détail se range sous sa journée : le document se lit du haut
+    // vers le bas, jamais en sautant d'une table à l'autre.
+    const detailParJour: Record<string, { moyen: string; entrees: number; sorties: number }[]> = {}
+    ;((mouvements ?? []) as any[]).forEach(m => {
+        const jour = m.jour as string
+        ;(detailParJour[jour] ??= []).push({
+            moyen:   m.moyen,
+            entrees: Number(m.entrees ?? 0),
+            sorties: Number(m.sorties ?? 0),
+        })
+    })
+
+    const fermees      = lignes.filter(l => l.statut === 'fermee')
+    const avecEcart    = fermees.filter(l => (l.ecart ?? 0) !== 0)
+    const totalEcart   = fermees.reduce((a, l) => a + (l.ecart ?? 0), 0)
+
+    return {
+        boutique:  boutique!,
+        periode:   `Du ${formatFR(debut)} au ${formatFR(fin)}`,
+        genere_le: horodatageBoutique(),
+        nb_journees:      lignes.length,
+        nb_fermees:       fermees.length,
+        nb_ouvertes:      lignes.length - fermees.length,
+        nb_avec_ecart:    avecEcart.length,
+        total_attendu:    fermees.reduce((a, l) => a + (l.attendu ?? 0), 0),
+        total_compte:     fermees.reduce((a, l) => a + (l.compte  ?? 0), 0),
+        // Un écart cumulé proche de zéro peut cacher un manque et un
+        // excédent qui se compensent : les deux sont donnés à part.
+        total_ecart:      totalEcart,
+        total_manques:    fermees.reduce((a, l) => a + Math.min(0, l.ecart ?? 0), 0),
+        total_excedents:  fermees.reduce((a, l) => a + Math.max(0, l.ecart ?? 0), 0),
+        journees:         lignes,
+        detail_par_jour:  detailParJour,
+    }
+}
+
+// ── Données rapport des retours et avoirs ─────────────────────
+// RAP-07 et RAP-10. Les retours clients ont reçu leur moitié
+// financière au Lot 3 POS, les avoirs leur effet réel au Lot 2
+// Facturation, et les ventes annulables au Lot 3 POS. Rien de tout
+// cela n'apparaissait dans un rapport — or c'est précisément ce
+// qu'un gérant surveille : ce qui revient, pourquoi, et ce que ça
+// coûte. Une vente annulée est un fait à regarder : trop
+// d'annulations sur un vendeur, ou toujours au même moment de la
+// journée, se voient dans un rapport et nulle part ailleurs.
+export async function getDonneesRapportRetours(
+    shopId: string,
+    debut:  string,
+    fin:    string,
+) {
+    const adminClient = createAdminClient()
+    const instants    = bornesInstant(debut, fin)
+
+    const [
+        { data: boutique },
+        { data: retours },
+        { data: avoirs },
+        { data: annulees },
+    ] = await Promise.all([
+        adminClient
+            .from('shops')
+            .select('nom, adresse, ville, telephone_1, ifu, devise, logo_url')
+            .eq('id', shopId).single(),
+        adminClient
+            .from('sale_returns')
+            .select(`
+                public_id, motif, montant, reglement, note, created_at,
+                clients(nom),
+                sales(public_id),
+                warehouses(nom),
+                shop_users(nom_complet)
+            `)
+            .eq('shop_id', shopId)
+            .gte('created_at', instants.de)
+            .lt('created_at', instants.avant)
+            .order('created_at', { ascending: false }),
+        adminClient
+            .from('avoirs')
+            .select(`
+                public_id, motif, montant, montant_deduit, montant_avance, created_at,
+                clients(nom),
+                factures(public_id)
+            `)
+            .eq('shop_id', shopId)
+            .gte('created_at', instants.de)
+            .lt('created_at', instants.avant)
+            .order('created_at', { ascending: false }),
+        adminClient
+            .from('sales')
+            .select(`
+                public_id, montant_total, motif_annulation, annule_le, created_at,
+                clients(nom),
+                shop_users!sales_vendeur_id_fkey(nom_complet)
+            `)
+            .eq('shop_id', shopId)
+            .eq('statut', 'annulee')
+            .gte('annule_le', instants.de)
+            .lt('annule_le', instants.avant)
+            .order('annule_le', { ascending: false }),
+    ])
+
+    const lignesRetours = (retours ?? []).map((r: any) => ({
+        public_id:  r.public_id,
+        date:       instantBoutique(r.created_at),
+        vente:      (r.sales as any)?.public_id ?? '—',
+        client:     (r.clients as any)?.nom ?? 'Anonyme',
+        entrepot:   (r.warehouses as any)?.nom ?? '—',
+        motif:      r.motif,
+        montant:    Number(r.montant ?? 0),
+        reglement:  r.reglement as string,
+        note:       r.note ?? null,
+        par:        (r.shop_users as any)?.nom_complet ?? '—',
+    }))
+
+    const lignesAvoirs = (avoirs ?? []).map((a: any) => ({
+        public_id: a.public_id,
+        date:      instantBoutique(a.created_at),
+        facture:   (a.factures as any)?.public_id ?? '—',
+        client:    (a.clients as any)?.nom ?? '—',
+        motif:     a.motif,
+        montant:   Number(a.montant ?? 0),
+        deduit:    Number(a.montant_deduit ?? 0),
+        avance:    Number(a.montant_avance ?? 0),
+    }))
+
+    const lignesAnnulees = (annulees ?? []).map((v: any) => ({
+        public_id: v.public_id,
+        date:      instantBoutique(v.created_at),
+        annule_le: v.annule_le ? instantBoutique(v.annule_le) : '—',
+        client:    (v.clients as any)?.nom ?? 'Anonyme',
+        vendeur:   (v.shop_users as any)?.nom_complet ?? '—',
+        montant:   Number(v.montant_total ?? 0),
+        motif:     v.motif_annulation ?? 'Aucun motif enregistré',
+    }))
+
+    // Ce que ces trois faits coûtent vraiment n'est pas leur somme :
+    // un retour réglé « sans suite » ne coûte rien, un avoir passé en
+    // avance reste dû au client. On les distingue.
+    const parReglement: Record<string, { nb: number; montant: number }> = {}
+    lignesRetours.forEach(r => {
+        const e = parReglement[r.reglement] ??= { nb: 0, montant: 0 }
+        e.nb++
+        e.montant += r.montant
+    })
+
+    return {
+        boutique:  boutique!,
+        periode:   `Du ${formatFR(debut)} au ${formatFR(fin)}`,
+        genere_le: horodatageBoutique(),
+        nb_retours:       lignesRetours.length,
+        total_retours:    lignesRetours.reduce((a, r) => a + r.montant, 0),
+        rembourse:        lignesRetours.filter(r => r.reglement === 'rembourse')
+                                       .reduce((a, r) => a + r.montant, 0),
+        a_traiter:        lignesRetours.filter(r => r.reglement === 'a_traiter').length,
+        nb_avoirs:        lignesAvoirs.length,
+        total_avoirs:     lignesAvoirs.reduce((a, x) => a + x.montant, 0),
+        nb_annulees:      lignesAnnulees.length,
+        total_annulees:   lignesAnnulees.reduce((a, v) => a + v.montant, 0),
+        par_reglement:    Object.entries(parReglement)
+                                .map(([reglement, v]) => ({ reglement, ...v })),
+        retours:  lignesRetours,
+        avoirs:   lignesAvoirs,
+        annulees: lignesAnnulees,
+    }
+}
