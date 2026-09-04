@@ -373,38 +373,22 @@ export async function creerFactureFournisseur(
         return { erreur: `Erreur lignes : ${erreurItems.message}` }
     }
 
-    // Mettre à jour le stock si entrepôt fourni
-    if (warehouseId) {
-        for (const l of lignesCalc) {
-            if (!l.product_id) continue
+    // La facture ne touche PLUS au stock.
+    // Elle le faisait à la main : lecture puis réécriture de
+    // stock_levels en TypeScript, sans verrou, sans transaction et
+    // sans le moindre mouvement — le stock augmentait sans laisser de
+    // trace dans le journal, et une réception suivie de sa facture
+    // faisait entrer deux fois la même marchandise.
+    // La marchandise entre désormais par une réception, seule voie qui
+    // passe par appliquer_mouvement_stock() et journalise l'entrée.
+    // La facture, elle, porte le prix et la dette.
+    for (const l of lignesCalc) {
+        if (!l.product_id) continue
 
-            const { data: stock } = await adminClient
-                .from('stock_levels')
-                .select('quantite')
-                .eq('product_id', l.product_id)
-                .eq('warehouse_id', warehouseId)
-                .maybeSingle()
-
-            if (stock === null) {
-                await adminClient.from('stock_levels').insert({
-                    shop_id:      shopId,
-                    product_id:   l.product_id,
-                    warehouse_id: warehouseId,
-                    quantite:     l.quantite,
-                })
-            } else {
-                await adminClient.from('stock_levels')
-                    .update({ quantite: (stock?.quantite ?? 0) + l.quantite })
-                    .eq('product_id', l.product_id)
-                    .eq('warehouse_id', warehouseId)
-            }
-
-            // Mettre à jour le prix d'achat
-            await adminClient.from('products')
-                .update({ prix_achat: l.prix_unitaire })
-                .eq('id', l.product_id)
-                .eq('shop_id', shopId)
-        }
+        await adminClient.from('products')
+            .update({ prix_achat: l.prix_unitaire })
+            .eq('id', l.product_id)
+            .eq('shop_id', shopId)
     }
 
     // Mettre à jour le solde fournisseur.

@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { creerFactureFournisseur } from '@/actions/fournisseurs'
-import { Plus, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
 
 interface Props {
@@ -84,14 +85,28 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                 </div>
             )}
 
+            {/* La facture porte le prix et la dette ; la marchandise
+                entre par une réception, seule voie qui laisse une trace
+                dans le journal des mouvements. */}
+            <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+                <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                    Cette facture enregistre la dette envers le fournisseur et met à jour les prix d&apos;achat.
+                    Elle <strong>ne modifie pas le stock</strong> : pour faire entrer la marchandise, passez par{' '}
+                    <Link href={`/stock/fournisseurs/${supplierId}/reception`} className="underline font-bold">
+                        Nouvelle réception
+                    </Link>.
+                </span>
+            </div>
+
             {/* Infos générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Entrepôt (pour mise à jour stock)</label>
+                        <label className="text-sm font-medium text-gray-700">Entrepôt destinataire</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
-                            <option value="">— Sans mise à jour stock —</option>
+                            <option value="">— Non précisé —</option>
                             {entrepots.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
                         </select>
                     </div>

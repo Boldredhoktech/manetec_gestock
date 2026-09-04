@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { creerFactureFournisseur } from '@/actions/fournisseurs'
-import { Plus, Trash2, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
 
 interface Produit {
@@ -151,11 +151,22 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                     )}
                 </div>
 
+                {/* La facture porte le prix et la dette ; la marchandise
+                    entre par une réception, seule voie journalisée. */}
+                <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+                    <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                    <span>
+                        Cette facture enregistre la dette et met à jour les prix d&apos;achat.
+                        Elle <strong>ne modifie pas le stock</strong> : la marchandise entre par une réception,
+                        depuis la fiche du fournisseur.
+                    </span>
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Entrepôt (mise à jour stock)</label>
+                        <label className="text-sm font-medium text-gray-700">Entrepôt destinataire</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
-                            <option value="">— Sans mise à jour stock —</option>
+                            <option value="">— Non précisé —</option>
                             {entrepots.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
                         </select>
                     </div>
