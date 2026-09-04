@@ -18,44 +18,6 @@ export interface LigneFacture {
     tva_pct:       number
 }
 
-// ── Clients entreprise ─────────────────────────────────────────
-export async function creerClientEntreprise(formData: FormData) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
-    if (!aPermission(user, PERMISSIONS.CLIENTS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
-
-    const shopId      = user.user_metadata.shop_id as string
-    const adminClient = createAdminClient()
-
-    const nom        = (formData.get('nom') as string)?.trim()
-    const nomContact = (formData.get('nomContact') as string)?.trim() || null
-    const telephone  = (formData.get('telephone') as string)?.trim() || null
-    const email      = (formData.get('email') as string)?.trim() || null
-    const adresse    = (formData.get('adresse') as string)?.trim() || null
-    const ville      = (formData.get('ville') as string)?.trim() || null
-    const pays       = (formData.get('pays') as string)?.trim() || null
-    const ifu        = (formData.get('ifu') as string)?.trim() || null
-    const rccm       = (formData.get('rccm') as string)?.trim() || null
-
-    if (!nom) return { erreur: 'Le nom est obligatoire.' }
-
-    const { data: publicId } = await adminClient
-        .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'CLI' })
-
-    const { error } = await adminClient.from('business_clients').insert({
-        public_id: publicId, shop_id: shopId,
-        nom, nom_contact: nomContact, telephone, email,
-        adresse, ville, pays, ifu, rccm,
-        est_actif: true, created_by: user.user_metadata.user_id,
-    })
-
-    if (error) return { erreur: 'Erreur lors de la création.' }
-
-    revalidatePath('/admin/factures/clients')
-    redirect('/admin/factures/clients')
-}
-
 // ── Créer un devis ─────────────────────────────────────────────
 export async function creerDevis(
     clientId: string | null,
@@ -126,10 +88,8 @@ export async function creerDevis(
     }).select().single()
 
     if (error || !devis) {
-        console.error('ERREUR DEVIS:', JSON.stringify(error, null, 2))
-        return {
-            erreur: `Erreur: ${error?.message ?? 'devis null'} | Code: ${error?.code ?? '?'} | Details: ${error?.details ?? '?'}`
-        }
+        console.error('ERREUR DEVIS:', error)
+        return { erreur: 'Erreur lors de la création du devis.' }
     }
 
     await adminClient.from('devis_items').insert(
@@ -204,10 +164,8 @@ export async function convertirDevisEnFacture(devisId: string) {
     }).select().single()
 
     if (error || !facture) {
-        console.error('ERREUR CONVERSION DEVIS→FACTURE:', JSON.stringify(error, null, 2))
-        return {
-            erreur: `Erreur: ${error?.message ?? 'facture null'} | Code: ${error?.code ?? '?'} | Details: ${error?.details ?? '?'}`
-        }
+        console.error('ERREUR CONVERSION DEVIS→FACTURE:', error)
+        return { erreur: 'Erreur lors de la conversion du devis en facture.' }
     }
 
     await adminClient.from('facture_items').insert(
@@ -305,10 +263,8 @@ export async function creerFactureDirecte(
     }).select().single()
 
     if (error || !facture) {
-        console.error('ERREUR FACTURE DIRECTE:', JSON.stringify(error, null, 2))
-        return {
-            erreur: `Erreur: ${error?.message ?? 'facture null'} | Code: ${error?.code ?? '?'} | Details: ${error?.details ?? '?'}`
-        }
+        console.error('ERREUR FACTURE DIRECTE:', error)
+        return { erreur: 'Erreur lors de la création de la facture.' }
     }
 
     await adminClient.from('facture_items').insert(
@@ -382,8 +338,36 @@ export async function creerAvoir(formData: FormData) {
 
     if (!motif || isNaN(montant) || montant <= 0) return { erreur: 'Données invalides.' }
 
+    // La facture DOIT appartenir à la boutique : sans ce filtre, un avoir
+    // pouvait être créé contre la facture d'une autre boutique, et
+    // repartir avec le client_id lu chez elle.
     const { data: facture } = await adminClient
-        .from('factures').select('client_id').eq('id', factureId).single()
+        .from('factures')
+        .select('id, client_id, montant_ttc, statut')
+        .eq('id', factureId)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!facture) return { erreur: 'Facture introuvable.' }
+
+    // Un avoir ne peut pas dépasser ce que la facture a facturé, avoirs
+    // déjà émis compris.
+    const { data: avoirsExistants } = await adminClient
+        .from('avoirs')
+        .select('montant')
+        .eq('shop_id', shopId)
+        .eq('facture_id', factureId)
+
+    const dejaAvoir = (avoirsExistants ?? []).reduce((somme, a) => somme + a.montant, 0)
+    const restant   = facture.montant_ttc - dejaAvoir
+
+    if (montant > restant) {
+        return {
+            erreur: dejaAvoir > 0
+                ? `Cette facture a déjà fait l'objet d'avoirs. Il ne reste que ${restant} à couvrir.`
+                : `Un avoir ne peut pas dépasser le montant de la facture (${facture.montant_ttc}).`,
+        }
+    }
 
     const { data: publicId } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'AVO' })

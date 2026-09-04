@@ -553,7 +553,7 @@ const TABLES_BOUTIQUE = [
     'warehouses', 'sale_items', 'facture_items', 'sales', 'factures_fournisseurs',
     'shop_users', 'stock_adjustments', 'stock_movements', 'devis_items', 'devis',
     'expenses', 'factures', 'stock_transfer_items',
-    'client_balance_operations', 'purchase_orders', 'categories', 'business_clients',
+    'client_balance_operations', 'purchase_orders', 'categories',
     'shop_sessions', 'shops',
 ]
 

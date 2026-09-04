@@ -2,6 +2,8 @@
 
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -14,6 +16,7 @@ export default async function PageNouveauClient() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.CLIENTS_CREER)) redirect('/admin/clients')
 
     return (
         <div className="flex flex-col min-h-screen">
