@@ -75,6 +75,22 @@ export function horodatageBoutique(instant = new Date()): string {
          + `:${deuxChiffres(local.getUTCMinutes())}`
 }
 
+/**
+ * Un instant (`created_at`) affiché à l'heure de la BOUTIQUE.
+ * Une vente conclue à 20 h 20 au comptoir s'imprimait « 19:20 » :
+ * l'heure du serveur, qui n'est celle de personne.
+ */
+export function instantBoutique(instant: string | Date): string {
+    const d = new Date(
+        (typeof instant === 'string' ? new Date(instant) : instant).getTime()
+        + DECALAGE_BOUTIQUE_HEURES * 3600_000,
+    )
+    const deux = (n: number) => String(n).padStart(2, '0')
+
+    return `${deux(d.getUTCDate())}/${deux(d.getUTCMonth() + 1)}/${d.getUTCFullYear()}`
+         + ` ${deux(d.getUTCHours())}:${deux(d.getUTCMinutes())}`
+}
+
 /** Le jour vécu dans la boutique à un instant donné, au format AAAA-MM-JJ. */
 export function jourBoutique(instant = new Date()): string {
     return new Date(instant.getTime() + DECALAGE_BOUTIQUE_HEURES * 3600_000)

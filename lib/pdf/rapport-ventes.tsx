@@ -160,6 +160,14 @@ interface DonneesRapportVentes {
     par_moyen:     { moyen: string; montant: number }[]
 }
 
+// Une vente n'a pas deux etats mais trois : conclue, annulee,
+// remboursee. La coche et la croix en confondaient deux.
+const LIBELLES_STATUT: Record<string, string> = {
+    completee:  'Conclue',
+    annulee:    'Annulée',
+    remboursee: 'Remboursée',
+}
+
 function fmt(n: number, d: string) {
     return formatMontantPDF(n, d)
 }
@@ -168,8 +176,16 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
     const { boutique, ventes, ventes_facture, top_produits, par_vendeur, par_moyen } = donnees
     const d = boutique.devise
 
-    // Facture - encaisse = credit accorde + soldes utilises - ardoise remboursee
+    // Facturé - encaissé = crédit accordé + soldes utilisés - ardoise remboursée
     const ecartPos = donnees.ca_pos_facture - donnees.encaisse_pos
+
+    const rapprochement = [
+        `${fmt(donnees.ca_pos_facture, d)} facturés`,
+        donnees.credit_accorde  > 0 ? `- ${fmt(donnees.credit_accorde, d)} accordés à crédit` : '',
+        donnees.soldes_utilises > 0 ? `- ${fmt(donnees.soldes_utilises, d)} réglés sur solde client` : '',
+        donnees.remb_ardoise    > 0 ? `+ ${fmt(donnees.remb_ardoise, d)} d'ardoise remboursée` : '',
+        `=  ${fmt(donnees.encaisse_pos, d)} entrés en caisse`,
+    ].filter(Boolean).join('  ')
 
     const MOYENS_LABELS: Record<string, string> = {
         cash: 'Espèces', wave: 'Wave', mtn_momo: 'MTN MoMo',
@@ -217,14 +233,10 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                         borderLeftWidth: 2, borderLeftColor: couleurs.bordure,
                     }}>
                         <Text style={{ fontSize: 7.5, color: couleurs.texteFaible, marginBottom: 3 }}>
-                            Du facture a l'encaisse au comptoir
+                            Du facturé à l&apos;encaissé, au comptoir
                         </Text>
-                        <Text style={{ fontSize: 8, color: couleurs.texte }}>
-                            {fmt(donnees.ca_pos_facture, d)} facture
-                            {donnees.credit_accorde > 0 && ` \u2212 ${fmt(donnees.credit_accorde, d)} accorde a credit`}
-                            {donnees.soldes_utilises > 0 && ` \u2212 ${fmt(donnees.soldes_utilises, d)} regle sur solde client`}
-                            {donnees.remb_ardoise > 0 && ` + ${fmt(donnees.remb_ardoise, d)} d'ardoise remboursee`}
-                            {`  =  ${fmt(donnees.encaisse_pos, d)} entres en caisse`}
+                        <Text style={{ fontSize: 8, color: couleurs.texte, lineHeight: 1.4 }}>
+                            {rapprochement}
                         </Text>
                     </View>
                 )}
@@ -234,11 +246,11 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                 <View style={styles.enteteTableau}>
                     <Text style={[styles.celluleEntete, { width: '15%' }]}>N° Vente</Text>
                     <Text style={[styles.celluleEntete, { width: '15%' }]}>Date</Text>
-                    <Text style={[styles.celluleEntete, { width: '22%' }]}>Client</Text>
+                    <Text style={[styles.celluleEntete, { width: '19%' }]}>Client</Text>
                     <Text style={[styles.celluleEntete, { width: '18%' }]}>Vendeur</Text>
                     <Text style={[styles.celluleEntete, { width: '8%', textAlign: 'center' }]}>Art.</Text>
                     <Text style={[styles.celluleEntete, { width: '12%', textAlign: 'right' }]}>Montant</Text>
-                    <Text style={[styles.celluleEntete, { width: '10%', textAlign: 'center' }]}>Statut</Text>
+                    <Text style={[styles.celluleEntete, { width: '13%', textAlign: 'center' }]}>Statut</Text>
                 </View>
                 {ventes.map((v, i) => (
                     <View key={v.public_id}
@@ -247,7 +259,7 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                             {v.public_id}
                         </Text>
                         <Text style={[styles.cellule, { width: '15%' }]}>{v.date}</Text>
-                        <Text style={[styles.cellule, { width: '22%', maxLines: 1 }]}>
+                        <Text style={[styles.cellule, { width: '19%', maxLines: 1 }]}>
                             {v.client_nom || 'Anonyme'}
                         </Text>
                         <Text style={[styles.cellule, { width: '18%', maxLines: 1 }]}>
@@ -260,10 +272,10 @@ export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes })
                             {fmt(v.montant_total, d)}
                         </Text>
                         <Text style={[styles.cellule, {
-                            width: '10%', textAlign: 'center',
+                            width: '13%', textAlign: 'center',
                             color: v.statut === 'completee' ? couleurs.vert : couleurs.rouge,
                         }]}>
-                            {v.statut === 'completee' ? '✓' : '✗'}
+                            {LIBELLES_STATUT[v.statut] ?? v.statut}
                         </Text>
                     </View>
                 ))}

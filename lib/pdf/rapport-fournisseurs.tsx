@@ -114,7 +114,7 @@ export function RapportFournisseursPDF({ donnees }: { donnees: DonneesRapportFou
                 </View>
 
                 <Text style={styles.note}>
-                    Dette à la clôture = dette à l&apos;ouverture ({fmt(donnees.total_ouverture)}) + achats − règlements.
+                    Dette à la clôture = dette à l&apos;ouverture ({fmt(donnees.total_ouverture)}) + achats - règlements.
                 </Text>
 
                 {donnees.total_en_retard > 0 && (

@@ -122,7 +122,7 @@ export function RapportInventairePDF({ donnees }: { donnees: DonneesRapportInven
                     </View>
                     <View style={[styles.carte, { borderTopColor: couleurs.rouge }]}>
                         <Text style={styles.carteLabel}>Pertes</Text>
-                        <Text style={[styles.carteVal, { color: couleurs.rouge }]}>−{fmt(inventaire.valeur_pertes)}</Text>
+                        <Text style={[styles.carteVal, { color: couleurs.rouge }]}>-{fmt(inventaire.valeur_pertes)}</Text>
                     </View>
                     <View style={[styles.carte, { borderTopColor: couleurs.vert }]}>
                         <Text style={styles.carteLabel}>Gains</Text>
@@ -151,7 +151,7 @@ export function RapportInventairePDF({ donnees }: { donnees: DonneesRapportInven
                                 {l.ecart > 0 ? '+' : ''}{l.ecart}
                             </Text>
                             <Text style={[styles.td, { width: '16%', textAlign: 'right', color: coul }]}>
-                                {l.ecart === 0 ? '—' : (l.ecart < 0 ? '−' : '+') + fmt(l.valeurEcart)}
+                                {l.ecart === 0 ? '—' : (l.ecart < 0 ? '-' : '+') + fmt(l.valeurEcart)}
                             </Text>
                         </View>
                     )
@@ -162,7 +162,7 @@ export function RapportInventairePDF({ donnees }: { donnees: DonneesRapportInven
                     <View style={styles.totBox}>
                         <View style={styles.totLigne}>
                             <Text style={[styles.totLabel, { color: couleurs.rouge }]}>Total pertes</Text>
-                            <Text style={[styles.totVal, { color: couleurs.rouge }]}>−{fmt(inventaire.valeur_pertes)}</Text>
+                            <Text style={[styles.totVal, { color: couleurs.rouge }]}>-{fmt(inventaire.valeur_pertes)}</Text>
                         </View>
                         <View style={styles.totLigne}>
                             <Text style={[styles.totLabel, { color: couleurs.vert }]}>Total gains</Text>
@@ -170,7 +170,7 @@ export function RapportInventairePDF({ donnees }: { donnees: DonneesRapportInven
                         </View>
                         <View style={styles.totNet}>
                             <Text style={styles.totNetLabel}>Impact net sur la valeur du stock</Text>
-                            <Text style={styles.totNetVal}>{valNette >= 0 ? '+' : '−'}{fmt(Math.abs(valNette))}</Text>
+                            <Text style={styles.totNetVal}>{valNette >= 0 ? '+' : '-'}{fmt(Math.abs(valNette))}</Text>
                         </View>
                     </View>
                 </View>

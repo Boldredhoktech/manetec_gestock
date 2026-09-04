@@ -43,6 +43,9 @@ const s = StyleSheet.create({
         padding: 6, borderRadius: 4,
     },
     cellEntete: { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
+    // Une colonne tient sa largeur : ni etirement, ni refus de
+    // retrecir. Sans cela le contenu deborde sur la colonne voisine.
+    colonne: { flexGrow: 0, flexShrink: 0, paddingRight: 3 },
     ligne: {
         flexDirection: 'row', padding: 5,
         borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
@@ -145,9 +148,11 @@ export function TableauRapport<T>({
         <View>
             <View style={s.tableauEntete}>
                 {colonnes.map((c, i) => (
-                    <Text key={i} style={[s.cellEntete, { width: c.largeur, textAlign: c.align ?? 'left' }]}>
-                        {c.entete}
-                    </Text>
+                    <View key={i} style={[s.colonne, { width: c.largeur }]}>
+                        <Text style={[s.cellEntete, { textAlign: c.align ?? 'left' }]}>
+                            {c.entete}
+                        </Text>
+                    </View>
                 ))}
             </View>
 
@@ -161,7 +166,7 @@ export function TableauRapport<T>({
                         const sous = c.sousTexte?.(ligne)
                         const couleur = c.couleur?.(ligne)
                         return (
-                            <View key={j} style={{ width: c.largeur }}>
+                            <View key={j} style={[s.colonne, { width: c.largeur }]}>
                                 <Text style={[
                                     s.cellule,
                                     { textAlign: c.align ?? 'left' },
@@ -182,9 +187,11 @@ export function TableauRapport<T>({
             {totaux && totaux.length > 0 && (
                 <View style={s.totaux}>
                     {colonnes.map((c, i) => (
-                        <Text key={i} style={[s.cellTotal, { width: c.largeur, textAlign: c.align ?? 'left' }]}>
-                            {totaux[i] ?? ''}
-                        </Text>
+                        <View key={i} style={[s.colonne, { width: c.largeur }]}>
+                            <Text style={[s.cellTotal, { textAlign: c.align ?? 'left' }]}>
+                                {totaux[i] ?? ''}
+                            </Text>
+                        </View>
                     ))}
                 </View>
             )}

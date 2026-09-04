@@ -15,8 +15,8 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
-    bornesDuMois, bornesInstant, horodatageBoutique,
-    DECALAGE_BOUTIQUE_HEURES, MOIS_FR, MOIS_FR_COURT,
+    bornesDuMois, bornesInstant, horodatageBoutique, instantBoutique,
+    jourBoutique, DECALAGE_BOUTIQUE_HEURES, MOIS_FR, MOIS_FR_COURT,
 } from '@/lib/dates/periode'
 import { etatFacture } from '@/lib/facturation/etat-facture'
 import { format } from 'date-fns'
@@ -181,7 +181,7 @@ export async function getDonneesRapportVentes(
         nb_paiements_factures: ventesFacture.length,
         ventes: (ventes ?? []).map(v => ({
             public_id:     v.public_id,
-            date:          format(new Date(v.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+            date:          instantBoutique(v.created_at),
             client_nom:    (v.clients as any)?.nom ?? null,
             vendeur_nom:   (v.shop_users as any)?.nom_complet ?? 'Inconnu',
             montant_total: v.montant_total,
@@ -276,7 +276,7 @@ export async function getDonneesRecu(saleId: string, shopId: string) {
         },
         vente: {
             public_id:          vente.public_id,
-            date:               format(new Date(vente.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+            date:               instantBoutique(vente.created_at),
             vendeur_nom:        (vente.shop_users as any)?.nom_complet ?? 'Vendeur',
             client_nom:         (vente.clients as any)?.nom ?? null,
             montant_brut:       vente.montant_brut,
@@ -504,7 +504,7 @@ export async function getDonneesRapportMouvements(
             quantite_apres: m.quantite_apres,
             sens,
             valeur:         sens * m.quantite * prix,
-            date:           format(new Date(m.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+            date:           instantBoutique(m.created_at),
         }
     })
 
@@ -541,9 +541,9 @@ export async function getDonneesRapportFournisseurs(
 ) {
     const adminClient = createAdminClient()
 
-    const aujourdhui = format(new Date(), 'yyyy-MM-dd')
+    const aujourdhui = jourBoutique()
     const dateFin    = fin   || aujourdhui
-    const dateDebut  = debut || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')
+    const dateDebut  = debut || `${aujourdhui.slice(0, 7)}-01`
 
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
@@ -654,9 +654,9 @@ export async function getDonneesReleveFournisseur(
 ) {
     const adminClient = createAdminClient()
 
-    const aujourdhui = format(new Date(), 'yyyy-MM-dd')
+    const aujourdhui = jourBoutique()
     const dateFin    = fin   || aujourdhui
-    const dateDebut  = debut || format(new Date(new Date().getFullYear(), 0, 1), 'yyyy-MM-dd')
+    const dateDebut  = debut || `${aujourdhui.slice(0, 4)}-01-01`
 
     const [{ data: boutique }, { data: fournisseur }, { data: factures }, { data: paiements }] =
         await Promise.all([
@@ -1003,10 +1003,8 @@ export async function getDonneesFacturesImpayees(shopId: string) {
         return {
             public_id:       f.public_id,
             client_nom:      (f.clients as any)?.nom ?? 'Client non spécifié',
-            date_facture:    format(new Date(f.date_facture), 'dd/MM/yyyy', { locale: fr }),
-            date_echeance:   f.date_echeance
-                ? format(new Date(f.date_echeance), 'dd/MM/yyyy', { locale: fr })
-                : null,
+            date_facture:    formatFR(f.date_facture),
+            date_echeance:   f.date_echeance ? formatFR(f.date_echeance) : null,
             montant_ttc:     f.montant_ttc,
             montant_restant: f.montant_restant,
             montant_avoirs:  avoir?.montant ?? 0,

@@ -109,7 +109,7 @@ export function ReleveFournisseurPDF({ donnees }: { donnees: DonneesReleve }) {
                     </View>
                     <View style={styles.carte}>
                         <Text style={styles.carteLabel}>Règlements</Text>
-                        <Text style={[styles.carteVal, { color: couleurs.vert }]}>−{fmt(donnees.total_paiements)}</Text>
+                        <Text style={[styles.carteVal, { color: couleurs.vert }]}>-{fmt(donnees.total_paiements)}</Text>
                     </View>
                     <View style={[styles.carte, { borderColor: couleurs.primaire, borderWidth: 2 }]}>
                         <Text style={styles.carteLabel}>Solde à la clôture</Text>

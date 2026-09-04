@@ -129,7 +129,7 @@ export function RapportFacturesImpayeesPDF({ donnees }: { donnees: DonneesFactur
                             marginBottom: 6, paddingBottom: 3,
                             borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
                         }}>
-                            ⚠ Factures en retard ({enRetard.length})
+                            ! Factures en retard ({enRetard.length})
                         </Text>
                         <View style={styles.tableauEntete}>
                             <Text style={[styles.cellEnt, { width: '13%' }]}>N° Facture</Text>

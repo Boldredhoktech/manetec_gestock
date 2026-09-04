@@ -1,54 +1,28 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF, formatDatePDF } from '@/lib/pdf/utils-pdf'
-import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import type { BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import {
+    DocumentRapport, CartesStats, TableauRapport, NotePDF, type Colonne,
+} from '@/lib/pdf/template'
 
-const styles = StyleSheet.create({
-    page: {
-        fontFamily: 'Helvetica', fontSize: 9,
-        color: couleurs.texte, padding: 30, backgroundColor: '#fff',
-    },
-    entete: {
-        display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        marginBottom: 20, paddingBottom: 12,
-        borderBottomWidth: 2, borderBottomColor: couleurs.primaire,
-    },
-    titreBoutique: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    titrePage: { fontSize: 11, fontFamily: 'Helvetica-Bold', textAlign: 'right', marginBottom: 2 },
-    infoGrise: { fontSize: 8, color: couleurs.texteFaible, textAlign: 'right' },
-    statsRow: { display: 'flex', flexDirection: 'row', gap: 8, marginBottom: 16 },
-    statCard: {
-        flex: 1, backgroundColor: couleurs.fondClair, padding: 10,
-        borderRadius: 6, borderLeftWidth: 3, borderLeftColor: couleurs.accent,
-    },
-    statLabel: { fontSize: 7, color: couleurs.texteFaible, marginBottom: 3 },
-    statVal: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    tableauEntete: {
-        display: 'flex', flexDirection: 'row',
-        backgroundColor: couleurs.primaire, padding: 6, borderRadius: 4,
-    },
-    cellEnt: { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
-    ligne: {
-        display: 'flex', flexDirection: 'row',
-        padding: 5, borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    ligneImp: { backgroundColor: couleurs.fondClair },
-    cell: { fontSize: 8, color: couleurs.texte },
-    pied: {
-        position: 'absolute', bottom: 20, left: 30, right: 30,
-        textAlign: 'center', fontSize: 7, color: couleurs.texteFaible,
-        borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 6,
-    },
-})
-
-const MOIS = ['', 'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin',
-    'Juill.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.']
+// ══════════════════════════════════════════════════════════════
+// Rapport de paie — repris sur le gabarit commun.
+//
+// Il redéfinissait sa propre feuille de styles et posait ses colonnes
+// à la main, en `<Text style={{ width: '13%' }}>`. Une cellule de
+// texte n'est pas une boîte : quand le montant était plus large que
+// sa part, il débordait sur la colonne voisine. On lisait donc
+// « 100 000 FCFAEspèces », et l'en-tête « Net verséMoyen ».
+//
+// Le tableau du gabarit enferme chaque cellule dans une vue de
+// largeur fixe : le texte est coupé, jamais superposé.
+// ══════════════════════════════════════════════════════════════
 
 interface LigneSalaire {
     employe:       string
     poste:         string | null
-    // Le mois travaille, distinct du jour ou l'argent est sorti.
+    // Le mois travaillé, distinct du jour où l'argent est sorti.
     au_titre_de:   string
     salaire_base:  number
     bonus:         number
@@ -77,127 +51,58 @@ const MOYENS: Record<string, string> = {
     bank_transfer: 'Virement', bank_card: 'Carte',
 }
 
-function fmt(n: number, d: string) {
-    return formatMontantPDF(n, d)
-}
-
 export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaires }) {
-    const d = donnees.boutique.devise
+    const d   = donnees.boutique.devise
+    const fmt = (n: number) => formatMontantPDF(n, d)
+
+    const colonnes: Colonne<LigneSalaire>[] = [
+        { entete: 'Employé', largeur: '22%', gras: true,
+          rendu: s => s.employe, sousTexte: s => s.poste },
+        { entete: 'Au titre de', largeur: '10%', rendu: s => s.au_titre_de },
+        { entete: 'Versé le',    largeur: '11%', rendu: s => formatDatePDF(s.date_paiement) },
+        { entete: 'Base',        largeur: '13%', align: 'right', rendu: s => fmt(s.salaire_base) },
+        { entete: 'Bonus',       largeur: '10%', align: 'right',
+          rendu: s => s.bonus > 0 ? fmt(s.bonus) : '—',
+          couleur: s => s.bonus > 0 ? couleurs.vert : undefined },
+        { entete: 'Déduct.',     largeur: '10%', align: 'right',
+          rendu: s => s.deductions > 0 ? fmt(s.deductions) : '—',
+          couleur: s => s.deductions > 0 ? couleurs.rouge : undefined },
+        { entete: 'Net versé',   largeur: '13%', align: 'right', gras: true,
+          rendu: s => fmt(s.montant_net), couleur: () => couleurs.vert },
+        { entete: 'Moyen',       largeur: '11%',
+          rendu: s => MOYENS[s.moyen] ?? s.moyen },
+    ]
 
     return (
-        <Document>
-            <Page size="A4" style={styles.page}>
+        <DocumentRapport
+            boutique={donnees.boutique}
+            titre="RAPPORT DE PAIE"
+            sousTitre={donnees.periode}
+            genereLe={donnees.genere_le}
+            pied={`${donnees.boutique.nom} — Rapport de paie — ${donnees.genere_le} — Manetec Gestock`}
+        >
+            <CartesStats cartes={[
+                { label: 'Employés payés',  valeur: String(donnees.nb_employes),   couleur: couleurs.accent },
+                { label: 'Versements',      valeur: String(donnees.nb_versements) },
+                { label: 'Total brut',      valeur: fmt(donnees.total_brut) },
+                { label: 'Total net versé', valeur: fmt(donnees.total_net), couleur: couleurs.vert },
+            ]} />
 
-                <EnteteRapportPDF boutique={donnees.boutique} titre="RAPPORT DE PAIE" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
+            <TableauRapport
+                colonnes={colonnes}
+                lignes={donnees.salaires}
+                vide="Aucun salaire versé sur cette période."
+                totaux={['TOTAL', '', '', fmt(donnees.total_brut),
+                         donnees.total_bonus > 0 ? `+${fmt(donnees.total_bonus)}` : '—',
+                         donnees.total_deductions > 0 ? `-${fmt(donnees.total_deductions)}` : '—',
+                         fmt(donnees.total_net), '']}
+            />
 
-                <View style={styles.statsRow}>
-                    <View style={[styles.statCard, { borderLeftColor: couleurs.accent }]}>
-                        <Text style={styles.statLabel}>Employés payés</Text>
-                        <Text style={[styles.statVal, { color: couleurs.accent }]}>{donnees.nb_employes}</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Versements</Text>
-                        <Text style={styles.statVal}>{donnees.nb_versements}</Text>
-                    </View>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Total brut</Text>
-                        <Text style={styles.statVal}>{fmt(donnees.total_brut, d)}</Text>
-                    </View>
-                    <View style={[styles.statCard, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.statLabel}>Total net versé</Text>
-                        <Text style={[styles.statVal, { color: couleurs.vert }]}>
-                            {fmt(donnees.total_net, d)}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.tableauEntete}>
-                    <Text style={[styles.cellEnt, { width: '22%' }]}>Employé</Text>
-                    <Text style={[styles.cellEnt, { width: '11%' }]}>Au titre de</Text>
-                    <Text style={[styles.cellEnt, { width: '11%' }]}>Versé le</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Base</Text>
-                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>Bonus</Text>
-                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>Déduct.</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Net versé</Text>
-                    <Text style={[styles.cellEnt, { width: '10%' }]}>Moyen</Text>
-                </View>
-
-                {donnees.salaires.map((s, i) => (
-                    <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                        <View style={{ width: '22%' }}>
-                            <Text style={[styles.cell, { fontFamily: 'Helvetica-Bold', maxLines: 1 }]}>
-                                {s.employe}
-                            </Text>
-                            {s.poste ? (
-                                <Text style={[styles.cell, { fontSize: 7, color: couleurs.texteFaible, maxLines: 1 }]}>
-                                    {s.poste}
-                                </Text>
-                            ) : null}
-                        </View>
-                        <Text style={[styles.cell, { width: '11%', maxLines: 1 }]}>
-                            {s.au_titre_de}
-                        </Text>
-                        <Text style={[styles.cell, { width: '11%', maxLines: 1 }]}>
-                            {formatDatePDF(s.date_paiement)}
-                        </Text>
-                        <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>
-                            {fmt(s.salaire_base, d)}
-                        </Text>
-                        <Text style={[styles.cell, { width: '10%', textAlign: 'right', color: couleurs.vert }]}>
-                            {s.bonus > 0 ? fmt(s.bonus, d) : '—'}
-                        </Text>
-                        <Text style={[styles.cell, { width: '10%', textAlign: 'right', color: couleurs.rouge }]}>
-                            {s.deductions > 0 ? fmt(s.deductions, d) : '—'}
-                        </Text>
-                        <Text style={[styles.cell, {
-                            width: '13%', textAlign: 'right', fontFamily: 'Helvetica-Bold', color: couleurs.vert,
-                        }]}>
-                            {fmt(s.montant_net, d)}
-                        </Text>
-                        <Text style={[styles.cell, { width: '10%', maxLines: 1 }]}>
-                            {MOYENS[s.moyen] ?? s.moyen}
-                        </Text>
-                    </View>
-                ))}
-
-                <View style={{
-                    display: 'flex', flexDirection: 'row', justifyContent: 'flex-end',
-                    marginTop: 8,
-                }}>
-                    <View style={{ width: '40%', borderTopWidth: 2, borderTopColor: couleurs.primaire, paddingTop: 6 }}>
-                        <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 2 }}>
-                            <Text style={{ fontSize: 8, color: couleurs.texteFaible }}>Total bonus</Text>
-                            <Text style={{ fontSize: 8, color: couleurs.vert, fontFamily: 'Helvetica-Bold' }}>
-                                +{fmt(donnees.total_bonus, d)}
-                            </Text>
-                        </View>
-                        <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <Text style={{ fontSize: 8, color: couleurs.texteFaible }}>Total déductions</Text>
-                            <Text style={{ fontSize: 8, color: couleurs.rouge, fontFamily: 'Helvetica-Bold' }}>
-                                -{fmt(donnees.total_deductions, d)}
-                            </Text>
-                        </View>
-                        <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
-                            <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: couleurs.primaire }}>
-                                TOTAL NET
-                            </Text>
-                            <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: couleurs.primaire }}>
-                                {fmt(donnees.total_net, d)}
-                            </Text>
-                        </View>
-                    </View>
-                </View>
-
-                <Text style={{ fontSize: 7, color: couleurs.texteFaible, marginTop: 10 }}>
-                    Ce rapport liste les salaires effectivement VERSÉS sur la période, quel que
-                    soit le mois travaillé auquel ils se rapportent (colonne « Au titre de »).
-                    Un même employé peut y figurer plusieurs fois : acompte puis solde.
-                </Text>
-
-                <Text style={styles.pied}>
-                    {donnees.boutique.nom} — Rapport de paie — {donnees.genere_le} — Manetec Gestock
-                </Text>
-            </Page>
-        </Document>
+            <NotePDF>
+                Ce rapport liste les salaires effectivement VERSÉS sur la période, quel que
+                soit le mois travaillé auquel ils se rapportent (colonne « Au titre de »).
+                Un même employé peut y figurer plusieurs fois : acompte puis solde.
+            </NotePDF>
+        </DocumentRapport>
     )
 }

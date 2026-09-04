@@ -140,7 +140,7 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
                             <Text style={{ fontSize: 9 }}>Pertes constatées aux inventaires</Text>
                             <Text style={{ fontSize: 9, color: couleurs.rouge }}>
-                                −{fmt(donnees.variation_stock.pertes, d)}
+                                -{fmt(donnees.variation_stock.pertes, d)}
                             </Text>
                         </View>
                         <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
@@ -160,7 +160,7 @@ export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP 
                                 fontSize: 9, fontFamily: 'Helvetica-Bold',
                                 color: (donnees.resultat_economique ?? 0) >= 0 ? couleurs.vert : couleurs.rouge,
                             }}>
-                                {(donnees.resultat_economique ?? 0) >= 0 ? '+' : '−'}
+                                {(donnees.resultat_economique ?? 0) >= 0 ? '+' : '-'}
                                 {fmt(Math.abs(donnees.resultat_economique ?? 0), d)}
                             </Text>
                         </View>

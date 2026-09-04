@@ -84,7 +84,7 @@ export function BulletinPaiePDF({ donnees }: { donnees: DonneesBulletinPaie }) {
           rendu: l => (l.signe === '+' ? 'Gain' : 'Retenue'),
           couleur: l => (l.signe === '+' ? couleurs.vert : couleurs.rouge) },
         { entete: 'Montant', largeur: '25%', align: 'right', gras: true,
-          rendu: l => `${l.signe === '-' ? '−' : ''}${fmt(l.montant)}` },
+          rendu: l => `${l.signe === '-' ? '-' : ''}${fmt(l.montant)}` },
     ]
 
     // Le cumul n'a d'intérêt que si ce bulletin ne raconte pas tout le mois.

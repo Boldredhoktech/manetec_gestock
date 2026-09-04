@@ -1,57 +1,25 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
-import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import type { BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import {
+    DocumentRapport, CartesStats, TableauRapport, SectionTitre, NotePDF,
+    type Colonne,
+} from '@/lib/pdf/template'
 
-const styles = StyleSheet.create({
-    page: {
-        fontFamily: 'Helvetica', fontSize: 9,
-        color: couleurs.texte, padding: 30, backgroundColor: '#fff',
-    },
-    entete: {
-        display: 'flex', flexDirection: 'row',
-        justifyContent: 'space-between', marginBottom: 20,
-        paddingBottom: 12, borderBottomWidth: 2, borderBottomColor: couleurs.primaire,
-    },
-    titreBoutique: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    infoBoutique: { fontSize: 8, color: couleurs.texteFaible, marginTop: 2 },
-    titrePage: { fontSize: 11, fontFamily: 'Helvetica-Bold', textAlign: 'right', marginBottom: 2 },
-    infoGrise: { fontSize: 8, color: couleurs.texteFaible, textAlign: 'right' },
-    statsRow: { display: 'flex', flexDirection: 'row', gap: 8, marginBottom: 16 },
-    statCard: {
-        flex: 1, backgroundColor: couleurs.fondClair, padding: 10,
-        borderRadius: 6, borderLeftWidth: 3, borderLeftColor: couleurs.accent,
-    },
-    statLabel: { fontSize: 7, color: couleurs.texteFaible, marginBottom: 3 },
-    statVal: { fontSize: 13, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    sectionTitre: {
-        fontSize: 10, fontFamily: 'Helvetica-Bold', color: couleurs.primaire,
-        marginTop: 14, marginBottom: 6, paddingBottom: 3,
-        borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    tableauEntete: {
-        display: 'flex', flexDirection: 'row',
-        backgroundColor: couleurs.primaire, padding: 6, borderRadius: 4,
-    },
-    cellEnt: { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
-    ligne: {
-        display: 'flex', flexDirection: 'row',
-        padding: 5, borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    ligneImp: { backgroundColor: couleurs.fondClair },
-    cell: { fontSize: 8, color: couleurs.texte },
-    alerteBadge: {
-        paddingHorizontal: 6, paddingVertical: 1,
-        borderRadius: 3, fontSize: 7, fontFamily: 'Helvetica-Bold',
-        backgroundColor: '#fee2e2', color: couleurs.rouge,
-    },
-    pied: {
-        position: 'absolute', bottom: 20, left: 30, right: 30,
-        textAlign: 'center', fontSize: 7, color: couleurs.texteFaible,
-        borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 6,
-    },
-})
+// ══════════════════════════════════════════════════════════════
+// État du stock — repris sur le gabarit commun.
+//
+// Le nom du produit débordait sur la colonne « Catégorie » : un
+// `maxLines: 1` posé sur un `<Text>` de largeur relative ne coupe
+// rien, il empile simplement les mots par-dessus le voisin. La
+// catégorie descend donc sous le nom, en seconde ligne, et le nom
+// récupère la place qui lui manquait.
+//
+// Les deux tableaux — alerte et stock normal — partagent désormais
+// les mêmes colonnes : celui des alertes taisait le prix et la
+// valeur, alors que ce sont les lignes qu'on regarde en premier.
+// ══════════════════════════════════════════════════════════════
 
 interface ProduitStock {
     public_id: string; nom: string; categorie: string | null
@@ -75,129 +43,84 @@ interface DonneesRapportStock {
     produits:          ProduitStock[]
 }
 
-function fmt(n: number, d: string) {
-    return formatMontantPDF(n, d)
-}
-
 export function RapportStockPDF({ donnees }: { donnees: DonneesRapportStock }) {
-    const d = donnees.boutique.devise
+    const d   = donnees.boutique.devise
+    const fmt = (n: number) => formatMontantPDF(n, d)
+
     const alertes = donnees.produits.filter(p => p.en_alerte)
     const normaux = donnees.produits.filter(p => !p.en_alerte)
 
+    function colonnes(enAlerte: boolean): Colonne<ProduitStock>[] {
+        return [
+            { entete: 'ID', largeur: '9%', rendu: p => p.public_id },
+            { entete: 'Produit', largeur: '29%', gras: true,
+              rendu: p => p.nom,
+              sousTexte: p => p.categorie,
+              couleur: () => enAlerte ? couleurs.rouge : undefined },
+            { entete: 'Stock', largeur: '12%', align: 'center', gras: true,
+              rendu: p => `${p.stock} ${p.unite}`,
+              couleur: () => enAlerte ? couleurs.rouge : undefined },
+            { entete: 'Seuil', largeur: '8%', align: 'center',
+              rendu: p => String(p.seuil_alerte) },
+            // L'asterisque marque une ligne valorisee faute de mieux :
+            // aucune reception connue, donc le prix courant.
+            { entete: 'Prix payé', largeur: '13%', align: 'right',
+              rendu: p => fmt(p.prix_achat) + (p.base_prix === 'courant' ? ' *' : ''),
+              couleur: p => p.base_prix === 'courant' ? couleurs.texteFaible : undefined },
+            { entete: 'Prix vente', largeur: '13%', align: 'right',
+              rendu: p => fmt(p.prix_vente) },
+            { entete: 'Val. stock', largeur: '16%', align: 'right', gras: true,
+              rendu: p => fmt(p.valeur) },
+        ]
+    }
+
+    const totalAlertes = alertes.reduce((a, p) => a + p.valeur, 0)
+    const totalNormaux = normaux.reduce((a, p) => a + p.valeur, 0)
+
     return (
-        <Document>
-            <Page size="A4" style={styles.page}>
+        <DocumentRapport
+            boutique={donnees.boutique}
+            titre="ÉTAT DU STOCK"
+            sousTitre={donnees.entrepot_filtre}
+            genereLe={donnees.genere_le}
+            pied={`${donnees.boutique.nom} — État du stock — ${donnees.genere_le} — Manetec Gestock`}
+        >
+            <CartesStats cartes={[
+                { label: 'Total produits', valeur: String(donnees.total_produits) },
+                { label: 'En alerte',      valeur: String(donnees.produits_en_alerte),
+                  couleur: donnees.produits_en_alerte > 0 ? couleurs.rouge : couleurs.vert },
+                { label: 'Valeur du stock', valeur: fmt(donnees.valeur_stock),
+                  note: 'au prix réellement payé', couleur: couleurs.vert },
+            ]} />
 
-                {/* EN-TÊTE */}
-                <EnteteRapportPDF
-                    boutique={donnees.boutique}
-                    titre="ÉTAT DU STOCK"
-                    sousTitre={donnees.entrepot_filtre}
-                    genereLe={donnees.genere_le}
-                />
+            {alertes.length > 0 && (
+                <>
+                    <SectionTitre>
+                        Produits en alerte de stock ({alertes.length})
+                    </SectionTitre>
+                    <TableauRapport
+                        colonnes={colonnes(true)}
+                        lignes={alertes}
+                        totaux={['', '', '', '', '', 'Valeur en alerte', fmt(totalAlertes)]}
+                    />
+                </>
+            )}
 
-                {/* STATS */}
-                <View style={styles.statsRow}>
-                    <View style={styles.statCard}>
-                        <Text style={styles.statLabel}>Total produits</Text>
-                        <Text style={styles.statVal}>{donnees.total_produits}</Text>
-                    </View>
-                    <View style={[styles.statCard, { borderLeftColor: couleurs.rouge }]}>
-                        <Text style={styles.statLabel}>En alerte</Text>
-                        <Text style={[styles.statVal, { color: couleurs.rouge }]}>
-                            {donnees.produits_en_alerte}
-                        </Text>
-                    </View>
-                    <View style={[styles.statCard, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.statLabel}>Valeur stock (prix payé)</Text>
-                        <Text style={[styles.statVal, { color: couleurs.vert, fontSize: 10 }]}>
-                            {fmt(donnees.valeur_stock, d)}
-                        </Text>
-                    </View>
-                </View>
+            <SectionTitre>Stock normal ({normaux.length} produit(s))</SectionTitre>
+            <TableauRapport
+                colonnes={colonnes(false)}
+                lignes={normaux}
+                vide="Tous les produits sont en alerte de stock."
+                totaux={['', '', '', '', '', 'Valeur', fmt(totalNormaux)]}
+            />
 
-                {donnees.lignes_prix_courant > 0 && (
-                    <Text style={{ fontSize: 7.5, color: couleurs.texteFaible, marginBottom: 8 }}>
-                        {donnees.lignes_prix_courant} ligne(s) valorisée(s) au prix d'achat
-                        courant, faute d'une réception connue pour ce produit. Les autres
-                        le sont au dernier prix effectivement réglé au fournisseur.
-                    </Text>
-                )}
-
-                {/* ALERTES D'ABORD */}
-                {alertes.length > 0 && (
-                    <>
-                        <Text style={[styles.sectionTitre, { color: couleurs.rouge }]}>
-                            ⚠ Produits en alerte de stock ({alertes.length})
-                        </Text>
-                        <View style={styles.tableauEntete}>
-                            <Text style={[styles.cellEnt, { width: '10%' }]}>ID</Text>
-                            <Text style={[styles.cellEnt, { width: '30%' }]}>Produit</Text>
-                            <Text style={[styles.cellEnt, { width: '18%' }]}>Catégorie</Text>
-                            <Text style={[styles.cellEnt, { width: '12%', textAlign: 'center' }]}>Stock</Text>
-                            <Text style={[styles.cellEnt, { width: '12%', textAlign: 'center' }]}>Seuil</Text>
-                            <Text style={[styles.cellEnt, { width: '18%', textAlign: 'right' }]}>Val. stock</Text>
-                        </View>
-                        {alertes.map((p, i) => (
-                            <View key={p.public_id}
-                                  style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}, { backgroundColor: '#fff5f5' }]}>
-                                <Text style={[styles.cell, { width: '10%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
-                                    {p.public_id}
-                                </Text>
-                                <Text style={[styles.cell, { width: '30%', fontFamily: 'Helvetica-Bold', color: couleurs.rouge, maxLines: 1 }]}>{p.nom}</Text>
-                                <Text style={[styles.cell, { width: '18%' }]}>{p.categorie ?? '—'}</Text>
-                                <Text style={[styles.cell, { width: '12%', textAlign: 'center', color: couleurs.rouge, fontFamily: 'Helvetica-Bold' }]}>
-                                    {p.stock} {p.unite}
-                                </Text>
-                                <Text style={[styles.cell, { width: '12%', textAlign: 'center' }]}>{p.seuil_alerte}</Text>
-                                <Text style={[styles.cell, { width: '18%', textAlign: 'right' }]}>
-                                    {fmt(p.valeur, d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                {/* PRODUITS NORMAUX */}
-                <Text style={styles.sectionTitre}>
-                    Stock normal ({normaux.length} produit(s))
-                </Text>
-                <View style={styles.tableauEntete}>
-                    <Text style={[styles.cellEnt, { width: '10%' }]}>ID</Text>
-                    <Text style={[styles.cellEnt, { width: '23%' }]}>Produit</Text>
-                    <Text style={[styles.cellEnt, { width: '14%' }]}>Catégorie</Text>
-                    <Text style={[styles.cellEnt, { width: '12%', textAlign: 'center' }]}>Stock</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix payé</Text>
-                    <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Prix vente</Text>
-                    <Text style={[styles.cellEnt, { width: '15%', textAlign: 'right' }]}>Val. stock</Text>
-                </View>
-                {normaux.map((p, i) => (
-                    <View key={p.public_id} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                        <Text style={[styles.cell, { width: '10%', fontSize: 7, fontFamily: 'Helvetica-Bold' }]}>
-                            {p.public_id}
-                        </Text>
-                        <Text style={[styles.cell, { width: '23%', maxLines: 1 }]}>{p.nom}</Text>
-                        <Text style={[styles.cell, { width: '14%' }]}>{p.categorie ?? '—'}</Text>
-                        <Text style={[styles.cell, { width: '12%', textAlign: 'center', fontFamily: 'Helvetica-Bold' }]}>
-                            {p.stock} {p.unite}
-                        </Text>
-                        <Text style={[styles.cell, {
-                            width: '13%', textAlign: 'right',
-                            color: p.base_prix === 'courant' ? couleurs.texteFaible : couleurs.texte,
-                        }]}>
-                            {fmt(p.prix_achat, d)}{p.base_prix === 'courant' ? ' *' : ''}
-                        </Text>
-                        <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>{fmt(p.prix_vente, d)}</Text>
-                        <Text style={[styles.cell, { width: '15%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                            {fmt(p.valeur, d)}
-                        </Text>
-                    </View>
-                ))}
-
-                <Text style={styles.pied}>
-                    {donnees.boutique.nom} — État du stock — {donnees.genere_le} — Manetec Gestock
-                </Text>
-            </Page>
-        </Document>
+            {donnees.lignes_prix_courant > 0 && (
+                <NotePDF>
+                    * {donnees.lignes_prix_courant} ligne(s) valorisée(s) au prix d&apos;achat
+                    courant, faute d&apos;une réception connue pour ce produit. Les autres le
+                    sont au dernier prix effectivement réglé au fournisseur.
+                </NotePDF>
+            )}
+        </DocumentRapport>
     )
 }
