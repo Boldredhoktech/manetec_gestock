@@ -750,8 +750,10 @@ export async function getDonneesRapportPP(
             .select('montant, expense_categories(nom)')
             .eq('shop_id', shopId)
             .gte('date_depense', debut).lte('date_depense', fin),
+        // Sur la date de VERSEMENT, comme tous les autres postes.
         adminClient.from('salary_payments').select('montant_net')
-            .eq('shop_id', shopId).eq('periode_mois', mois).eq('periode_annee', annee),
+            .eq('shop_id', shopId)
+            .gte('date_paiement', debut).lte('date_paiement', fin),
         adminClient.from('supplier_payments').select('montant')
             .eq('shop_id', shopId)
             .gte('date_paiement', debut).lte('date_paiement', fin),
@@ -803,7 +805,7 @@ export async function getDonneesRapportPP(
         const { data: dep } = await adminClient.from('expenses').select('montant')
             .eq('shop_id', shopId).gte('date_depense', deb).lte('date_depense', fin2)
         const { data: sal } = await adminClient.from('salary_payments').select('montant_net')
-            .eq('shop_id', shopId).eq('periode_mois', m).eq('periode_annee', a)
+            .eq('shop_id', shopId).gte('date_paiement', deb).lte('date_paiement', fin2)
 
         const ca  = v?.reduce((acc, x) => acc + x.montant_total, 0) ?? 0
         const ch  = (dep?.reduce((acc, x) => acc + x.montant, 0) ?? 0) +
@@ -841,7 +843,11 @@ export async function getDonneesRapportPP(
     }
 }
 
-// ── Données rapport salaires ──────────────────────────────────
+// ── Données rapport salaires ────────────────────────
+// Le rapport liste ce qui est SORTI DE CAISSE dans le mois demandé, et
+// non ce qui était dû au titre de ce mois : c'est ce décalage qui
+// faisait dire aux PDF autre chose que la réalité. Chaque ligne porte
+// donc les deux dates — le mois travaillé et le jour du versement.
 export async function getDonneesRapportSalaires(
     shopId: string,
     mois:   number,
@@ -849,35 +855,50 @@ export async function getDonneesRapportSalaires(
 ) {
     const adminClient = createAdminClient()
 
+    const debut = `${annee}-${String(mois).padStart(2, '0')}-01`
+    const fin   = new Date(Date.UTC(annee, mois, 0)).toISOString().split('T')[0]
+
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
     const { data: salaires } = await adminClient
         .from('salary_payments')
         .select(`
+      employee_id, periode_mois, periode_annee,
       salaire_base, bonus, deductions, montant_net,
       moyen_paiement, date_paiement,
       employees(nom_complet, poste)
     `)
         .eq('shop_id', shopId)
-        .eq('periode_mois', mois)
-        .eq('periode_annee', annee)
+        .gte('date_paiement', debut)
+        .lte('date_paiement', fin)
+        .order('date_paiement')
 
     const MOIS_LABELS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin',
         'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
+    const MOIS_COURTS = ['','Janv.','Févr.','Mars','Avr.','Mai','Juin',
+        'Juill.','Août','Sept.','Oct.','Nov.','Déc.']
+
+    const lignes = salaires ?? []
+
+    // Plusieurs versements sont admis pour un même employé (acompte puis
+    // solde) : compter les lignes donnerait un nombre d'employés faux.
+    const employesPayes = new Set(lignes.map(s => s.employee_id)).size
 
     return {
         boutique:          boutique!,
-        periode:           `${MOIS_LABELS_FR[mois]} ${annee}`,
+        periode:           `Versements de ${MOIS_LABELS_FR[mois]} ${annee}`,
         genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
-        nb_employes:       salaires?.length ?? 0,
-        total_brut:        salaires?.reduce((a, s) => a + s.salaire_base, 0) ?? 0,
-        total_bonus:       salaires?.reduce((a, s) => a + s.bonus, 0) ?? 0,
-        total_deductions:  salaires?.reduce((a, s) => a + s.deductions, 0) ?? 0,
-        total_net:         salaires?.reduce((a, s) => a + s.montant_net, 0) ?? 0,
-        salaires: (salaires ?? []).map(s => ({
+        nb_employes:       employesPayes,
+        nb_versements:     lignes.length,
+        total_brut:        lignes.reduce((a, s) => a + s.salaire_base, 0),
+        total_bonus:       lignes.reduce((a, s) => a + s.bonus, 0),
+        total_deductions:  lignes.reduce((a, s) => a + s.deductions, 0),
+        total_net:         lignes.reduce((a, s) => a + s.montant_net, 0),
+        salaires: lignes.map(s => ({
             employe:       (s.employees as any)?.nom_complet ?? 'Inconnu',
             poste:         (s.employees as any)?.poste ?? null,
+            au_titre_de:   `${MOIS_COURTS[s.periode_mois]} ${s.periode_annee}`,
             salaire_base:  s.salaire_base,
             bonus:         s.bonus,
             deductions:    s.deductions,

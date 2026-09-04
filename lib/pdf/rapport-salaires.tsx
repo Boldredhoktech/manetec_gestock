@@ -1,7 +1,7 @@
 import React from 'react'
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
-import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
+import { formatMontantPDF, formatDatePDF } from '@/lib/pdf/utils-pdf'
 import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
 const styles = StyleSheet.create({
@@ -48,6 +48,8 @@ const MOIS = ['', 'Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin',
 interface LigneSalaire {
     employe:       string
     poste:         string | null
+    // Le mois travaille, distinct du jour ou l'argent est sorti.
+    au_titre_de:   string
     salaire_base:  number
     bonus:         number
     deductions:    number
@@ -61,6 +63,7 @@ interface DonneesRapportSalaires {
     periode:        string
     genere_le:      string
     nb_employes:    number
+    nb_versements:  number
     total_brut:     number
     total_bonus:    number
     total_deductions: number
@@ -70,6 +73,7 @@ interface DonneesRapportSalaires {
 
 const MOYENS: Record<string, string> = {
     cash: 'Espèces', wave: 'Wave', mtn_momo: 'MTN MoMo',
+    celtiis_cash: 'Celtiis', moov_money: 'Moov', other_mobile: 'Mobile',
     bank_transfer: 'Virement', bank_card: 'Carte',
 }
 
@@ -92,6 +96,10 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
                         <Text style={[styles.statVal, { color: couleurs.accent }]}>{donnees.nb_employes}</Text>
                     </View>
                     <View style={styles.statCard}>
+                        <Text style={styles.statLabel}>Versements</Text>
+                        <Text style={styles.statVal}>{donnees.nb_versements}</Text>
+                    </View>
+                    <View style={styles.statCard}>
                         <Text style={styles.statLabel}>Total brut</Text>
                         <Text style={styles.statVal}>{fmt(donnees.total_brut, d)}</Text>
                     </View>
@@ -104,20 +112,33 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
                 </View>
 
                 <View style={styles.tableauEntete}>
-                    <Text style={[styles.cellEnt, { width: '25%' }]}>Employé</Text>
-                    <Text style={[styles.cellEnt, { width: '15%' }]}>Poste</Text>
+                    <Text style={[styles.cellEnt, { width: '22%' }]}>Employé</Text>
+                    <Text style={[styles.cellEnt, { width: '11%' }]}>Au titre de</Text>
+                    <Text style={[styles.cellEnt, { width: '11%' }]}>Versé le</Text>
                     <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Base</Text>
                     <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>Bonus</Text>
-                    <Text style={[styles.cellEnt, { width: '11%', textAlign: 'right' }]}>Déduct.</Text>
+                    <Text style={[styles.cellEnt, { width: '10%', textAlign: 'right' }]}>Déduct.</Text>
                     <Text style={[styles.cellEnt, { width: '13%', textAlign: 'right' }]}>Net versé</Text>
-                    <Text style={[styles.cellEnt, { width: '13%' }]}>Moyen</Text>
+                    <Text style={[styles.cellEnt, { width: '10%' }]}>Moyen</Text>
                 </View>
 
                 {donnees.salaires.map((s, i) => (
                     <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                        <Text style={[styles.cell, { width: '25%', fontFamily: 'Helvetica-Bold', maxLines: 1 }]}>{s.employe}</Text>
-                        <Text style={[styles.cell, { width: '15%', maxLines: 1 }]}>
-                            {s.poste ?? '—'}
+                        <View style={{ width: '22%' }}>
+                            <Text style={[styles.cell, { fontFamily: 'Helvetica-Bold', maxLines: 1 }]}>
+                                {s.employe}
+                            </Text>
+                            {s.poste ? (
+                                <Text style={[styles.cell, { fontSize: 7, color: couleurs.texteFaible, maxLines: 1 }]}>
+                                    {s.poste}
+                                </Text>
+                            ) : null}
+                        </View>
+                        <Text style={[styles.cell, { width: '11%', maxLines: 1 }]}>
+                            {s.au_titre_de}
+                        </Text>
+                        <Text style={[styles.cell, { width: '11%', maxLines: 1 }]}>
+                            {formatDatePDF(s.date_paiement)}
                         </Text>
                         <Text style={[styles.cell, { width: '13%', textAlign: 'right' }]}>
                             {fmt(s.salaire_base, d)}
@@ -125,7 +146,7 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
                         <Text style={[styles.cell, { width: '10%', textAlign: 'right', color: couleurs.vert }]}>
                             {s.bonus > 0 ? fmt(s.bonus, d) : '—'}
                         </Text>
-                        <Text style={[styles.cell, { width: '11%', textAlign: 'right', color: couleurs.rouge }]}>
+                        <Text style={[styles.cell, { width: '10%', textAlign: 'right', color: couleurs.rouge }]}>
                             {s.deductions > 0 ? fmt(s.deductions, d) : '—'}
                         </Text>
                         <Text style={[styles.cell, {
@@ -133,7 +154,7 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
                         }]}>
                             {fmt(s.montant_net, d)}
                         </Text>
-                        <Text style={[styles.cell, { width: '13%' }]}>
+                        <Text style={[styles.cell, { width: '10%', maxLines: 1 }]}>
                             {MOYENS[s.moyen] ?? s.moyen}
                         </Text>
                     </View>
@@ -166,6 +187,12 @@ export function RapportSalairesPDF({ donnees }: { donnees: DonneesRapportSalaire
                         </View>
                     </View>
                 </View>
+
+                <Text style={{ fontSize: 7, color: couleurs.texteFaible, marginTop: 10 }}>
+                    Ce rapport liste les salaires effectivement VERSÉS sur la période, quel que
+                    soit le mois travaillé auquel ils se rapportent (colonne « Au titre de »).
+                    Un même employé peut y figurer plusieurs fois : acompte puis solde.
+                </Text>
 
                 <Text style={styles.pied}>
                     {donnees.boutique.nom} — Rapport de paie — {donnees.genere_le} — Manetec Gestock

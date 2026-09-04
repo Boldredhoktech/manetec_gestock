@@ -109,6 +109,12 @@ export async function creerEmploye(formData: FormData) {
 }
 
 // ── Payer un salaire ──────────────────────────────────────────
+// La période travaillée (mois/année) et la DATE DE VERSEMENT sont deux
+// choses distinctes, et toutes deux saisissables : on peut régler un
+// arriéré, et le versement compte dans le mois où l'argent sort.
+// Plusieurs versements sont admis pour une même période (acompte puis
+// solde) — c'est l'écran qui rend le cumul visible, plus la base qui
+// l'interdit.
 export async function payerSalaire(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -125,12 +131,37 @@ export async function payerSalaire(formData: FormData) {
     const bonus        = parseFloat(formData.get('bonus') as string) || 0
     const deductions   = parseFloat(formData.get('deductions') as string) || 0
     const moyen        = (formData.get('moyen') as string) || 'cash'
+    const datePaiement = (formData.get('datePaiement') as string) || ''
     const reference    = (formData.get('reference') as string)?.trim() || null
     const note         = (formData.get('note') as string)?.trim() || null
     const montantNet   = salaireBase + bonus - deductions
 
-    if (!employeeId || isNaN(mois) || isNaN(annee)) return { erreur: 'Données invalides.' }
+    if (!employeeId) return { erreur: 'Employé manquant.' }
+    if (!Number.isInteger(mois) || mois < 1 || mois > 12) {
+        return { erreur: 'Mois de la période invalide.' }
+    }
+    if (!Number.isInteger(annee) || annee < 2000 || annee > 2100) {
+        return { erreur: 'Année de la période invalide.' }
+    }
     if (montantNet <= 0) return { erreur: 'Le montant net doit être positif.' }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datePaiement)) {
+        return { erreur: 'Date de versement invalide.' }
+    }
+    // Un versement futur fausserait la trésorerie du mois en cours.
+    if (datePaiement > new Date().toISOString().split('T')[0]) {
+        return { erreur: 'La date de versement ne peut pas être dans le futur.' }
+    }
+
+    // Cloisonnement : l'employé doit appartenir à la boutique.
+    const { data: employe } = await adminClient
+        .from('employees')
+        .select('id')
+        .eq('id', employeeId)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!employe) return { erreur: 'Employé introuvable.' }
 
     const { data: publicId } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'PSAL' })
@@ -146,14 +177,19 @@ export async function payerSalaire(formData: FormData) {
         deductions,
         montant_net:    montantNet,
         moyen_paiement: moyen,
+        date_paiement:  datePaiement,
         reference,
         note,
         created_by:     user.user_metadata.user_id,
     })
 
-    if (error) return { erreur: 'Salaire déjà payé pour cette période ou erreur.' }
+    if (error) {
+        console.error('ERREUR VERSEMENT SALAIRE:', error)
+        return { erreur: 'Erreur lors de l\'enregistrement du versement.' }
+    }
 
     revalidatePath('/compta/salaires')
+    revalidatePath('/compta/dashboard')
     return { succes: true }
 }
 
@@ -411,10 +447,13 @@ export async function getTableauBordComptable(mois: number, annee: number) {
             .select('montant, date_depense, libelle, expense_categories(nom)')
             .eq('shop_id', shopId)
             .gte('date_depense', debut).lte('date_depense', fin),
+        // Sur la DATE DE VERSEMENT, comme les dépenses et les
+        // fournisseurs : un salaire de juin réglé en juillet sort de la
+        // caisse de juillet. La période travaillée n'est qu'une étiquette.
         adminClient.from('salary_payments')
             .select('montant_net')
             .eq('shop_id', shopId)
-            .eq('periode_mois', mois).eq('periode_annee', annee),
+            .gte('date_paiement', debut).lte('date_paiement', fin),
         adminClient.from('supplier_payments')
             .select('montant, date_paiement')
             .eq('shop_id', shopId)
