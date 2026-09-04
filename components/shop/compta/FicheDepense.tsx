@@ -6,6 +6,8 @@ import { modifierDepense, annulerDepense } from '@/actions/comptabilite'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
+import ChampsReglement from './ChampsReglement'
 import { Loader2, AlertCircle, Ban, Pencil, CheckCircle } from 'lucide-react'
 import HistoriqueCorrections, { type EntreeHistorique } from './HistoriqueCorrections'
 
@@ -41,6 +43,7 @@ export default function FicheDepense({ depense, categories, historique, peutModi
     const [message, setMessage]     = useState('')
     const [enAttente, setEnAttente] = useState(false)
     const [motif, setMotif]         = useState('')
+    const [montant, setMontant]     = useState(depense.montant)
 
     const aujourdhui = new Date().toISOString().split('T')[0]
 
@@ -135,9 +138,10 @@ export default function FicheDepense({ depense, categories, historique, peutModi
                             <label className="text-sm font-medium text-foreground">
                                 Montant <span className="text-destructive">*</span>
                             </label>
-                            <input name="montant" type="number" min="0.01" step="0.01" required
-                                   defaultValue={depense.montant} disabled={enAttente}
-                                   className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                            <ChampNombre
+                                name="montant" value={montant} onChange={setMontant}
+                                required disabled={enAttente}
+                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground">Date</label>
@@ -162,16 +166,11 @@ export default function FicheDepense({ depense, categories, historique, peutModi
                                 ))}
                             </select>
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-foreground">Moyen de paiement</label>
-                            <select name="moyen" defaultValue={depense.moyen_paiement}
-                                    disabled={enAttente}
-                                    className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50">
-                                {MOYENS_PAIEMENT.map(m => (
-                                    <option key={m.code} value={m.code}>{m.label}</option>
-                                ))}
-                            </select>
-                        </div>
+                        <ChampsReglement
+                            moyenParDefaut={depense.moyen_paiement}
+                            referenceParDefaut={depense.reference ?? ''}
+                            disabled={enAttente}
+                        />
                     </div>
 
                     <div className="space-y-1.5">

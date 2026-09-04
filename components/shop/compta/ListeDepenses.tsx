@@ -1,4 +1,8 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname, useSearchParams } from 'next/navigation'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
@@ -9,27 +13,44 @@ interface Depense {
     expense_categories: { nom: string } | { nom: string }[] | null
 }
 
-interface Props { depenses: Depense[] }
+interface Props {
+    depenses:     Depense[]
+    total:        number
+    totalMontant: number
+    page:         number
+    parPage:      number
+}
 
 function nomCategorie(c: Depense['expense_categories']): string {
     if (!c) return '—'
     return (Array.isArray(c) ? c[0]?.nom : c.nom) ?? '—'
 }
 
-export default function ListeDepenses({ depenses }: Props) {
+export default function ListeDepenses({
+    depenses, total, totalMontant, page, parPage,
+}: Props) {
+    const pathname     = usePathname()
+    const searchParams = useSearchParams()
+
+    const nbPages = Math.max(1, Math.ceil(total / parPage))
+    const premier = total === 0 ? 0 : (page - 1) * parPage + 1
+    const dernier = Math.min(page * parPage, total)
+
+    function lienPage(p: number) {
+        const params = new URLSearchParams(searchParams.toString())
+        params.set('page', String(p))
+        return `${pathname}?${params.toString()}`
+    }
+
     if (depenses.length === 0) {
         return (
             <div className="text-center py-10 text-muted-foreground text-sm bg-card border border-border rounded-xl">
-                Aucune dépense enregistrée.
+                {total === 0
+                    ? 'Aucune dépense ne correspond à cette sélection.'
+                    : 'Cette page est vide — revenez à la première.'}
             </div>
         )
     }
-
-    // Les dépenses annulées restent à l'écran, barrées, mais ne comptent
-    // dans aucun total — ici comme dans les rapports.
-    const total = depenses
-        .filter(d => !d.est_annule)
-        .reduce((somme, d) => somme + d.montant, 0)
 
     return (
         <div className="bg-card border border-border rounded-xl overflow-hidden">
@@ -81,15 +102,55 @@ export default function ListeDepenses({ depenses }: Props) {
                     <tfoot>
                     <tr className="border-t-2 border-border bg-muted/30">
                         <td colSpan={4} className="px-4 py-3 text-sm font-semibold text-foreground">
-                            Total affiché
+                            Total de la sélection
                             <span className="font-normal text-muted-foreground"> (hors annulées)</span>
                         </td>
                         <td className="px-4 py-3 text-right text-sm font-bold text-destructive tabular-nums">
-                            {formatMontant(total)}
+                            {formatMontant(totalMontant)}
                         </td>
                     </tr>
                     </tfoot>
                 </table>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 border-t border-border">
+                <p className="text-xs text-muted-foreground">
+                    Dépenses {premier} à {dernier} sur {total}
+                </p>
+
+                {nbPages > 1 && (
+                    <div className="flex items-center gap-2">
+                        {page > 1 ? (
+                            <Link href={lienPage(page - 1)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-input rounded-lg hover:bg-muted transition-colors">
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                                Précédent
+                            </Link>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-input rounded-lg opacity-40">
+                                <ChevronLeft className="w-3.5 h-3.5" />
+                                Précédent
+                            </span>
+                        )}
+
+                        <span className="text-xs text-muted-foreground tabular-nums">
+                            Page {page} / {nbPages}
+                        </span>
+
+                        {page < nbPages ? (
+                            <Link href={lienPage(page + 1)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-input rounded-lg hover:bg-muted transition-colors">
+                                Suivant
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </Link>
+                        ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs border border-input rounded-lg opacity-40">
+                                Suivant
+                                <ChevronRight className="w-3.5 h-3.5" />
+                            </span>
+                        )}
+                    </div>
+                )}
             </div>
         </div>
     )

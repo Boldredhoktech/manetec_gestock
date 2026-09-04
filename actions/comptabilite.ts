@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { journaliserCorrection, champsModifies } from '@/lib/audit/journaliser'
+import { bornesDuMois, bornesInstant, MOIS_FR } from '@/lib/dates/periode'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -52,6 +53,9 @@ export async function creerDepense(formData: FormData) {
 
     if (!libelle) return { erreur: 'Le libellé est obligatoire.' }
     if (isNaN(montant) || montant <= 0) return { erreur: 'Montant invalide.' }
+    if (dateDepense > new Date().toISOString().split('T')[0]) {
+        return { erreur: 'La date de la dépense ne peut pas être dans le futur.' }
+    }
 
     const { data: publicId } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'EXP' })
@@ -75,6 +79,30 @@ export async function creerDepense(formData: FormData) {
     redirect('/compta/depenses')
 }
 
+
+// Un employe peut etre relie au compte de connexion de la meme
+// personne : c'est ce qui permettra de rapprocher ce qu'un vendeur
+// encaisse de ce qu'il coute. Le compte doit appartenir a la boutique.
+async function verifierRattachement(
+    userId: string | null,
+    shopId: string,
+): Promise<{ userId: string | null } | { erreur: string }> {
+    if (!userId) return { userId: null }
+
+    const adminClient = createAdminClient()
+
+    const { data: compte } = await adminClient
+        .from('shop_users')
+        .select('id')
+        .eq('id', userId)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!compte) return { erreur: 'Ce compte utilisateur est introuvable dans cette boutique.' }
+
+    return { userId }
+}
+
 // ── Créer un employé ──────────────────────────────────────────
 export async function creerEmploye(formData: FormData) {
     const supabase = await createClient()
@@ -90,11 +118,19 @@ export async function creerEmploye(formData: FormData) {
     const salaireBase  = parseFloat(formData.get('salaireBase') as string) || 0
     const telephone    = (formData.get('telephone') as string)?.trim() || null
     const dateEmbauche = (formData.get('dateEmbauche') as string) || null
+    const userId       = (formData.get('userId') as string) || null
 
     if (!nomComplet) return { erreur: 'Le nom est obligatoire.' }
 
+    // employees.user_id etait prevu au schema depuis l'origine et
+    // alimente nulle part : le meme vendeur existait deux fois, une
+    // fiche de paie et un compte de connexion, sans lien entre eux.
+    const rattachement = await verifierRattachement(userId, shopId)
+    if ('erreur' in rattachement) return rattachement
+
     const { error } = await adminClient.from('employees').insert({
         shop_id:      shopId,
+        user_id:      rattachement.userId,
         nom_complet:  nomComplet,
         poste,
         salaire_base: salaireBase,
@@ -116,7 +152,7 @@ export async function creerEmploye(formData: FormData) {
 // Plusieurs versements sont admis pour une même période (acompte puis
 // solde) — c'est l'écran qui rend le cumul visible, plus la base qui
 // l'interdit.
-export async function payerSalaire(formData: FormData) {
+export async function payerSalaire(formData: FormData): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -428,8 +464,8 @@ export async function getTableauBordComptable(mois: number, annee: number) {
     if (!Number.isInteger(mois) || mois < 1 || mois > 12) return null
     if (!Number.isInteger(annee) || annee < 2000 || annee > 2100) return null
 
-    const debut = `${annee}-${String(mois).padStart(2, '0')}-01`
-    const fin   = new Date(Date.UTC(annee, mois, 0)).toISOString().split('T')[0]
+    const { debut, fin } = bornesDuMois(mois, annee)
+    const instants       = bornesInstant(debut, fin)
 
     const [
         { data: ventes },
@@ -443,7 +479,7 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         adminClient.from('sales')
             .select('montant_total, credit_accorde, created_at')
             .eq('shop_id', shopId).eq('statut', 'completee')
-            .gte('created_at', debut).lte('created_at', fin + 'T23:59:59'),
+            .gte('created_at', instants.de).lt('created_at', instants.avant),
         // Les écritures annulées restent visibles à l'écran, barrées,
         // mais sortent de tous les totaux.
         adminClient.from('expenses')
@@ -477,8 +513,8 @@ export async function getTableauBordComptable(mois: number, annee: number) {
             .select('valeur_pertes, valeur_gains')
             .eq('shop_id', shopId)
             .eq('statut', 'valide')
-            .gte('valide_le', debut + 'T00:00:00')
-            .lte('valide_le', fin + 'T23:59:59'),
+            .gte('valide_le', instants.de)
+            .lt('valide_le', instants.avant),
         // Cinq sources d'argent agrégées par moyen de paiement en une
         // seule requête, cumul compris (voir migration 022).
         adminClient.rpc('ventilation_caisse', {
@@ -515,11 +551,8 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         solde:          Number(l.entrees_cumul) - Number(l.sorties_cumul),
     }))
 
-    const MOIS_LABELS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin',
-        'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-
     return {
-        periode: { mois, annee, libelle: `${MOIS_LABELS_FR[mois]} ${annee}` },
+        periode: { mois, annee, libelle: `${MOIS_FR[mois]} ${annee}` },
         totalVentes,
         totalFactures,
         totalEntrees,
@@ -554,10 +587,20 @@ export async function getTableauBordComptable(mois: number, annee: number) {
 // visible et barrée, et elle sort de tous les totaux.
 // ══════════════════════════════════════════════════════════════
 
+
+// Toutes les actions de correction repondent de la meme facon. Sans ce
+// type explicite, TypeScript infere une union ({erreur} | {succes} |
+// {succes, aucunChangement}) dont l'appelant ne peut lire aucun champ.
+export type ResultatCorrection = {
+    erreur?:         string
+    succes?:         boolean
+    aucunChangement?: boolean
+}
+
 const MOTIF_MINIMUM = 5
 
 // ── Modifier une dépense ──────────────────────────────────────
-export async function modifierDepense(formData: FormData) {
+export async function modifierDepense(formData: FormData): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -572,16 +615,20 @@ export async function modifierDepense(formData: FormData) {
     const moyen        = (formData.get('moyen') as string) || 'cash'
     const categoryId   = (formData.get('categoryId') as string) || null
     const dateDepense  = (formData.get('dateDepense') as string) || ''
+    const reference    = (formData.get('reference') as string)?.trim() || null
     const note         = (formData.get('note') as string)?.trim() || null
 
     if (!id) return { erreur: 'Dépense introuvable.' }
     if (!libelle) return { erreur: 'Le libellé est obligatoire.' }
     if (isNaN(montant) || montant <= 0) return { erreur: 'Montant invalide.' }
     if (!/^\d{4}-\d{2}-\d{2}$/.test(dateDepense)) return { erreur: 'Date invalide.' }
+    if (dateDepense > new Date().toISOString().split('T')[0]) {
+        return { erreur: 'La date de la dépense ne peut pas être dans le futur.' }
+    }
 
     const { data: avant } = await adminClient
         .from('expenses')
-        .select('id, public_id, libelle, montant, moyen_paiement, category_id, date_depense, note, est_annule')
+        .select('id, public_id, libelle, montant, moyen_paiement, category_id, date_depense, reference, note, est_annule')
         .eq('id', id)
         .eq('shop_id', shopId)
         .maybeSingle()
@@ -595,6 +642,7 @@ export async function modifierDepense(formData: FormData) {
         moyen_paiement: moyen,
         category_id:    categoryId || null,
         date_depense:   dateDepense,
+        reference,
         note,
     }
 
@@ -604,6 +652,7 @@ export async function modifierDepense(formData: FormData) {
         moyen_paiement: 'Moyen de paiement',
         category_id:    'Catégorie',
         date_depense:   'Date',
+        reference:      'Référence',
         note:           'Note',
     })
 
@@ -636,7 +685,7 @@ export async function modifierDepense(formData: FormData) {
 }
 
 // ── Annuler une dépense ───────────────────────────────────────
-export async function annulerDepense(id: string, motif: string) {
+export async function annulerDepense(id: string, motif: string): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -696,7 +745,7 @@ export async function annulerDepense(id: string, motif: string) {
 }
 
 // ── Renommer une catégorie de dépense ─────────────────────────
-export async function modifierCategorieDepense(id: string, nom: string) {
+export async function modifierCategorieDepense(id: string, nom: string): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -741,7 +790,7 @@ export async function modifierCategorieDepense(id: string, nom: string) {
 // ── Activer / retirer une catégorie ───────────────────────────
 // Retirée, la catégorie disparaît de la saisie mais reste lisible sur
 // les dépenses passées : on ne réécrit pas l'histoire.
-export async function basculerCategorieDepense(id: string, actif: boolean) {
+export async function basculerCategorieDepense(id: string, actif: boolean): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -783,7 +832,7 @@ export async function basculerCategorieDepense(id: string, actif: boolean) {
 }
 
 // ── Modifier un employé ───────────────────────────────────────
-export async function modifierEmploye(formData: FormData) {
+export async function modifierEmploye(formData: FormData): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -798,6 +847,7 @@ export async function modifierEmploye(formData: FormData) {
     const salaireBase  = parseFloat(formData.get('salaireBase') as string) || 0
     const telephone    = (formData.get('telephone') as string)?.trim() || null
     const dateEmbauche = (formData.get('dateEmbauche') as string) || null
+    const userId       = (formData.get('userId') as string) || null
 
     if (!id) return { erreur: 'Employé introuvable.' }
     if (!nomComplet) return { erreur: 'Le nom est obligatoire.' }
@@ -806,9 +856,12 @@ export async function modifierEmploye(formData: FormData) {
         return { erreur: 'Date d\'embauche invalide.' }
     }
 
+    const rattachement = await verifierRattachement(userId, shopId)
+    if ('erreur' in rattachement) return rattachement
+
     const { data: avant } = await adminClient
         .from('employees')
-        .select('id, nom_complet, poste, salaire_base, telephone, date_embauche')
+        .select('id, nom_complet, poste, salaire_base, telephone, date_embauche, user_id')
         .eq('id', id)
         .eq('shop_id', shopId)
         .maybeSingle()
@@ -821,6 +874,7 @@ export async function modifierEmploye(formData: FormData) {
         salaire_base:  salaireBase,
         telephone,
         date_embauche: dateEmbauche || null,
+        user_id:       rattachement.userId,
     }
 
     const modifications = champsModifies(avant, apres, {
@@ -828,6 +882,7 @@ export async function modifierEmploye(formData: FormData) {
         poste:         'Poste',
         salaire_base:  'Salaire de base',
         telephone:     'Téléphone',
+        user_id:       'Compte utilisateur',
         date_embauche: 'Date d\'embauche',
     })
 
@@ -860,7 +915,7 @@ export async function modifierEmploye(formData: FormData) {
 // ── Désactiver / réintégrer un employé ────────────────────────
 // Les versements déjà faits restent au rapport de paie : désactiver
 // range un employé sorti, cela n'efface pas ce qu'on lui a versé.
-export async function basculerEmploye(id: string, actif: boolean) {
+export async function basculerEmploye(id: string, actif: boolean): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -906,7 +961,7 @@ export async function basculerEmploye(id: string, actif: boolean) {
 }
 
 // ── Modifier un versement de salaire ──────────────────────────
-export async function modifierVersementSalaire(formData: FormData) {
+export async function modifierVersementSalaire(formData: FormData): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -986,7 +1041,7 @@ export async function modifierVersementSalaire(formData: FormData) {
 }
 
 // ── Annuler un versement de salaire ───────────────────────────
-export async function annulerVersementSalaire(id: string, motif: string) {
+export async function annulerVersementSalaire(id: string, motif: string): Promise<ResultatCorrection> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }

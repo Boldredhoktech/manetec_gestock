@@ -8,11 +8,12 @@ import {
 } from '@/actions/comptabilite'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
+import ChampsReglement from './ChampsReglement'
 import {
     Loader2, CheckCircle, AlertCircle, User, History, AlertTriangle,
-    Pencil, Ban, ChevronRight,
+    Pencil, Ban, ChevronRight, FileText,
 } from 'lucide-react'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
 interface Versement {
     id:             string
@@ -292,6 +293,13 @@ export default function ListeEmployes({
                                                             <span className={`tabular-nums ${v.est_annule ? 'line-through' : ''}`}>
                                                                 {formatMontant(v.montant_net)}
                                                             </span>
+                                                            <a href={`/api/v1/pdf/bulletin-paie/${v.id}`}
+                                                               target="_blank" rel="noopener noreferrer"
+                                                               aria-label="Bulletin de paie"
+                                                               title="Bulletin de paie"
+                                                               className="p-0.5 rounded hover:bg-background text-muted-foreground">
+                                                                <FileText className="w-3 h-3" />
+                                                            </a>
                                                             {!v.est_annule && (
                                                                 <>
                                                                     <button type="button"
@@ -329,28 +337,19 @@ export default function ListeEmployes({
                                                     {versementEdite === v.id && (
                                                         <form onSubmit={e => enregistrerCorrection(e, v.id)}
                                                               className="bg-background border border-border rounded p-2 space-y-1.5">
-                                                            <div className="grid grid-cols-3 gap-1">
-                                                                <input name="salaireBase" type="number" min="0" step="0.01"
-                                                                       defaultValue={v.salaire_base} aria-label="Base"
-                                                                       className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
-                                                                <input name="bonus" type="number" min="0" step="0.01"
-                                                                       defaultValue={v.bonus} aria-label="Bonus"
-                                                                       className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
-                                                                <input name="deductions" type="number" min="0" step="0.01"
-                                                                       defaultValue={v.deductions} aria-label="Déductions"
-                                                                       className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
-                                                            </div>
+                                                            <MontantsCorrection
+                                                                base={v.salaire_base}
+                                                                bonus={v.bonus}
+                                                                deductions={v.deductions}
+                                                            />
                                                             <input name="datePaiement" type="date" required
                                                                    defaultValue={v.date_paiement} max={aujourdhui}
                                                                    aria-label="Date de versement"
                                                                    className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
-                                                            <select name="moyen" defaultValue={v.moyen_paiement}
-                                                                    aria-label="Moyen de paiement"
-                                                                    className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs">
-                                                                {MOYENS_PAIEMENT.map(m => (
-                                                                    <option key={m.code} value={m.code}>{m.label}</option>
-                                                                ))}
-                                                            </select>
+                                                            <ChampsReglement
+                                                                compact
+                                                                moyenParDefaut={v.moyen_paiement}
+                                                            />
                                                             <div className="flex gap-1">
                                                                 <Button type="button" size="sm" variant="outline"
                                                                         className="flex-1 h-7 text-xs"
@@ -451,27 +450,9 @@ export default function ListeEmployes({
                                             </div>
                                         )}
 
-                                        <div className="grid grid-cols-3 gap-1.5">
-                                            <div>
-                                                <label className="text-xs text-muted-foreground">Base</label>
-                                                <input name="salaireBase" type="number"
-                                                       defaultValue={reste > 0 ? reste : emp.salaire_base}
-                                                       min="0" step="0.01"
-                                                       className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5 focus:outline-none focus:ring-1 focus:ring-ring" />
-                                            </div>
-                                            <div>
-                                                <label className="text-xs text-muted-foreground">Bonus</label>
-                                                <input name="bonus" type="number"
-                                                       defaultValue="0" min="0" step="0.01"
-                                                       className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5 focus:outline-none focus:ring-1 focus:ring-ring" />
-                                            </div>
-                                            <div>
-                                                <label className="text-xs text-muted-foreground">Déductions</label>
-                                                <input name="deductions" type="number"
-                                                       defaultValue="0" min="0" step="0.01"
-                                                       className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5 focus:outline-none focus:ring-1 focus:ring-ring" />
-                                            </div>
-                                        </div>
+                                        <FormulaireMontants
+                                            base={reste > 0 ? reste : emp.salaire_base}
+                                        />
 
                                         <div>
                                             <label className="text-xs text-muted-foreground">Date de versement</label>
@@ -480,12 +461,12 @@ export default function ListeEmployes({
                                                    className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5 focus:outline-none focus:ring-1 focus:ring-ring" />
                                         </div>
 
-                                        <select name="moyen"
-                                                className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs focus:outline-none focus:ring-1 focus:ring-ring">
-                                            {MOYENS_PAIEMENT.map(m => (
-                                                <option key={m.code} value={m.code}>{m.label}</option>
-                                            ))}
-                                        </select>
+                                        <ChampsReglement compact disabled={enAttente} />
+
+                                        <input name="note" type="text"
+                                               placeholder="Note (facultative)"
+                                               disabled={enAttente}
+                                               className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50" />
 
                                         <div className="flex gap-2">
                                             <Button type="button" size="sm" variant="outline"
@@ -539,6 +520,50 @@ export default function ListeEmployes({
                     </ul>
                 </div>
             )}
+        </div>
+    )
+}
+
+// ChampNombre garde son propre etat : il lui faut un composant, pas un
+// fragment de JSX. Deux petits, plutot qu'un etat par employe remonte
+// dans la liste entiere.
+function FormulaireMontants({ base }: { base: number }) {
+    const [b, setB]   = useState(base)
+    const [bo, setBo] = useState(0)
+    const [d, setD]   = useState(0)
+    const cls = 'w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5 focus:outline-none focus:ring-1 focus:ring-ring'
+
+    return (
+        <div className="grid grid-cols-3 gap-1.5">
+            <div>
+                <label className="text-xs text-muted-foreground">Base</label>
+                <ChampNombre name="salaireBase" value={b} onChange={setB} className={cls} />
+            </div>
+            <div>
+                <label className="text-xs text-muted-foreground">Bonus</label>
+                <ChampNombre name="bonus" value={bo} onChange={setBo} className={cls} />
+            </div>
+            <div>
+                <label className="text-xs text-muted-foreground">Déductions</label>
+                <ChampNombre name="deductions" value={d} onChange={setD} className={cls} />
+            </div>
+        </div>
+    )
+}
+
+function MontantsCorrection({
+    base, bonus, deductions,
+}: { base: number; bonus: number; deductions: number }) {
+    const [b, setB]   = useState(base)
+    const [bo, setBo] = useState(bonus)
+    const [d, setD]   = useState(deductions)
+    const cls = 'w-full px-1.5 py-1 bg-background border border-input rounded text-xs'
+
+    return (
+        <div className="grid grid-cols-3 gap-1">
+            <ChampNombre name="salaireBase" value={b} onChange={setB} className={cls} aria-label="Base" />
+            <ChampNombre name="bonus" value={bo} onChange={setBo} className={cls} aria-label="Bonus" />
+            <ChampNombre name="deductions" value={d} onChange={setD} className={cls} aria-label="Déductions" />
         </div>
     )
 }

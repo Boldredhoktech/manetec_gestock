@@ -5,11 +5,21 @@ import { useRouter } from 'next/navigation'
 import { modifierEmploye, basculerEmploye } from '@/actions/comptabilite'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle, Pencil, CheckCircle, UserMinus, UserCheck } from 'lucide-react'
+import ChampNombre from '@/components/ui/ChampNombre'
+import {
+    Loader2, AlertCircle, Pencil, CheckCircle, UserMinus, UserCheck, FileText,
+} from 'lucide-react'
 import HistoriqueCorrections, { type EntreeHistorique } from './HistoriqueCorrections'
+
+export interface CompteBoutique {
+    id:          string
+    nom_complet: string
+    identifiant: string
+}
 
 interface Employe {
     id:            string
+    user_id:       string | null
     nom_complet:   string
     poste:         string | null
     salaire_base:  number
@@ -36,11 +46,12 @@ const MOIS_LABELS = [
 ]
 
 export default function FicheEmploye({
-    employe, versements, historique,
+    employe, versements, historique, comptes,
 }: {
     employe:    Employe
     versements: Versement[]
     historique: EntreeHistorique[]
+    comptes:    CompteBoutique[]
 }) {
     const router = useRouter()
 
@@ -48,6 +59,7 @@ export default function FicheEmploye({
     const [erreur, setErreur]       = useState('')
     const [message, setMessage]     = useState('')
     const [enAttente, setEnAttente] = useState(false)
+    const [salaire, setSalaire]     = useState(employe.salaire_base)
 
     const aujourdhui = new Date().toISOString().split('T')[0]
 
@@ -153,9 +165,10 @@ export default function FicheEmploye({
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground">Salaire de base</label>
-                            <input name="salaireBase" type="number" min="0" step="0.01"
-                                   defaultValue={employe.salaire_base} disabled={enAttente}
-                                   className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                            <ChampNombre
+                                name="salaireBase" value={salaire} onChange={setSalaire}
+                                disabled={enAttente}
+                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-foreground">Date d&apos;embauche</label>
@@ -163,6 +176,26 @@ export default function FicheEmploye({
                                    defaultValue={employe.date_embauche ?? ''} disabled={enAttente}
                                    className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                         </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-foreground">
+                            Compte utilisateur
+                        </label>
+                        <select name="userId" defaultValue={employe.user_id ?? ''} disabled={enAttente}
+                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50">
+                            <option value="">— Aucun —</option>
+                            {comptes.map(c => (
+                                <option key={c.id} value={c.id}>
+                                    {c.nom_complet} · {c.identifiant}
+                                </option>
+                            ))}
+                        </select>
+                        <p className="text-xs text-muted-foreground">
+                            Relie cette fiche de paie au compte avec lequel la personne se connecte.
+                            Facultatif, mais c&apos;est ce lien qui permettra plus tard de rapprocher
+                            ce qu&apos;un vendeur encaisse de ce qu&apos;il coûte.
+                        </p>
                     </div>
 
                     <p className="text-xs text-muted-foreground">
@@ -253,10 +286,19 @@ export default function FicheEmploye({
                                         Versé le {formatDate(v.date_paiement)} · {v.public_id}
                                     </p>
                                 </div>
-                                <span className={`font-medium tabular-nums ${
-                                    v.est_annule ? 'text-muted-foreground line-through' : 'text-foreground'
-                                }`}>
-                                    {formatMontant(v.montant_net)}
+                                <span className="flex items-center gap-2 shrink-0">
+                                    <span className={`font-medium tabular-nums ${
+                                        v.est_annule ? 'text-muted-foreground line-through' : 'text-foreground'
+                                    }`}>
+                                        {formatMontant(v.montant_net)}
+                                    </span>
+                                    <a href={`/api/v1/pdf/bulletin-paie/${v.id}`}
+                                       target="_blank" rel="noopener noreferrer"
+                                       aria-label={`Bulletin de paie ${v.public_id}`}
+                                       title="Bulletin de paie"
+                                       className="p-1 rounded hover:bg-muted text-muted-foreground">
+                                        <FileText className="w-3.5 h-3.5" />
+                                    </a>
                                 </span>
                             </li>
                         ))}

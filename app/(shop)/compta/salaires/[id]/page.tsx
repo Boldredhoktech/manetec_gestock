@@ -28,14 +28,14 @@ export default async function PageEmploye({
 
     const { data: employe } = await adminClient
         .from('employees')
-        .select('id, nom_complet, poste, salaire_base, telephone, date_embauche, est_actif, desactive_le, created_at')
+        .select('id, user_id, nom_complet, poste, salaire_base, telephone, date_embauche, est_actif, desactive_le, created_at')
         .eq('id', id)
         .eq('shop_id', shopId)
         .maybeSingle()
 
     if (!employe) notFound()
 
-    const [{ data: versements }, historique] = await Promise.all([
+    const [{ data: versements }, historique, { data: comptes }] = await Promise.all([
         adminClient
             .from('salary_payments')
             .select('id, public_id, periode_mois, periode_annee, montant_net, date_paiement, est_annule')
@@ -44,6 +44,12 @@ export default async function PageEmploye({
             .order('date_paiement', { ascending: false })
             .limit(24),
         historiqueCorrections(shopId, id),
+        adminClient
+            .from('shop_users')
+            .select('id, nom_complet, identifiant')
+            .eq('shop_id', shopId)
+            .eq('est_actif', true)
+            .order('nom_complet'),
     ])
 
     return (
@@ -66,6 +72,7 @@ export default async function PageEmploye({
                     employe={employe}
                     versements={versements ?? []}
                     historique={historique}
+                    comptes={comptes ?? []}
                 />
             </main>
         </div>

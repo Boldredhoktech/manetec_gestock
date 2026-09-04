@@ -1,15 +1,19 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { creerDepense } from '@/actions/comptabilite'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
+import ChampsReglement from './ChampsReglement'
 import { Loader2, AlertCircle } from 'lucide-react'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
 interface Props { categories: { id: string; nom: string }[] }
 const etatInitial = { erreur: undefined as string | undefined }
 
 export default function FormulaireDepense({ categories }: Props) {
+    const [montant, setMontant] = useState(0)
+    const aujourdhui = new Date().toISOString().split('T')[0]
+
     const [etat, action, enAttente] = useActionState(
         async (_prev: typeof etatInitial, formData: FormData) => {
             const res = await creerDepense(formData)
@@ -45,14 +49,15 @@ export default function FormulaireDepense({ categories }: Props) {
                         <label className="text-sm font-medium text-foreground">
                             Montant <span className="text-destructive">*</span>
                         </label>
-                        <input name="montant" type="number" min="0.01" step="0.01"
-                               required disabled={enAttente}
-                               className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                        <ChampNombre
+                            name="montant" value={montant} onChange={setMontant}
+                            required disabled={enAttente}
+                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Date</label>
                         <input name="dateDepense" type="date"
-                               defaultValue={new Date().toISOString().split('T')[0]}
+                               defaultValue={aujourdhui} max={aujourdhui}
                                disabled={enAttente}
                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
@@ -69,15 +74,7 @@ export default function FormulaireDepense({ categories }: Props) {
                             ))}
                         </select>
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-foreground">Moyen de paiement</label>
-                        <select name="moyen" disabled={enAttente}
-                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50">
-                            {MOYENS_PAIEMENT.map(m => (
-                                <option key={m.code} value={m.code}>{m.label}</option>
-                            ))}
-                        </select>
-                    </div>
+                    <ChampsReglement disabled={enAttente} />
                 </div>
 
                 <div className="space-y-1.5">

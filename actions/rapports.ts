@@ -14,6 +14,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import {
+    bornesDuMois, bornesInstant, MOIS_FR, MOIS_FR_COURT,
+} from '@/lib/dates/periode'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -41,6 +44,8 @@ export async function getDonneesRapportVentes(
         .eq('id', shopId)
         .single()
 
+    const instantsVentes = bornesInstant(debut, fin)
+
     const { data: ventes } = await adminClient
         .from('sales')
         .select(`
@@ -51,8 +56,8 @@ export async function getDonneesRapportVentes(
       sale_payments(moyen_paiement, montant)
     `)
         .eq('shop_id', shopId)
-        .gte('created_at', debut + 'T00:00:00')
-        .lte('created_at', fin + 'T23:59:59')
+        .gte('created_at', instantsVentes.de)
+        .lt('created_at', instantsVentes.avant)
         .order('created_at', { ascending: false })
 
     // Ventes sur facture A4 = paiements de factures encaissés sur la période
@@ -78,8 +83,8 @@ export async function getDonneesRapportVentes(
     `)
         .eq('sales.shop_id', shopId)
         .eq('sales.statut', 'completee')
-        .gte('sales.created_at', debut + 'T00:00:00')
-        .lte('sales.created_at', fin + 'T23:59:59')
+        .gte('sales.created_at', instantsVentes.de)
+        .lt('sales.created_at', instantsVentes.avant)
 
     // Agréger top produits
     const aggregatProduits: Record<string, { nom: string; quantite: number; ca: number }> = {}
@@ -403,6 +408,8 @@ export async function getDonneesRapportMouvements(
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, logo_url').eq('id', shopId).single()
 
+    const instantsMvt = bornesInstant(debut, fin)
+
     const { data: mouvements } = await adminClient
         .from('stock_movements')
         .select(`
@@ -412,8 +419,8 @@ export async function getDonneesRapportMouvements(
       warehouses(nom)
     `)
         .eq('shop_id', shopId)
-        .gte('created_at', debut + 'T00:00:00')
-        .lte('created_at', fin + 'T23:59:59')
+        .gte('created_at', instantsMvt.de)
+        .lt('created_at', instantsMvt.avant)
         .order('created_at', { ascending: false })
 
     const entrees    = ['entree_initiale','reception','retour_vente','transfert_entree','ajustement_positif']
@@ -732,8 +739,10 @@ export async function getDonneesRapportPP(
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
-    const debut = new Date(annee, mois - 1, 1).toISOString().split('T')[0]
-    const fin   = new Date(annee, mois, 0).toISOString().split('T')[0]
+    // Bornes calculees sans dependre du fuseau du serveur, et instants
+    // ramenes a la journee vecue dans la boutique (voir lib/dates/periode).
+    const { debut, fin } = bornesDuMois(mois, annee)
+    const instants       = bornesInstant(debut, fin)
 
     const [
         { data: ventes },
@@ -744,8 +753,8 @@ export async function getDonneesRapportPP(
     ] = await Promise.all([
         adminClient.from('sales').select('montant_total')
             .eq('shop_id', shopId).eq('statut', 'completee')
-            .gte('created_at', debut + 'T00:00:00')
-            .lte('created_at', fin + 'T23:59:59'),
+            .gte('created_at', instants.de)
+            .lt('created_at', instants.avant),
         // Les ecritures annulees restent lisibles a l'ecran mais
         // sortent de tous les totaux.
         adminClient.from('expenses')
@@ -776,8 +785,8 @@ export async function getDonneesRapportPP(
         .select('valeur_pertes, valeur_gains')
         .eq('shop_id', shopId)
         .eq('statut', 'valide')
-        .gte('valide_le', debut + 'T00:00:00')
-        .lte('valide_le', fin + 'T23:59:59')
+        .gte('valide_le', instants.de)
+        .lt('valide_le', instants.avant)
 
     const pertesStock = inventaires?.reduce((a, i) => a + (i.valeur_pertes ?? 0), 0) ?? 0
     const gainsStock  = inventaires?.reduce((a, i) => a + (i.valeur_gains  ?? 0), 0) ?? 0
@@ -795,42 +804,32 @@ export async function getDonneesRapportPP(
         parCategorie[cat] = (parCategorie[cat] ?? 0) + d.montant
     })
 
-    // Évolution 6 derniers mois
-    const evolution = []
-    for (let i = 5; i >= 0; i--) {
-        const d = new Date(annee, mois - 1 - i, 1)
-        const m = d.getMonth() + 1
-        const a = d.getFullYear()
-        const deb = new Date(a, m - 1, 1).toISOString().split('T')[0]
-        const fin2 = new Date(a, m, 0).toISOString().split('T')[0]
+    // Evolution sur 6 mois : une seule requete au lieu de trois par
+    // mois enchainees en serie (migration 023). La fonction SQL exclut
+    // aussi les ecritures annulees, ce que la boucle d'origine ne
+    // faisait pas : elle avait ete ecrite avant qu'elles existent.
+    const { data: serie } = await adminClient.rpc('evolution_tresorerie', {
+        p_shop_id:   shopId,
+        p_mois_fin:  mois,
+        p_annee_fin: annee,
+        p_nb_mois:   6,
+    })
 
-        const { data: v } = await adminClient.from('sales').select('montant_total')
-            .eq('shop_id', shopId).eq('statut', 'completee')
-            .gte('created_at', deb + 'T00:00:00').lte('created_at', fin2 + 'T23:59:59')
-        const { data: dep } = await adminClient.from('expenses').select('montant')
-            .eq('shop_id', shopId).eq('est_annule', false)
-            .gte('date_depense', deb).lte('date_depense', fin2)
-        const { data: sal } = await adminClient.from('salary_payments').select('montant_net')
-            .eq('shop_id', shopId).eq('est_annule', false)
-            .gte('date_paiement', deb).lte('date_paiement', fin2)
-
-        const ca  = v?.reduce((acc, x) => acc + x.montant_total, 0) ?? 0
-        const ch  = (dep?.reduce((acc, x) => acc + x.montant, 0) ?? 0) +
-            (sal?.reduce((acc, x) => acc + x.montant_net, 0) ?? 0)
-
-        const MOIS_LABELS = ['','Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc']
-        evolution.push({ mois: `${MOIS_LABELS[m]} ${a}`, ca, depenses: ch, resultat: ca - ch })
-    }
+    const evolution = ((serie ?? []) as {
+        mois: number; annee: number; ca: number; depenses: number; resultat: number
+    }[]).map(l => ({
+        mois:     `${MOIS_FR_COURT[l.mois]} ${l.annee}`,
+        ca:       Number(l.ca),
+        depenses: Number(l.depenses),
+        resultat: Number(l.resultat),
+    }))
 
     const totalEntrees = totalVentes + totalFactures
     const totalSorties = totalDepenses + totalSalaires + totalFournisseurs
 
-    const MOIS_LABELS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin',
-        'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-
     return {
         boutique:        boutique!,
-        periode:         `${MOIS_LABELS_FR[mois]} ${annee}`,
+        periode:         `${MOIS_FR[mois]} ${annee}`,
         genere_le:       format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         entrees:         { ventes_pos: totalVentes, paiements_factures: totalFactures, total: totalEntrees },
         sorties:         { depenses: totalDepenses, salaires: totalSalaires, fournisseurs: totalFournisseurs, total: totalSorties },
@@ -862,8 +861,7 @@ export async function getDonneesRapportSalaires(
 ) {
     const adminClient = createAdminClient()
 
-    const debut = `${annee}-${String(mois).padStart(2, '0')}-01`
-    const fin   = new Date(Date.UTC(annee, mois, 0)).toISOString().split('T')[0]
+    const { debut, fin } = bornesDuMois(mois, annee)
 
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
@@ -882,11 +880,6 @@ export async function getDonneesRapportSalaires(
         .lte('date_paiement', fin)
         .order('date_paiement')
 
-    const MOIS_LABELS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin',
-        'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
-    const MOIS_COURTS = ['','Janv.','Févr.','Mars','Avr.','Mai','Juin',
-        'Juill.','Août','Sept.','Oct.','Nov.','Déc.']
-
     const lignes = salaires ?? []
 
     // Plusieurs versements sont admis pour un même employé (acompte puis
@@ -895,7 +888,7 @@ export async function getDonneesRapportSalaires(
 
     return {
         boutique:          boutique!,
-        periode:           `Versements de ${MOIS_LABELS_FR[mois]} ${annee}`,
+        periode:           `Versements de ${MOIS_FR[mois]} ${annee}`,
         genere_le:         format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
         nb_employes:       employesPayes,
         nb_versements:     lignes.length,
@@ -906,7 +899,7 @@ export async function getDonneesRapportSalaires(
         salaires: lignes.map(s => ({
             employe:       (s.employees as any)?.nom_complet ?? 'Inconnu',
             poste:         (s.employees as any)?.poste ?? null,
-            au_titre_de:   `${MOIS_COURTS[s.periode_mois]} ${s.periode_annee}`,
+            au_titre_de:   `${MOIS_FR_COURT[s.periode_mois]} ${s.periode_annee}`,
             salaire_base:  s.salaire_base,
             bonus:         s.bonus,
             deductions:    s.deductions,
@@ -967,5 +960,79 @@ export async function getDonneesFacturesImpayees(shopId: string) {
         montant_total_du:   facturesFormatees.reduce((a, f) => a + f.montant_restant, 0),
         montant_en_retard:  enRetard.reduce((a, f) => a + f.montant_restant, 0),
         factures:           facturesFormatees,
+    }
+}
+// ── Données bulletin de paie ──────────────────────────────────
+// Le seul PDF de paie était un récapitulatif de tous les employés d'un
+// mois : impossible de remettre à quelqu'un le justificatif de son
+// propre versement. On lit ici UN versement, avec le cumul de sa
+// période pour que le bulletin dise la vérité quand il y a eu acompte.
+export async function getDonneesBulletinPaie(versementId: string, shopId: string) {
+    const adminClient = createAdminClient()
+
+    const [{ data: versement }, { data: boutique }] = await Promise.all([
+        adminClient
+            .from('salary_payments')
+            .select(`
+                public_id, employee_id, periode_mois, periode_annee,
+                salaire_base, bonus, deductions, montant_net,
+                moyen_paiement, reference, note, date_paiement,
+                est_annule, motif_annulation,
+                employees(nom_complet, poste, telephone, date_embauche)
+            `)
+            .eq('id', versementId)
+            .eq('shop_id', shopId)
+            .maybeSingle(),
+        adminClient
+            .from('shops')
+            .select('nom, adresse, ville, telephone_1, email, ifu, devise, logo_url')
+            .eq('id', shopId)
+            .single(),
+    ])
+
+    if (!versement || !boutique) return null
+
+    // Cumul de la période travaillée, versements annulés exclus.
+    const { data: memeperiode } = await adminClient
+        .from('salary_payments')
+        .select('montant_net')
+        .eq('shop_id', shopId)
+        .eq('employee_id', versement.employee_id)
+        .eq('periode_mois', versement.periode_mois)
+        .eq('periode_annee', versement.periode_annee)
+        .eq('est_annule', false)
+
+    const employe = versement.employees as unknown as {
+        nom_complet: string; poste: string | null
+        telephone: string | null; date_embauche: string | null
+    } | null
+
+    return {
+        boutique: { ...boutique, devise: boutique.devise ?? 'FCFA' },
+        employe: {
+            nom_complet:   employe?.nom_complet ?? 'Inconnu',
+            poste:         employe?.poste ?? null,
+            telephone:     employe?.telephone ?? null,
+            date_embauche: employe?.date_embauche ?? null,
+        },
+        versement: {
+            public_id:        versement.public_id,
+            au_titre_de:      `${MOIS_FR[versement.periode_mois]} ${versement.periode_annee}`,
+            date_paiement:    versement.date_paiement,
+            salaire_base:     versement.salaire_base,
+            bonus:            versement.bonus,
+            deductions:       versement.deductions,
+            montant_net:      versement.montant_net,
+            moyen:            versement.moyen_paiement,
+            reference:        versement.reference,
+            note:             versement.note,
+            est_annule:       versement.est_annule,
+            motif_annulation: versement.motif_annulation,
+        },
+        cumul_periode: {
+            nb_versements: memeperiode?.length ?? 0,
+            total_verse:   memeperiode?.reduce((a, v) => a + v.montant_net, 0) ?? 0,
+        },
+        genere_le: format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
     }
 }
