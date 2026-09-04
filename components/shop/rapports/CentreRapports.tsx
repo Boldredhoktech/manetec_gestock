@@ -72,11 +72,15 @@ const RAPPORTS: Rapport[] = [
     {
         id:          'rapport-fournisseurs',
         titre:       'Rapport fournisseurs',
-        description: 'Dettes fournisseurs, bons de commande',
+        description: 'Achats, règlements et dette par fournisseur sur une période',
         icone:       Truck,
         couleur:     'text-amber-600',
         fond:        'bg-amber-50 border-amber-200',
-        getUrl:      () => `/api/v1/pdf/rapport-fournisseurs`,
+        getUrl:      (p) => `/api/v1/pdf/rapport-fournisseurs?debut=${p.debut}&fin=${p.fin}`,
+        params: [
+            { key: 'debut', label: 'Date début', type: 'date' },
+            { key: 'fin',   label: 'Date fin',   type: 'date' },
+        ],
     },
 
     // ── BLOC 1C ──────────────────────────────────────

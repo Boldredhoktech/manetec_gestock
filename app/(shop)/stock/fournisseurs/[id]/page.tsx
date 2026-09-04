@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, FileInput, PackageCheck, Phone, Mail, MapPin, Building2, ClipboardList } from 'lucide-react'
+import { ArrowLeft, Plus, FileInput, PackageCheck, Phone, Mail, MapPin, Building2, ClipboardList, FileText } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
 import CartePaiementFournisseur from '@/components/shop/fournisseurs/CartePaiementFournisseur'
 import { aPermission } from '@/lib/auth/permissions-serveur'
@@ -98,6 +98,12 @@ export default async function PageDetailFournisseur({ params }: Props) {
                             <PackageCheck className="w-4 h-4" />
                             Réception
                         </Link>
+                        <a href={`/api/v1/pdf/releve-fournisseur/${id}`}
+                           target="_blank" rel="noopener noreferrer"
+                           className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-sm rounded-xl transition-colors border border-white/20">
+                            <FileText className="w-4 h-4" />
+                            Relevé
+                        </a>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
                               className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm">
                             <FileInput className="w-4 h-4" />

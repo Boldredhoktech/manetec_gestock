@@ -20,7 +20,11 @@ export async function GET(request: NextRequest) {
         return new NextResponse('Rapports réservés aux plans Pro et Enterprise.', { status: 403 })
     }
 
-    const donnees = await getDonneesRapportFournisseurs(user.user_metadata.shop_id)
+    const { searchParams } = new URL(request.url)
+    const debut = searchParams.get('debut') ?? undefined
+    const fin   = searchParams.get('fin')   ?? undefined
+
+    const donnees = await getDonneesRapportFournisseurs(user.user_metadata.shop_id, debut, fin)
 
     const buffer = await renderToBuffer(
         React.createElement(RapportFournisseursPDF, { donnees }) as React.ReactElement<any>

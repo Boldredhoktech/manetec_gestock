@@ -453,49 +453,212 @@ export async function getDonneesRapportMouvements(
 }
 
 // ── Données rapport fournisseurs ──────────────────────────────
-export async function getDonneesRapportFournisseurs(shopId: string) {
+// Avant : un annuaire de dettes, sans période, sans achats et sans
+// paiements — d'où « des fournisseurs payés qui n'apparaissent pas
+// dans les rapports ».
+//
+// Le solde d'un fournisseur vaut, par construction, la somme de ses
+// achats moins la somme de ses règlements. On remonte donc le temps
+// depuis le solde d'aujourd'hui pour reconstituer le solde à la fin
+// puis au début de la période — ce qui donne un rapport juste même
+// sur un mois clos depuis longtemps.
+export async function getDonneesRapportFournisseurs(
+    shopId: string,
+    debut?: string,
+    fin?: string
+) {
     const adminClient = createAdminClient()
+
+    const aujourdhui = format(new Date(), 'yyyy-MM-dd')
+    const dateFin    = fin   || aujourdhui
+    const dateDebut  = debut || format(new Date(new Date().getFullYear(), new Date().getMonth(), 1), 'yyyy-MM-dd')
 
     const { data: boutique } = await adminClient
         .from('shops').select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single()
 
-    // Note: solde_dû contient un caractère accentué qui casse le parser de types
-    // Supabase. On caste la réponse en any[] pour contourner le problème.
-    const { data: fournisseursRaw } = await adminClient
-        .from('suppliers')
-        .select('public_id, nom, telephone, email, solde_dû, purchase_orders(id, created_at)')
-        .eq('shop_id', shopId)
-        .order('solde_dû', { ascending: false })
+    // Note : solde_dû contient un caractère accentué qui casse le parser
+    // de types Supabase. On caste en any[] pour contourner.
+    const [{ data: fournisseursRaw }, { data: factures }, { data: paiements }] = await Promise.all([
+        adminClient.from('suppliers')
+            .select('id, public_id, nom, telephone, email, est_actif, solde_dû')
+            .eq('shop_id', shopId)
+            .order('nom'),
+        adminClient.from('factures_fournisseurs')
+            .select('supplier_id, statut, date_facture, date_echeance, montant_ttc, montant_restant, a_completer, public_id')
+            .eq('shop_id', shopId)
+            .neq('statut', 'annulee'),
+        adminClient.from('supplier_payments')
+            .select('supplier_id, montant, moyen_paiement, date_paiement, facture_id')
+            .eq('shop_id', shopId),
+    ])
 
     const fournisseurs = (fournisseursRaw ?? []) as any[]
+    const toutesFactures = (factures ?? []) as any[]
+    const tousPaiements  = (paiements ?? []) as any[]
 
-    const formates = fournisseurs.map((f: any) => {
-        const commandes = (f.purchase_orders as any[]) ?? []
-        const dernierAchat = commandes.length > 0
-            ? format(
-                new Date(Math.max(...commandes.map((c: any) => new Date(c.created_at).getTime()))),
-                'dd/MM/yyyy', { locale: fr }
-            )
-            : null
+    const dansPeriode = (d: string | null) => !!d && d >= dateDebut && d <= dateFin
+    const apresFin    = (d: string | null) => !!d && d > dateFin
+
+    const formates = fournisseurs.map(f => {
+        const sesFactures = toutesFactures.filter(x => x.supplier_id === f.id)
+        const sesPaiements = tousPaiements.filter(x => x.supplier_id === f.id)
+
+        const achatsPeriode    = sesFactures.filter(x => dansPeriode(x.date_facture))
+            .reduce((a, x) => a + Number(x.montant_ttc ?? 0), 0)
+        const paiementsPeriode = sesPaiements.filter(x => dansPeriode(x.date_paiement))
+            .reduce((a, x) => a + Number(x.montant ?? 0), 0)
+
+        // Ce qui s'est passé APRÈS la période, pour remonter au solde de clôture.
+        const achatsApres    = sesFactures.filter(x => apresFin(x.date_facture))
+            .reduce((a, x) => a + Number(x.montant_ttc ?? 0), 0)
+        const paiementsApres = sesPaiements.filter(x => apresFin(x.date_paiement))
+            .reduce((a, x) => a + Number(x.montant ?? 0), 0)
+
+        const soldeActuel   = Number(f['solde_dû'] ?? 0)
+        const soldeCloture  = soldeActuel - achatsApres + paiementsApres
+        const soldeOuverture = soldeCloture - achatsPeriode + paiementsPeriode
+
+        const impayees = sesFactures.filter(x => Number(x.montant_restant ?? 0) > 0)
+        const enRetard = impayees.filter(x => x.date_echeance && x.date_echeance < aujourdhui)
+
+        const dates = (arr: any[], champ: string) => arr
+            .map(x => x[champ] as string | null)
+            .filter(Boolean)
+            .sort()
+            .pop() ?? null
+
         return {
-            public_id:     f.public_id    as string,
-            nom:           f.nom          as string,
-            telephone:     f.telephone    as string | null,
-            email:         f.email        as string | null,
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-            solde_du:     (f['solde_dû']  as number) ?? 0,
-            nb_commandes:  commandes.length,
-            dernier_achat: dernierAchat,
+            public_id:        f.public_id as string,
+            nom:              f.nom as string,
+            telephone:        f.telephone as string | null,
+            email:            f.email as string | null,
+            est_actif:        f.est_actif !== false,
+            solde_ouverture:  soldeOuverture,
+            achats:           achatsPeriode,
+            paiements:        paiementsPeriode,
+            solde_du:         soldeCloture,
+            nb_factures:      sesFactures.filter(x => dansPeriode(x.date_facture)).length,
+            nb_impayees:      impayees.length,
+            nb_en_retard:     enRetard.length,
+            montant_en_retard: enRetard.reduce((a, x) => a + Number(x.montant_restant ?? 0), 0),
+            a_completer:      sesFactures.filter(x => x.a_completer).length,
+            dernier_achat:    dates(sesFactures, 'date_facture'),
+            dernier_paiement: dates(sesPaiements, 'date_paiement'),
         }
     })
 
+    // Un fournisseur sans mouvement ni dette n'encombre pas le rapport.
+    const retenus = formates.filter(f =>
+        f.achats > 0 || f.paiements > 0 || f.solde_du > 0 || f.solde_ouverture > 0)
+
+    const somme = (champ: keyof typeof formates[number]) =>
+        retenus.reduce((a, f) => a + Number(f[champ] ?? 0), 0)
+
     return {
         boutique:                boutique!,
+        periode:                 `Du ${formatFR(dateDebut)} au ${formatFR(dateFin)}`,
         genere_le:               format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
-        total_fournisseurs:      formates.length,
-        fournisseurs_avec_dette: formates.filter(f => f.solde_du > 0).length,
-        total_dette:             formates.reduce((a, f) => a + f.solde_du, 0),
-        fournisseurs:            formates,
+        total_fournisseurs:      fournisseurs.length,
+        fournisseurs_mouvementes: retenus.length,
+        total_achats:            somme('achats'),
+        total_paiements:         somme('paiements'),
+        total_ouverture:         somme('solde_ouverture'),
+        total_dette:             somme('solde_du'),
+        fournisseurs_avec_dette: retenus.filter(f => f.solde_du > 0).length,
+        total_en_retard:         somme('montant_en_retard'),
+        factures_a_completer:    somme('a_completer'),
+        fournisseurs:            retenus.sort((a, b) => b.solde_du - a.solde_du),
+    }
+}
+
+// ── Relevé d'un fournisseur ───────────────────────────────────
+// Le document à envoyer en cas de litige : chaque pièce dans l'ordre,
+// avec le solde qui court.
+export async function getDonneesReleveFournisseur(
+    supplierId: string,
+    shopId: string,
+    debut?: string,
+    fin?: string
+) {
+    const adminClient = createAdminClient()
+
+    const aujourdhui = format(new Date(), 'yyyy-MM-dd')
+    const dateFin    = fin   || aujourdhui
+    const dateDebut  = debut || format(new Date(new Date().getFullYear(), 0, 1), 'yyyy-MM-dd')
+
+    const [{ data: boutique }, { data: fournisseur }, { data: factures }, { data: paiements }] =
+        await Promise.all([
+            adminClient.from('shops')
+                .select('nom, adresse, ville, telephone_1, ifu, devise, logo_url').eq('id', shopId).single(),
+            // Pas de solde_dû ici : le caractère accentué casse le parser
+            // de types Supabase, et le relevé recalcule le solde ligne à
+            // ligne de toute façon.
+            adminClient.from('suppliers')
+                .select('public_id, nom, telephone, email, adresse, ville')
+                .eq('id', supplierId).eq('shop_id', shopId).single(),
+            adminClient.from('factures_fournisseurs')
+                .select('public_id, reference_fourn, date_facture, montant_ttc, montant_restant, statut, a_completer')
+                .eq('shop_id', shopId).eq('supplier_id', supplierId).neq('statut', 'annulee'),
+            adminClient.from('supplier_payments')
+                .select('public_id, date_paiement, montant, moyen_paiement, reference, facture_id, factures_fournisseurs(public_id)')
+                .eq('shop_id', shopId).eq('supplier_id', supplierId),
+        ])
+
+    const lignesFactures = (factures ?? []).map((f: any) => ({
+        date:      f.date_facture as string,
+        type:      'facture' as const,
+        piece:     f.public_id as string,
+        libelle:   f.a_completer
+            ? 'Facture à compléter (créée par une réception)'
+            : (f.reference_fourn ? `Facture fournisseur ${f.reference_fourn}` : 'Facture fournisseur'),
+        debit:     Number(f.montant_ttc ?? 0),
+        credit:    0,
+    }))
+
+    const lignesPaiements = (paiements ?? []).map((p: any) => {
+        const facture = Array.isArray(p.factures_fournisseurs)
+            ? p.factures_fournisseurs[0] : p.factures_fournisseurs
+        return {
+            date:    p.date_paiement as string,
+            type:    'paiement' as const,
+            piece:   p.public_id as string,
+            libelle: facture?.public_id
+                ? `Règlement de ${facture.public_id}${p.reference ? ` — ${p.reference}` : ''}`
+                : `Règlement sur solde${p.reference ? ` — ${p.reference}` : ''}`,
+            debit:   0,
+            credit:  Number(p.montant ?? 0),
+        }
+    })
+
+    const toutes = [...lignesFactures, ...lignesPaiements]
+        .sort((a, b) => a.date.localeCompare(b.date))
+
+    // Solde d'ouverture = tout ce qui précède la période.
+    const avant = toutes.filter(l => l.date < dateDebut)
+    const soldeOuverture = avant.reduce((a, l) => a + l.debit - l.credit, 0)
+
+    let courant = soldeOuverture
+    const lignes = toutes
+        .filter(l => l.date >= dateDebut && l.date <= dateFin)
+        .map(l => {
+            courant += l.debit - l.credit
+            return {
+                ...l,
+                date_fr: formatFR(l.date),
+                solde:   courant,
+            }
+        })
+
+    return {
+        boutique:        boutique!,
+        fournisseur:     fournisseur!,
+        periode:         `Du ${formatFR(dateDebut)} au ${formatFR(dateFin)}`,
+        genere_le:       format(new Date(), 'dd/MM/yyyy à HH:mm', { locale: fr }),
+        solde_ouverture: soldeOuverture,
+        total_achats:    lignes.reduce((a, l) => a + l.debit, 0),
+        total_paiements: lignes.reduce((a, l) => a + l.credit, 0),
+        solde_cloture:   courant,
+        lignes,
     }
 }
 
