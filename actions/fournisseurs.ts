@@ -182,6 +182,61 @@ export async function changerStatutBonCommande(
     return { succes: true, statut: result.statut as string }
 }
 
+// ── Activer / desactiver un fournisseur ────────────────────────
+// La colonne est_actif existait sans qu'aucune action ne la touche :
+// un fournisseur avec lequel on ne travaille plus restait dans toutes
+// les listes de saisie.
+export async function toggleActivationFournisseur(supplierId: string, estActif: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FOURNISSEURS_MODIFIER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    if (!estActif) {
+        // On ne masque pas un fournisseur à qui l'on doit encore de
+        // l'argent : sa dette deviendrait invisible.
+        const { data: impayees } = await adminClient
+            .from('factures_fournisseurs')
+            .select('public_id')
+            .eq('shop_id', shopId)
+            .eq('supplier_id', supplierId)
+            .neq('statut', 'annulee')
+            .gt('montant_restant', 0)
+            .limit(1)
+
+        if (impayees && impayees.length > 0) {
+            return { erreur: 'Ce fournisseur a encore des factures impayées. Soldez-les avant de le désactiver.' }
+        }
+
+        const { data: commandes } = await adminClient
+            .from('purchase_orders')
+            .select('public_id')
+            .eq('shop_id', shopId)
+            .eq('supplier_id', supplierId)
+            .in('statut', ['brouillon', 'soumis', 'recu_partiel'])
+            .limit(1)
+
+        if (commandes && commandes.length > 0) {
+            return { erreur: `Une commande est encore en cours avec ce fournisseur (${commandes[0].public_id}).` }
+        }
+    }
+
+    const { error } = await adminClient
+        .from('suppliers')
+        .update({ est_actif: estActif })
+        .eq('id', supplierId)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la modification.' }
+
+    revalidatePath('/stock/fournisseurs')
+    revalidatePath(`/stock/fournisseurs/${supplierId}`)
+    return { succes: true }
+}
+
 // ── Enregistrer une réception ──────────────────────────────────
 // factureId : réception qui accompagne une facture déjà saisie —
 // la dette existe déjà, on ne la crée pas une seconde fois.
@@ -308,17 +363,37 @@ export async function creerFactureFournisseur(
     // porte déjà.
     genererReception = false
 ) {
-    console.log('[FACT FOURN] Début création')
-
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
-    if (!aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)) return { erreur: 'Permission insuffisante pour cette action.' }
+    // Enregistrer une facture reçue n'est pas la payer.
+    if (!aPermission(user, PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
+
+    // Le numéro de facture du fournisseur est libre : rien n'empêchait
+    // de saisir deux fois la même facture, donc de créer deux dettes.
+    if (referenceFourn?.trim()) {
+        const { data: doublon } = await adminClient
+            .from('factures_fournisseurs')
+            .select('public_id, date_facture, montant_ttc')
+            .eq('shop_id', shopId)
+            .eq('supplier_id', supplierId)
+            .eq('reference_fourn', referenceFourn.trim())
+            .neq('statut', 'annulee')
+            .limit(1)
+
+        if (doublon && doublon.length > 0) {
+            const d = doublon[0]
+            return {
+                erreur: `La facture n° ${referenceFourn.trim()} de ce fournisseur est déjà enregistrée ` +
+                        `sous ${d.public_id} (${d.date_facture}). Vérifiez avant de saisir à nouveau.`,
+            }
+        }
+    }
 
     // Calcul des totaux
     let montantHT = 0, montantTVA = 0
@@ -484,8 +559,6 @@ export async function creerFactureFournisseur(
             receptionPublicId = rec.public_id as string
         }
     }
-
-    console.log('[FACT FOURN] ✅ Facture fournisseur créée :', facture.id)
 
     revalidatePath(`/stock/fournisseurs/${supplierId}`)
     revalidatePath('/stock/factures-fournisseurs')

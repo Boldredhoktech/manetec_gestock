@@ -16,7 +16,7 @@ export default async function PageNouvelleFactureFournisseurGlobal() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
-    if (!aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)) redirect('/admin/dashboard')
+    if (!aPermission(user, PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()

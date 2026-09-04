@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, PackageCheck, Truck, Warehouse, Calendar } from 'lucide-react'
+import { ArrowLeft, PackageCheck, Truck, Warehouse, Calendar, FileText } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
 import ActionsBonCommande from '@/components/shop/fournisseurs/ActionsBonCommande'
 import { aPermission } from '@/lib/auth/permissions-serveur'
@@ -88,6 +88,13 @@ export default async function PageBonCommande({ params }: Props) {
                             </p>
                         </div>
                     </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                    <a href={`/api/v1/pdf/bon-commande/${bon.id}`}
+                       target="_blank" rel="noopener noreferrer"
+                       className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors">
+                        <FileText className="w-4 h-4" />
+                        Imprimer / envoyer
+                    </a>
                     {peutReceptionner && fournisseur && (
                         <Link
                             href={`/stock/fournisseurs/${fournisseur.id}/reception`}
@@ -97,6 +104,7 @@ export default async function PageBonCommande({ params }: Props) {
                             Réceptionner
                         </Link>
                     )}
+                    </div>
                 </div>
             </header>
 

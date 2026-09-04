@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft, Plus, FileInput, PackageCheck, Phone, Mail, MapPin, Building2, ClipboardList, FileText } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
 import CartePaiementFournisseur from '@/components/shop/fournisseurs/CartePaiementFournisseur'
+import StatutFournisseur from '@/components/shop/fournisseurs/StatutFournisseur'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
@@ -26,6 +27,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
     const peutPayer   = aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)
+    const peutModifier = aPermission(user, PERMISSIONS.FOURNISSEURS_MODIFIER)
 
     const { data: fournisseur } = await adminClient
         .from('suppliers')
@@ -281,6 +283,13 @@ export default async function PageDetailFournisseur({ params }: Props) {
                         </div>
                     )}
                 </div>
+
+                {peutModifier && (
+                    <StatutFournisseur
+                        supplierId={fournisseur.id}
+                        estActif={fournisseur.est_actif !== false}
+                    />
+                )}
 
                 {/* Reglement libre du solde : cet ecran existait depuis
                     le debut sans etre affiche nulle part, donc

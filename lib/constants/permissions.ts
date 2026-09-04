@@ -61,6 +61,9 @@ export const PERMISSIONS = {
     FOURNISSEURS_MODIFIER: 'suppliers.edit',
     BONS_COMMANDE_CREER: 'purchase_orders.create',
     RECEPTION_CREER: 'reception.create',
+    // Saisir une facture recue et la regler sont deux gestes
+    // differents : le magasinier enregistre, le comptable paie.
+    FACTURE_FOURNISSEUR_SAISIR: 'supplier_invoice.create',
     PAIEMENT_FOURNISSEUR: 'supplier_payment.declare',
     // Clients
     CLIENTS_VOIR: 'clients.view',
@@ -109,6 +112,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
         PERMISSIONS.FOURNISSEURS_MODIFIER,
         PERMISSIONS.BONS_COMMANDE_CREER,
         PERMISSIONS.RECEPTION_CREER,
+        PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR,
     ],
     comptable: [
         PERMISSIONS.PRODUITS_VOIR,
@@ -120,6 +124,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
         PERMISSIONS.FACTURES_CREER,
         PERMISSIONS.FACTURES_PAIEMENT,
         PERMISSIONS.FOURNISSEURS_VOIR,
+        PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR,
         PERMISSIONS.PAIEMENT_FOURNISSEUR,
         PERMISSIONS.CLIENTS_VOIR,
         PERMISSIONS.CLIENTS_ACCES_COMPLET,

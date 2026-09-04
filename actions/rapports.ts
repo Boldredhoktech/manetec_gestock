@@ -668,12 +668,12 @@ export async function getDonneesBonCommande(poId: string, shopId: string) {
 
     const [{ data: bon }, { data: boutique }] = await Promise.all([
         adminClient.from('purchase_orders').select(`
-      public_id, date_commande, date_livraison, montant_total, notes,
+      public_id, statut, date_commande, date_livraison, montant_total, notes,
       suppliers(nom, adresse, ville, telephone, email, ifu),
       purchase_order_items(designation, quantite_cmd, prix_unitaire, montant_ligne)
     `).eq('id', poId).eq('shop_id', shopId).single(),
         adminClient.from('shops').select(
-            'nom, adresse, telephone_1, email, ifu, devise'
+            'nom, adresse, ville, telephone_1, email, ifu, devise, logo_url'
         ).eq('id', shopId).single(),
     ])
 
@@ -681,16 +681,19 @@ export async function getDonneesBonCommande(poId: string, shopId: string) {
 
     return {
         boutique: {
-            nom:        boutique.nom,
-            adresse:    boutique.adresse,
+            nom:         boutique.nom,
+            adresse:     boutique.adresse,
+            ville:       (boutique as any).ville ?? null,
             telephone_1: boutique.telephone_1,
-            email:      boutique.email,
-            ifu:        boutique.ifu,
-            devise:     boutique.devise,
+            email:       boutique.email,
+            ifu:         boutique.ifu,
+            logo_url:    (boutique as any).logo_url ?? null,
+            devise:      boutique.devise,
         },
         fournisseur: (bon.suppliers as any) ?? {},
         bon: {
             public_id:      bon.public_id,
+            statut:         bon.statut,
             date_commande:  bon.date_commande,
             date_livraison: bon.date_livraison,
             montant_total:  bon.montant_total,
