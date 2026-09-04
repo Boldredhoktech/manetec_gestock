@@ -746,13 +746,17 @@ export async function getDonneesRapportPP(
             .eq('shop_id', shopId).eq('statut', 'completee')
             .gte('created_at', debut + 'T00:00:00')
             .lte('created_at', fin + 'T23:59:59'),
+        // Les ecritures annulees restent lisibles a l'ecran mais
+        // sortent de tous les totaux.
         adminClient.from('expenses')
             .select('montant, expense_categories(nom)')
             .eq('shop_id', shopId)
+            .eq('est_annule', false)
             .gte('date_depense', debut).lte('date_depense', fin),
         // Sur la date de VERSEMENT, comme tous les autres postes.
         adminClient.from('salary_payments').select('montant_net')
             .eq('shop_id', shopId)
+            .eq('est_annule', false)
             .gte('date_paiement', debut).lte('date_paiement', fin),
         adminClient.from('supplier_payments').select('montant')
             .eq('shop_id', shopId)
@@ -803,9 +807,11 @@ export async function getDonneesRapportPP(
             .eq('shop_id', shopId).eq('statut', 'completee')
             .gte('created_at', deb + 'T00:00:00').lte('created_at', fin2 + 'T23:59:59')
         const { data: dep } = await adminClient.from('expenses').select('montant')
-            .eq('shop_id', shopId).gte('date_depense', deb).lte('date_depense', fin2)
+            .eq('shop_id', shopId).eq('est_annule', false)
+            .gte('date_depense', deb).lte('date_depense', fin2)
         const { data: sal } = await adminClient.from('salary_payments').select('montant_net')
-            .eq('shop_id', shopId).gte('date_paiement', deb).lte('date_paiement', fin2)
+            .eq('shop_id', shopId).eq('est_annule', false)
+            .gte('date_paiement', deb).lte('date_paiement', fin2)
 
         const ca  = v?.reduce((acc, x) => acc + x.montant_total, 0) ?? 0
         const ch  = (dep?.reduce((acc, x) => acc + x.montant, 0) ?? 0) +
@@ -870,6 +876,7 @@ export async function getDonneesRapportSalaires(
       employees(nom_complet, poste)
     `)
         .eq('shop_id', shopId)
+        .eq('est_annule', false)
         .gte('date_paiement', debut)
         .lte('date_paiement', fin)
         .order('date_paiement')

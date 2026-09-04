@@ -42,17 +42,18 @@ export default async function PageSalaires({
 
     const [{ data: employes }, { data: versementsPeriode }, { data: derniersVersements }] =
         await Promise.all([
+            // Les employes desactives sont charges eux aussi : l'ecran
+            // les range a part et permet de les reintegrer.
             adminClient
                 .from('employees')
                 .select('id, nom_complet, poste, salaire_base, est_actif')
                 .eq('shop_id', shopId)
-                .eq('est_actif', true)
                 .order('nom_complet'),
             // Les versements faits AU TITRE de la période choisie, quelle
             // que soit la date à laquelle l'argent est sorti.
             adminClient
                 .from('salary_payments')
-                .select('id, public_id, employee_id, montant_net, salaire_base, bonus, deductions, date_paiement, moyen_paiement')
+                .select('id, public_id, employee_id, montant_net, salaire_base, bonus, deductions, date_paiement, moyen_paiement, est_annule, motif_annulation')
                 .eq('shop_id', shopId)
                 .eq('periode_mois', mois)
                 .eq('periode_annee', annee)
@@ -61,6 +62,7 @@ export default async function PageSalaires({
                 .from('salary_payments')
                 .select('employee_id, montant_net, periode_mois, periode_annee, date_paiement')
                 .eq('shop_id', shopId)
+                .eq('est_annule', false)
                 .order('date_paiement', { ascending: false })
                 .limit(200),
         ])

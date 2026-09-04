@@ -25,12 +25,14 @@ export default async function PageDepenses() {
 
     const [{ data: depenses }, { data: categories }] = await Promise.all([
         adminClient.from('expenses')
-            .select('id, public_id, libelle, montant, moyen_paiement, date_depense, expense_categories(nom)')
+            .select('id, public_id, libelle, montant, moyen_paiement, date_depense, est_annule, expense_categories(nom)')
             .eq('shop_id', shopId)
             .order('date_depense', { ascending: false })
             .limit(50),
+        // Les catégories retirées sont chargées elles aussi : l'écran
+        // doit pouvoir les remettre en service.
         adminClient.from('expense_categories')
-            .select('id, nom').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+            .select('id, nom, est_actif').eq('shop_id', shopId).order('nom'),
     ])
 
     return (

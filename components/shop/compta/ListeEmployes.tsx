@@ -1,11 +1,17 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { payerSalaire } from '@/actions/comptabilite'
+import {
+    payerSalaire, modifierVersementSalaire, annulerVersementSalaire,
+} from '@/actions/comptabilite'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Loader2, CheckCircle, AlertCircle, User, History, AlertTriangle } from 'lucide-react'
+import {
+    Loader2, CheckCircle, AlertCircle, User, History, AlertTriangle,
+    Pencil, Ban, ChevronRight,
+} from 'lucide-react'
 import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
 interface Versement {
@@ -18,6 +24,8 @@ interface Versement {
     deductions:     number
     date_paiement:  string
     moyen_paiement: string
+    est_annule:       boolean
+    motif_annulation: string | null
 }
 
 interface DernierVersement {
@@ -62,13 +70,23 @@ export default function ListeEmployes({
     const [erreurs, setErreurs]         = useState<Record<string, string>>({})
     const [ouvertId, setOuvertId]       = useState<string | null>(null)
 
+    // Correction d'un versement deja enregistre : on modifie sur place,
+    // ou on annule avec un motif si la ligne n'aurait pas du exister.
+    const [versementEdite, setVersementEdite]   = useState<string | null>(null)
+    const [versementAnnule, setVersementAnnule] = useState<string | null>(null)
+    const [motif, setMotif]                     = useState('')
+    const [erreurVersement, setErreurVersement] = useState('')
+
     // Un employé peut recevoir plusieurs versements pour une même période
     // (acompte puis solde) : on cumule au lieu de bloquer le second.
     const versementsDe = (employeId: string) =>
         versementsPeriode.filter(v => v.employee_id === employeId)
 
+    // Un versement annule reste affiche, barre, mais ne compte nulle part.
     const verseA = (employeId: string) =>
-        versementsDe(employeId).reduce((total, v) => total + v.montant_net, 0)
+        versementsDe(employeId)
+            .filter(v => !v.est_annule)
+            .reduce((total, v) => total + v.montant_net, 0)
 
     const dernierDe = (employeId: string) =>
         derniersVersements.find(v => v.employee_id === employeId) ?? null
@@ -100,8 +118,42 @@ export default function ListeEmployes({
         }
     }
 
-    const totalVerse   = versementsPeriode.reduce((t, v) => t + v.montant_net, 0)
-    const nbCouverts   = employes.filter(e => verseA(e.id) >= e.salaire_base && e.salaire_base > 0).length
+    async function enregistrerCorrection(e: React.FormEvent<HTMLFormElement>, versementId: string) {
+        e.preventDefault()
+        setEnAttenteId(versementId)
+        setErreurVersement('')
+
+        const formData = new FormData(e.currentTarget)
+        formData.set('id', versementId)
+
+        const res = await modifierVersementSalaire(formData)
+        setEnAttenteId(null)
+
+        if (res?.erreur) { setErreurVersement(res.erreur); return }
+        setVersementEdite(null)
+        router.refresh()
+    }
+
+    async function confirmerAnnulation(versementId: string) {
+        setEnAttenteId(versementId)
+        setErreurVersement('')
+
+        const res = await annulerVersementSalaire(versementId, motif)
+        setEnAttenteId(null)
+
+        if (res?.erreur) { setErreurVersement(res.erreur); return }
+        setVersementAnnule(null)
+        setMotif('')
+        router.refresh()
+    }
+
+    const employesActifs   = employes.filter(e => e.est_actif)
+    const employesInactifs = employes.filter(e => !e.est_actif)
+
+    const totalVerse   = versementsPeriode
+        .filter(v => !v.est_annule)
+        .reduce((t, v) => t + v.montant_net, 0)
+    const nbCouverts   = employesActifs.filter(e => verseA(e.id) >= e.salaire_base && e.salaire_base > 0).length
     const anneesChoix  = Array.from({ length: 6 }, (_, i) => new Date().getFullYear() - 4 + i)
 
     return (
@@ -140,7 +192,7 @@ export default function ListeEmployes({
                         <div>
                             <p className="text-xs text-muted-foreground">Employés couverts</p>
                             <p className="text-lg font-bold text-foreground tabular-nums">
-                                {nbCouverts}<span className="text-sm font-normal text-muted-foreground">/{employes.length}</span>
+                                {nbCouverts}<span className="text-sm font-normal text-muted-foreground">/{employesActifs.length}</span>
                             </p>
                         </div>
                         <div>
@@ -160,13 +212,13 @@ export default function ListeEmployes({
                 </p>
             </div>
 
-            {employes.length === 0 ? (
+            {employesActifs.length === 0 ? (
                 <div className="text-center py-16 text-muted-foreground text-sm">
-                    Aucun employé enregistré.
+                    Aucun employé actif.
                 </div>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {employes.map(emp => {
+                    {employesActifs.map(emp => {
                         const versements = versementsDe(emp.id)
                         const verse      = verseA(emp.id)
                         const reste      = emp.salaire_base - verse
@@ -187,9 +239,10 @@ export default function ListeEmployes({
                                             <User className="w-4 h-4 text-primary" />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-sm font-semibold text-foreground truncate">
+                                            <Link href={`/compta/salaires/${emp.id}`}
+                                                  className="text-sm font-semibold text-foreground truncate hover:text-primary hover:underline block">
                                                 {emp.nom_complet}
-                                            </p>
+                                            </Link>
                                             {emp.poste && (
                                                 <p className="text-xs text-muted-foreground mt-0.5 truncate">{emp.poste}</p>
                                             )}
@@ -230,11 +283,123 @@ export default function ListeEmployes({
                                     </div>
 
                                     {versements.length > 0 && (
-                                        <ul className="pt-1.5 mt-1 border-t border-border space-y-1">
+                                        <ul className="pt-1.5 mt-1 border-t border-border space-y-1.5">
                                             {versements.map(v => (
-                                                <li key={v.id} className="flex justify-between text-xs text-muted-foreground">
-                                                    <span className="font-mono">{formatDate(v.date_paiement)}</span>
-                                                    <span className="tabular-nums">{formatMontant(v.montant_net)}</span>
+                                                <li key={v.id} className="space-y-1">
+                                                    <div className="flex items-center justify-between gap-1 text-xs text-muted-foreground">
+                                                        <span className="font-mono">{formatDate(v.date_paiement)}</span>
+                                                        <span className="flex items-center gap-1">
+                                                            <span className={`tabular-nums ${v.est_annule ? 'line-through' : ''}`}>
+                                                                {formatMontant(v.montant_net)}
+                                                            </span>
+                                                            {!v.est_annule && (
+                                                                <>
+                                                                    <button type="button"
+                                                                            aria-label="Modifier ce versement"
+                                                                            onClick={() => {
+                                                                                setVersementEdite(versementEdite === v.id ? null : v.id)
+                                                                                setVersementAnnule(null)
+                                                                                setErreurVersement('')
+                                                                            }}
+                                                                            className="p-0.5 rounded hover:bg-background text-muted-foreground">
+                                                                        <Pencil className="w-3 h-3" />
+                                                                    </button>
+                                                                    <button type="button"
+                                                                            aria-label="Annuler ce versement"
+                                                                            onClick={() => {
+                                                                                setVersementAnnule(versementAnnule === v.id ? null : v.id)
+                                                                                setVersementEdite(null)
+                                                                                setMotif('')
+                                                                                setErreurVersement('')
+                                                                            }}
+                                                                            className="p-0.5 rounded hover:bg-background text-muted-foreground">
+                                                                        <Ban className="w-3 h-3" />
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    </div>
+
+                                                    {v.est_annule && (
+                                                        <p className="text-xs text-destructive">
+                                                            Annulé{v.motif_annulation ? ` — « ${v.motif_annulation} »` : ''}
+                                                        </p>
+                                                    )}
+
+                                                    {versementEdite === v.id && (
+                                                        <form onSubmit={e => enregistrerCorrection(e, v.id)}
+                                                              className="bg-background border border-border rounded p-2 space-y-1.5">
+                                                            <div className="grid grid-cols-3 gap-1">
+                                                                <input name="salaireBase" type="number" min="0" step="0.01"
+                                                                       defaultValue={v.salaire_base} aria-label="Base"
+                                                                       className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
+                                                                <input name="bonus" type="number" min="0" step="0.01"
+                                                                       defaultValue={v.bonus} aria-label="Bonus"
+                                                                       className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
+                                                                <input name="deductions" type="number" min="0" step="0.01"
+                                                                       defaultValue={v.deductions} aria-label="Déductions"
+                                                                       className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
+                                                            </div>
+                                                            <input name="datePaiement" type="date" required
+                                                                   defaultValue={v.date_paiement} max={aujourdhui}
+                                                                   aria-label="Date de versement"
+                                                                   className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
+                                                            <select name="moyen" defaultValue={v.moyen_paiement}
+                                                                    aria-label="Moyen de paiement"
+                                                                    className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs">
+                                                                {MOYENS_PAIEMENT.map(m => (
+                                                                    <option key={m.code} value={m.code}>{m.label}</option>
+                                                                ))}
+                                                            </select>
+                                                            <div className="flex gap-1">
+                                                                <Button type="button" size="sm" variant="outline"
+                                                                        className="flex-1 h-7 text-xs"
+                                                                        onClick={() => setVersementEdite(null)}>
+                                                                    Retour
+                                                                </Button>
+                                                                <Button type="submit" size="sm" className="flex-1 h-7 text-xs"
+                                                                        disabled={enAttenteId === v.id}>
+                                                                    {enAttenteId === v.id
+                                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        : 'Corriger'}
+                                                                </Button>
+                                                            </div>
+                                                        </form>
+                                                    )}
+
+                                                    {versementAnnule === v.id && (
+                                                        <div className="bg-background border border-border rounded p-2 space-y-1.5">
+                                                            <input
+                                                                type="text"
+                                                                value={motif}
+                                                                onChange={e => setMotif(e.target.value)}
+                                                                placeholder="Motif de l'annulation"
+                                                                className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs"
+                                                            />
+                                                            <p className="text-xs text-muted-foreground">
+                                                                Le versement restera visible, barré, et sortira des totaux.
+                                                            </p>
+                                                            <div className="flex gap-1">
+                                                                <Button type="button" size="sm" variant="outline"
+                                                                        className="flex-1 h-7 text-xs"
+                                                                        onClick={() => { setVersementAnnule(null); setMotif('') }}>
+                                                                    Retour
+                                                                </Button>
+                                                                <Button type="button" size="sm" variant="destructive"
+                                                                        className="flex-1 h-7 text-xs"
+                                                                        disabled={enAttenteId === v.id}
+                                                                        onClick={() => confirmerAnnulation(v.id)}>
+                                                                    {enAttenteId === v.id
+                                                                        ? <Loader2 className="w-3 h-3 animate-spin" />
+                                                                        : 'Annuler'}
+                                                                </Button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {erreurVersement && (versementEdite === v.id || versementAnnule === v.id) && (
+                                                        <p className="text-xs text-destructive">{erreurVersement}</p>
+                                                    )}
                                                 </li>
                                             ))}
                                         </ul>
@@ -342,6 +507,36 @@ export default function ListeEmployes({
                             </div>
                         )
                     })}
+                </div>
+            )}
+
+            {employesInactifs.length > 0 && (
+                <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+                    <h2 className="text-sm font-semibold text-foreground">
+                        Employés désactivés
+                    </h2>
+                    <p className="text-xs text-muted-foreground">
+                        Ils ne figurent plus dans la liste de paie. Les versements déjà faits
+                        restent au rapport.
+                    </p>
+                    <ul className="divide-y divide-border">
+                        {employesInactifs.map(emp => (
+                            <li key={emp.id}>
+                                <Link href={`/compta/salaires/${emp.id}`}
+                                      className="flex items-center justify-between py-2.5 text-sm group">
+                                    <span>
+                                        <span className="text-foreground group-hover:text-primary">
+                                            {emp.nom_complet}
+                                        </span>
+                                        {emp.poste && (
+                                            <span className="text-xs text-muted-foreground ml-2">{emp.poste}</span>
+                                        )}
+                                    </span>
+                                    <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             )}
         </div>

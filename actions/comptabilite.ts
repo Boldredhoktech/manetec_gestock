@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import { journaliserCorrection, champsModifies } from '@/lib/audit/journaliser'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 
@@ -443,9 +444,12 @@ export async function getTableauBordComptable(mois: number, annee: number) {
             .select('montant_total, created_at')
             .eq('shop_id', shopId).eq('statut', 'completee')
             .gte('created_at', debut).lte('created_at', fin + 'T23:59:59'),
+        // Les ecritures annulees restent visibles a l'ecran, barrees,
+        // mais sortent de tous les totaux.
         adminClient.from('expenses')
             .select('montant, date_depense, libelle, expense_categories(nom)')
             .eq('shop_id', shopId)
+            .eq('est_annule', false)
             .gte('date_depense', debut).lte('date_depense', fin),
         // Sur la DATE DE VERSEMENT, comme les dépenses et les
         // fournisseurs : un salaire de juin réglé en juillet sort de la
@@ -453,6 +457,7 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         adminClient.from('salary_payments')
             .select('montant_net')
             .eq('shop_id', shopId)
+            .eq('est_annule', false)
             .gte('date_paiement', debut).lte('date_paiement', fin),
         adminClient.from('supplier_payments')
             .select('montant, date_paiement')
@@ -485,4 +490,507 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         nbVentes:   ventes?.length ?? 0,
         depenses:   depenses ?? [],
     }
+}
+
+// ══════════════════════════════════════════════════════════════
+// CORRECTIONS D'ÉCRITURES
+//
+// Décision produit D4 : on modifie sur place, jamais en silence.
+// La ligne garde son identifiant, ses valeurs changent, et l'ancienne
+// valeur part dans `audit_logs` avec son auteur et sa date — l'écran de
+// détail de l'écriture la réaffiche.
+//
+// L'annulation est réservée à une écriture qui n'aurait jamais dû
+// exister (une double saisie). Elle exige un motif, la ligne reste
+// visible et barrée, et elle sort de tous les totaux.
+// ══════════════════════════════════════════════════════════════
+
+const MOTIF_MINIMUM = 5
+
+// ── Modifier une dépense ──────────────────────────────────────
+export async function modifierDepense(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const id           = formData.get('id') as string
+    const libelle      = (formData.get('libelle') as string)?.trim()
+    const montant      = parseFloat(formData.get('montant') as string)
+    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const categoryId   = (formData.get('categoryId') as string) || null
+    const dateDepense  = (formData.get('dateDepense') as string) || ''
+    const note         = (formData.get('note') as string)?.trim() || null
+
+    if (!id) return { erreur: 'Dépense introuvable.' }
+    if (!libelle) return { erreur: 'Le libellé est obligatoire.' }
+    if (isNaN(montant) || montant <= 0) return { erreur: 'Montant invalide.' }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(dateDepense)) return { erreur: 'Date invalide.' }
+
+    const { data: avant } = await adminClient
+        .from('expenses')
+        .select('id, public_id, libelle, montant, moyen_paiement, category_id, date_depense, note, est_annule')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!avant) return { erreur: 'Dépense introuvable.' }
+    if (avant.est_annule) return { erreur: 'Cette dépense est annulée : elle ne peut plus être modifiée.' }
+
+    const apres = {
+        libelle,
+        montant,
+        moyen_paiement: moyen,
+        category_id:    categoryId || null,
+        date_depense:   dateDepense,
+        note,
+    }
+
+    const modifications = champsModifies(avant, apres, {
+        libelle:        'Libellé',
+        montant:        'Montant',
+        moyen_paiement: 'Moyen de paiement',
+        category_id:    'Catégorie',
+        date_depense:   'Date',
+        note:           'Note',
+    })
+
+    if (modifications.length === 0) return { succes: true, aucunChangement: true }
+
+    const { error } = await adminClient
+        .from('expenses')
+        .update({ ...apres, modifie_le: new Date().toISOString(), modifie_par: user.user_metadata.user_id })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) {
+        console.error('ERREUR MODIFICATION DEPENSE:', error)
+        return { erreur: 'Erreur lors de la modification.' }
+    }
+
+    await journaliserCorrection({
+        user,
+        eventType:         'EXPENSE_UPDATED',
+        referenceType:     'expense',
+        referenceId:       id,
+        referencePublicId: avant.public_id,
+        modifications,
+    })
+
+    revalidatePath('/compta/depenses')
+    revalidatePath(`/compta/depenses/${id}`)
+    revalidatePath('/compta/dashboard')
+    return { succes: true }
+}
+
+// ── Annuler une dépense ───────────────────────────────────────
+export async function annulerDepense(id: string, motif: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+    const motifPropre = motif?.trim() ?? ''
+
+    if (motifPropre.length < MOTIF_MINIMUM) {
+        return { erreur: 'Expliquez en quelques mots pourquoi cette dépense est annulée.' }
+    }
+
+    const { data: depense } = await adminClient
+        .from('expenses')
+        .select('id, public_id, libelle, montant, est_annule')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!depense) return { erreur: 'Dépense introuvable.' }
+    if (depense.est_annule) return { erreur: 'Cette dépense est déjà annulée.' }
+
+    const { error } = await adminClient
+        .from('expenses')
+        .update({
+            est_annule:       true,
+            annule_le:        new Date().toISOString(),
+            annule_par:       user.user_metadata.user_id,
+            motif_annulation: motifPropre,
+        })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) {
+        console.error('ERREUR ANNULATION DEPENSE:', error)
+        return { erreur: 'Erreur lors de l\'annulation.' }
+    }
+
+    await journaliserCorrection({
+        user,
+        eventType:         'EXPENSE_CANCELLED',
+        referenceType:     'expense',
+        referenceId:       id,
+        referencePublicId: depense.public_id,
+        motif:             motifPropre,
+        modifications: [{
+            champ: 'montant', libelle: 'Montant retiré des totaux',
+            avant: depense.montant, apres: 0,
+        }],
+    })
+
+    revalidatePath('/compta/depenses')
+    revalidatePath(`/compta/depenses/${id}`)
+    revalidatePath('/compta/dashboard')
+    return { succes: true }
+}
+
+// ── Renommer une catégorie de dépense ─────────────────────────
+export async function modifierCategorieDepense(id: string, nom: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+    const nouveauNom  = nom?.trim() ?? ''
+
+    if (!nouveauNom) return { erreur: 'Le nom est obligatoire.' }
+
+    const { data: avant } = await adminClient
+        .from('expense_categories')
+        .select('id, nom')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!avant) return { erreur: 'Catégorie introuvable.' }
+    if (avant.nom === nouveauNom) return { succes: true, aucunChangement: true }
+
+    const { error } = await adminClient
+        .from('expense_categories')
+        .update({ nom: nouveauNom })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Une catégorie porte déjà ce nom.' }
+
+    await journaliserCorrection({
+        user,
+        eventType:     'EXPENSE_CATEGORY_UPDATED',
+        referenceType: 'expense_category',
+        referenceId:   id,
+        modifications: [{ champ: 'nom', libelle: 'Nom', avant: avant.nom, apres: nouveauNom }],
+    })
+
+    revalidatePath('/compta/depenses')
+    return { succes: true }
+}
+
+// ── Activer / retirer une catégorie ───────────────────────────
+// Retirée, la catégorie disparaît de la saisie mais reste lisible sur
+// les dépenses passées : on ne réécrit pas l'histoire.
+export async function basculerCategorieDepense(id: string, actif: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const { data: categorie } = await adminClient
+        .from('expense_categories')
+        .select('id, nom, est_actif')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!categorie) return { erreur: 'Catégorie introuvable.' }
+
+    const { error } = await adminClient
+        .from('expense_categories')
+        .update({ est_actif: actif })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour.' }
+
+    await journaliserCorrection({
+        user,
+        eventType:     actif ? 'EXPENSE_CATEGORY_ENABLED' : 'EXPENSE_CATEGORY_DISABLED',
+        referenceType: 'expense_category',
+        referenceId:   id,
+        modifications: [{
+            champ: 'est_actif', libelle: 'Proposée à la saisie',
+            avant: categorie.est_actif, apres: actif,
+        }],
+    })
+
+    revalidatePath('/compta/depenses')
+    return { succes: true }
+}
+
+// ── Modifier un employé ───────────────────────────────────────
+export async function modifierEmploye(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const id           = formData.get('id') as string
+    const nomComplet   = (formData.get('nomComplet') as string)?.trim()
+    const poste        = (formData.get('poste') as string)?.trim() || null
+    const salaireBase  = parseFloat(formData.get('salaireBase') as string) || 0
+    const telephone    = (formData.get('telephone') as string)?.trim() || null
+    const dateEmbauche = (formData.get('dateEmbauche') as string) || null
+
+    if (!id) return { erreur: 'Employé introuvable.' }
+    if (!nomComplet) return { erreur: 'Le nom est obligatoire.' }
+    if (salaireBase < 0) return { erreur: 'Le salaire de base ne peut pas être négatif.' }
+    if (dateEmbauche && !/^\d{4}-\d{2}-\d{2}$/.test(dateEmbauche)) {
+        return { erreur: 'Date d\'embauche invalide.' }
+    }
+
+    const { data: avant } = await adminClient
+        .from('employees')
+        .select('id, nom_complet, poste, salaire_base, telephone, date_embauche')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!avant) return { erreur: 'Employé introuvable.' }
+
+    const apres = {
+        nom_complet:   nomComplet,
+        poste,
+        salaire_base:  salaireBase,
+        telephone,
+        date_embauche: dateEmbauche || null,
+    }
+
+    const modifications = champsModifies(avant, apres, {
+        nom_complet:   'Nom',
+        poste:         'Poste',
+        salaire_base:  'Salaire de base',
+        telephone:     'Téléphone',
+        date_embauche: 'Date d\'embauche',
+    })
+
+    if (modifications.length === 0) return { succes: true, aucunChangement: true }
+
+    const { error } = await adminClient
+        .from('employees')
+        .update(apres)
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) {
+        console.error('ERREUR MODIFICATION EMPLOYE:', error)
+        return { erreur: 'Erreur lors de la modification.' }
+    }
+
+    await journaliserCorrection({
+        user,
+        eventType:     'EMPLOYEE_UPDATED',
+        referenceType: 'employee',
+        referenceId:   id,
+        modifications,
+    })
+
+    revalidatePath('/compta/salaires')
+    revalidatePath(`/compta/salaires/${id}`)
+    return { succes: true }
+}
+
+// ── Désactiver / réintégrer un employé ────────────────────────
+// Les versements déjà faits restent au rapport de paie : désactiver
+// range un employé sorti, cela n'efface pas ce qu'on lui a versé.
+export async function basculerEmploye(id: string, actif: boolean) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const { data: employe } = await adminClient
+        .from('employees')
+        .select('id, nom_complet, est_actif')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!employe) return { erreur: 'Employé introuvable.' }
+
+    const { error } = await adminClient
+        .from('employees')
+        .update({
+            est_actif:    actif,
+            desactive_le: actif ? null : new Date().toISOString(),
+        })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) return { erreur: 'Erreur lors de la mise à jour.' }
+
+    await journaliserCorrection({
+        user,
+        eventType:     actif ? 'EMPLOYEE_REACTIVATED' : 'EMPLOYEE_DEACTIVATED',
+        referenceType: 'employee',
+        referenceId:   id,
+        modifications: [{
+            champ: 'est_actif', libelle: 'Employé actif',
+            avant: employe.est_actif, apres: actif,
+        }],
+    })
+
+    revalidatePath('/compta/salaires')
+    revalidatePath(`/compta/salaires/${id}`)
+    return { succes: true }
+}
+
+// ── Modifier un versement de salaire ──────────────────────────
+export async function modifierVersementSalaire(formData: FormData) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+
+    const id           = formData.get('id') as string
+    const salaireBase  = parseFloat(formData.get('salaireBase') as string) || 0
+    const bonus        = parseFloat(formData.get('bonus') as string) || 0
+    const deductions   = parseFloat(formData.get('deductions') as string) || 0
+    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const datePaiement = (formData.get('datePaiement') as string) || ''
+    const montantNet   = salaireBase + bonus - deductions
+
+    if (!id) return { erreur: 'Versement introuvable.' }
+    if (montantNet <= 0) return { erreur: 'Le montant net doit être positif.' }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(datePaiement)) return { erreur: 'Date de versement invalide.' }
+    if (datePaiement > new Date().toISOString().split('T')[0]) {
+        return { erreur: 'La date de versement ne peut pas être dans le futur.' }
+    }
+
+    const { data: avant } = await adminClient
+        .from('salary_payments')
+        .select('id, public_id, salaire_base, bonus, deductions, montant_net, moyen_paiement, date_paiement, est_annule')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!avant) return { erreur: 'Versement introuvable.' }
+    if (avant.est_annule) return { erreur: 'Ce versement est annulé : il ne peut plus être modifié.' }
+
+    const apres = {
+        salaire_base:   salaireBase,
+        bonus,
+        deductions,
+        montant_net:    montantNet,
+        moyen_paiement: moyen,
+        date_paiement:  datePaiement,
+    }
+
+    const modifications = champsModifies(avant, apres, {
+        salaire_base:   'Base',
+        bonus:          'Bonus',
+        deductions:     'Déductions',
+        montant_net:    'Net versé',
+        moyen_paiement: 'Moyen de paiement',
+        date_paiement:  'Date de versement',
+    })
+
+    if (modifications.length === 0) return { succes: true, aucunChangement: true }
+
+    const { error } = await adminClient
+        .from('salary_payments')
+        .update({ ...apres, modifie_le: new Date().toISOString(), modifie_par: user.user_metadata.user_id })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) {
+        console.error('ERREUR MODIFICATION VERSEMENT:', error)
+        return { erreur: 'Erreur lors de la modification.' }
+    }
+
+    await journaliserCorrection({
+        user,
+        eventType:         'SALARY_PAYMENT_UPDATED',
+        referenceType:     'salary_payment',
+        referenceId:       id,
+        referencePublicId: avant.public_id,
+        modifications,
+    })
+
+    revalidatePath('/compta/salaires')
+    revalidatePath('/compta/dashboard')
+    return { succes: true }
+}
+
+// ── Annuler un versement de salaire ───────────────────────────
+export async function annulerVersementSalaire(id: string, motif: string) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const shopId      = user.user_metadata.shop_id as string
+    const adminClient = createAdminClient()
+    const motifPropre = motif?.trim() ?? ''
+
+    if (motifPropre.length < MOTIF_MINIMUM) {
+        return { erreur: 'Expliquez en quelques mots pourquoi ce versement est annulé.' }
+    }
+
+    const { data: versement } = await adminClient
+        .from('salary_payments')
+        .select('id, public_id, montant_net, est_annule')
+        .eq('id', id)
+        .eq('shop_id', shopId)
+        .maybeSingle()
+
+    if (!versement) return { erreur: 'Versement introuvable.' }
+    if (versement.est_annule) return { erreur: 'Ce versement est déjà annulé.' }
+
+    const { error } = await adminClient
+        .from('salary_payments')
+        .update({
+            est_annule:       true,
+            annule_le:        new Date().toISOString(),
+            annule_par:       user.user_metadata.user_id,
+            motif_annulation: motifPropre,
+        })
+        .eq('id', id)
+        .eq('shop_id', shopId)
+
+    if (error) {
+        console.error('ERREUR ANNULATION VERSEMENT:', error)
+        return { erreur: 'Erreur lors de l\'annulation.' }
+    }
+
+    await journaliserCorrection({
+        user,
+        eventType:         'SALARY_PAYMENT_CANCELLED',
+        referenceType:     'salary_payment',
+        referenceId:       id,
+        referencePublicId: versement.public_id,
+        motif:             motifPropre,
+        modifications: [{
+            champ: 'montant_net', libelle: 'Montant retiré des totaux',
+            avant: versement.montant_net, apres: 0,
+        }],
+    })
+
+    revalidatePath('/compta/salaires')
+    revalidatePath('/compta/dashboard')
+    return { succes: true }
 }
