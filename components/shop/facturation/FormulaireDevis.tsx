@@ -1,28 +1,45 @@
 'use client'
 
 import { useState } from 'react'
-import { creerDevis } from '@/actions/facturation'
+import { creerDevis, modifierDevis } from '@/actions/facturation'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import EditeurLignes from '@/components/shop/facturation/EditeurLignes'
 import type { LigneFacture } from '@/actions/facturation'
 import { useRouter } from 'next/navigation'
 
+// Un devis existant peut être repris : c'est une proposition, pas une
+// pièce. Le même formulaire sert à créer et à modifier.
+export interface DevisExistant {
+    id:            string
+    client_id:     string | null
+    objet:         string | null
+    date_validite: string | null
+    remise_pct:    number
+    note_client:   string | null
+    note_interne:  string | null
+    lignes:        LigneFacture[]
+}
+
 interface Props {
     clients:                 { id: string; nom: string }[]
     produits:                { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
     clientIdPreselectionne?: string
+    devisExistant?:          DevisExistant
 }
 
-export default function FormulaireDevis({ clients, produits, clientIdPreselectionne }: Props) {
+export default function FormulaireDevis({
+    clients, produits, clientIdPreselectionne, devisExistant,
+}: Props) {
     const router = useRouter()
-    const [lignes, setLignes]               = useState<LigneFacture[]>([])
-    const [clientId, setClientId]           = useState(clientIdPreselectionne ?? '')
-    const [objet, setObjet]                 = useState('')
-    const [dateValidite, setDateValidite]   = useState('')
-    const [remisePct, setRemisePct]         = useState(0)
-    const [noteClient, setNoteClient]       = useState('')
-    const [noteInterne, setNoteInterne]     = useState('')
+    const [lignes, setLignes]               = useState<LigneFacture[]>(devisExistant?.lignes ?? [])
+    const [clientId, setClientId]           = useState(devisExistant?.client_id ?? clientIdPreselectionne ?? '')
+    const [objet, setObjet]                 = useState(devisExistant?.objet ?? '')
+    const [dateValidite, setDateValidite]   = useState(devisExistant?.date_validite ?? '')
+    const [remisePct, setRemisePct]         = useState(devisExistant?.remise_pct ?? 0)
+    const [noteClient, setNoteClient]       = useState(devisExistant?.note_client ?? '')
+    const [noteInterne, setNoteInterne]     = useState(devisExistant?.note_interne ?? '')
     const [enAttente, setEnAttente]         = useState(false)
     const [erreur, setErreur]               = useState<string>()
     const [succes, setSucces]               = useState<string>()
@@ -30,14 +47,25 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
     async function handleSoumettre() {
         setEnAttente(true)
         setErreur(undefined)
-        const res = await creerDevis(
-            clientId || null, objet, dateValidite || null,
-            remisePct, noteClient, noteInterne, lignes
-        )
+
+        const res = devisExistant
+            ? await modifierDevis(
+                devisExistant.id, clientId || null, objet, dateValidite || null,
+                remisePct, noteClient, noteInterne, lignes)
+            : await creerDevis(
+                clientId || null, objet, dateValidite || null,
+                remisePct, noteClient, noteInterne, lignes)
+
         setEnAttente(false)
         if (res?.erreur) { setErreur(res.erreur); return }
-        setSucces(res.public_id!)
-        setTimeout(() => router.push('/admin/factures'), 1500)
+
+        if (devisExistant) {
+            setSucces('modifiee')
+            setTimeout(() => router.push(`/admin/factures/devis/${devisExistant.id}`), 1200)
+        } else {
+            setSucces((res as { public_id?: string }).public_id!)
+            setTimeout(() => router.push('/admin/factures'), 1500)
+        }
     }
 
     return (
@@ -52,7 +80,9 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
             {succes && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    Proforma {succes} créée. Redirection...
+                    {succes === 'modifiee'
+                        ? 'Proforma modifiée. Redirection…'
+                        : `Proforma ${succes} créée. Redirection…`}
                 </div>
             )}
 
@@ -98,10 +128,9 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Remise globale (%)</label>
-                        <input
-                            type="number" min="0" max="100" step="0.5"
+                        <ChampNombre
                             value={remisePct}
-                            onChange={e => setRemisePct(parseFloat(e.target.value) || 0)}
+                            onChange={setRemisePct}
                             className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>
@@ -141,7 +170,7 @@ export default function FormulaireDevis({ clients, produits, clientIdPreselectio
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer la proforma'
+                    : (devisExistant ? 'Enregistrer les modifications' : 'Créer la proforma')
                 }
             </Button>
         </div>

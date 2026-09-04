@@ -1,8 +1,5 @@
-'use client'
-
-import { useState } from 'react'
 import Link from 'next/link'
-import { Search, ChevronRight, AlertCircle, UserSquare } from 'lucide-react'
+import { ChevronRight, AlertCircle, UserSquare } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 
 interface Client {
@@ -14,39 +11,21 @@ interface Client {
 
 interface Props { clients: Client[] }
 
+// La recherche vit desormais dans l'URL, cote serveur (FiltresListe) :
+// une recherche locale ne filtrerait que la page affichee tout en
+// donnant l'illusion de chercher dans tout le fichier client.
 export default function TableauClients({ clients }: Props) {
-    const [recherche, setRecherche] = useState('')
-
-    const filtres = clients.filter(c =>
-        c.nom.toLowerCase().includes(recherche.toLowerCase()) ||
-        (c.telephone ?? '').includes(recherche) ||
-        c.public_id.toLowerCase().includes(recherche.toLowerCase())
-    )
-
     return (
-        <div className="space-y-4">
-
-            {/* Barre recherche */}
-            <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input
-                    type="text"
-                    placeholder="Rechercher par nom, téléphone, ID..."
-                    value={recherche}
-                    onChange={e => setRecherche(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 shadow-sm"
-                />
-            </div>
-
-            {filtres.length === 0 ? (
+        <div>
+            {clients.length === 0 ? (
                 <div className="text-center py-16 space-y-3">
                     <div className="w-16 h-16 bg-[#15335a]/10 rounded-2xl flex items-center justify-center mx-auto">
                         <UserSquare className="w-8 h-8 text-[#15335a]/40" />
                     </div>
-                    <p className="text-sm text-gray-400">Aucun client trouvé.</p>
+                    <p className="text-sm text-gray-400">Aucun client ne correspond à cette recherche.</p>
                 </div>
             ) : (
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="overflow-hidden">
                   <div className="overflow-x-auto">
                    <div className="min-w-[720px]">
 
@@ -65,7 +44,7 @@ export default function TableauClients({ clients }: Props) {
 
                     {/* Lignes */}
                     <div className="divide-y divide-gray-50">
-                        {filtres.map((c, i) => (
+                        {clients.map((c, i) => (
                             <Link
                                 key={c.id}
                                 href={`/admin/clients/${c.id}`}

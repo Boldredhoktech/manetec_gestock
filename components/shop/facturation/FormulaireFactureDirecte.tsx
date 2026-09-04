@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { creerFactureDirecte } from '@/actions/facturation'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import EditeurLignes from '@/components/shop/facturation/EditeurLignes'
 import type { LigneFacture } from '@/actions/facturation'
@@ -19,7 +20,15 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
     const [lignes, setLignes]             = useState<LigneFacture[]>([])
     const [clientId, setClientId]         = useState(clientIdPreselectionne ?? '')
     const [objet, setObjet]               = useState('')
-    const [dateEcheance, setDateEcheance] = useState('')
+    // Le champ partait vide et la facture s'enregistrait sans echeance,
+    // ou avec celle du jour : deux factures en production sont en retard
+    // a la seconde ou elles ont ete creees. Trente jours, comme la
+    // conversion d'un devis.
+    const [dateEcheance, setDateEcheance] = useState(() => {
+        const d = new Date()
+        d.setDate(d.getDate() + 30)
+        return d.toISOString().split('T')[0]
+    })
     const [remisePct, setRemisePct]       = useState(0)
     const [noteClient, setNoteClient]     = useState('')
     const [enAttente, setEnAttente]       = useState(false)
@@ -98,11 +107,9 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Remise globale (%)</label>
-                        <input
-                            type="number"
-                            min="0" max="100" step="0.5"
+                        <ChampNombre
                             value={remisePct}
-                            onChange={e => setRemisePct(parseFloat(e.target.value) || 0)}
+                            onChange={setRemisePct}
                             className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                         />
                     </div>

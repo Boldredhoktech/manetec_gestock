@@ -24,14 +24,14 @@ interface Props { factures: Facture[] }
 export default function TableauFactures({ factures }: Props) {
     if (factures.length === 0) {
         return (
-            <div className="text-center py-10 text-muted-foreground text-sm bg-card border border-border rounded-xl">
-                Aucune facture.
+            <div className="text-center py-10 text-muted-foreground text-sm">
+                Aucune facture ne correspond à cette sélection.
             </div>
         )
     }
 
     return (
-        <div className="bg-card border border-border rounded-xl overflow-hidden">
+        <div className="overflow-hidden">
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>

@@ -70,7 +70,16 @@ export async function creerClient(formData: FormData) {
         created_by:  user.user_metadata.user_id,
     })
 
-    if (error) return { erreur: 'Erreur lors de la création du client.' }
+    if (error) {
+        // L'index unique partiel refuse deux fiches pour le meme numero
+        // dans une meme boutique : deux fiches eclateraient l'historique
+        // et les soldes d'une seule personne.
+        if (error.code === '23505') {
+            return { erreur: 'Un client de cette boutique porte déjà ce numéro de téléphone.' }
+        }
+        console.error('ERREUR CREATION CLIENT:', error)
+        return { erreur: 'Erreur lors de la création du client.' }
+    }
 
     revalidatePath('/admin/clients')
     redirect('/admin/clients')
@@ -160,7 +169,13 @@ export async function modifierClient(formData: FormData) {
         .eq('id', clientId)
         .eq('shop_id', user.user_metadata.shop_id)
 
-    if (error) return { erreur: 'Erreur lors de la modification.' }
+    if (error) {
+        if (error.code === '23505') {
+            return { erreur: 'Un client de cette boutique porte déjà ce numéro de téléphone.' }
+        }
+        console.error('ERREUR MODIFICATION CLIENT:', error)
+        return { erreur: 'Erreur lors de la modification.' }
+    }
 
     revalidatePath(`/admin/clients/${clientId}`)
     revalidatePath('/admin/clients')

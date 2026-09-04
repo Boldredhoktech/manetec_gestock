@@ -3,7 +3,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Download, Loader2, CheckCircle, XCircle, FileText } from 'lucide-react'
+import { Download, Loader2, CheckCircle, XCircle, FileText, Pencil } from 'lucide-react'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { nombreEnLettresPDF, deviseEnLettresPDF } from '@/lib/pdf/utils-pdf'
@@ -196,8 +197,16 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
             </div>
 
             {/* Actions selon statut */}
-            {['brouillon', 'envoye'].includes(devis.statut) && (
+            {['brouillon', 'envoye'].includes(devis.statut) && !devis.converti_en_facture && (
                 <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                    {/* Un devis n'est qu'une proposition : tant qu'il est
+                        ouvert, il se corrige au lieu d'être ressaisi. */}
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href={`/admin/factures/devis/${devis.id}/modifier`}>
+                            <Pencil className="w-3.5 h-3.5 mr-1.5" />
+                            Modifier
+                        </Link>
+                    </Button>
                     {devis.statut === 'brouillon' && (
                         <Button variant="outline" size="sm"
                                 onClick={() => handleStatut('envoye')}>

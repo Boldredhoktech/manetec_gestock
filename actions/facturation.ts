@@ -527,3 +527,50 @@ export async function annulerPaiementFacture(
     revalidatePath('/compta/dashboard')
     return { succes: true }
 }
+
+// ── Modifier un devis ──────────────────────────────────────────
+// Un devis n'est qu'une proposition : une faute de frappe ou un prix
+// erroné obligeait à tout ressaisir. La facture, elle, reste immuable —
+// c'est une pièce — et c'est l'annulation qui sert à la corriger.
+export async function modifierDevis(
+    devisId: string,
+    clientId: string | null,
+    objet: string,
+    dateValidite: string | null,
+    remisePct: number,
+    noteClient: string,
+    noteInterne: string,
+    lignes: LigneFacture[],
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const adminClient = createAdminClient()
+
+    if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
+
+    const { data: result, error } = await adminClient.rpc('modifier_devis', {
+        p_shop_id:       user.user_metadata.shop_id,
+        p_devis_id:      devisId,
+        p_client_id:     clientId || null,
+        p_objet:         objet || '',
+        p_date_validite: dateValidite || null,
+        p_remise_pct:    remisePct,
+        p_note_client:   noteClient || '',
+        p_note_interne:  noteInterne || '',
+        p_lignes:        lignes,
+        p_user_id:       user.user_metadata.user_id,
+    })
+
+    if (error) {
+        console.error('ERREUR MODIFICATION DEVIS:', error)
+        return { erreur: 'Erreur lors de la modification du devis.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la modification.' }
+
+    revalidatePath('/admin/factures')
+    revalidatePath(`/admin/factures/devis/${devisId}`)
+    return { succes: true }
+}
