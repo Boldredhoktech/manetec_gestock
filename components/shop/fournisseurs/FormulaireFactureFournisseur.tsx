@@ -6,6 +6,7 @@ import { creerFactureFournisseur } from '@/actions/fournisseurs'
 import Link from 'next/link'
 import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
+import { LIENS } from '@/lib/constants/liens'
 
 interface Props {
     supplierId: string
@@ -69,7 +70,10 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
 
         if (res?.erreur) { setErreur(res.erreur); return }
         setSucces(true)
-        setTimeout(() => router.push(`/stock/fournisseurs/${supplierId}/factures/${res.facture_id}`), 1000)
+        // La fiche d'une facture fournisseur vit sous
+        // /stock/factures-fournisseurs, jamais sous le fournisseur :
+        // cette adresse-la n'a jamais existe et rendait un 404.
+        setTimeout(() => router.push(LIENS.factureFournisseur(res.facture_id as string)), 1000)
     }
 
     const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 transition-colors'

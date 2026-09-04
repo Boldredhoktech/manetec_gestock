@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { creerFactureFournisseur } from '@/actions/fournisseurs'
 import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
+import { LIENS } from '@/lib/constants/liens'
 
 interface Produit {
     id: string; nom: string; prix_achat: number; unite: string
@@ -112,7 +113,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
 
         if (res?.erreur) { setErreur(res.erreur); return }
         setSucces(true)
-        setTimeout(() => router.push(`/stock/factures-fournisseurs/${(res as any).facture_id}`), 1000)
+        setTimeout(() => router.push(LIENS.factureFournisseur((res as any).facture_id)), 1000)
     }
 
     const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 transition-colors'

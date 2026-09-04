@@ -9,6 +9,7 @@ import { ArrowLeft, Plus, FileText, AlertCircle, CheckCircle, Clock } from 'luci
 import { formatDate, formatMontant } from '@/lib/utils'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import { LIENS } from '@/lib/constants/liens'
 
 export const metadata: Metadata = { title: 'Factures fournisseur' }
 
@@ -127,7 +128,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                                     f.date_echeance && new Date(f.date_echeance) < new Date()
                                 return (
                                     <Link key={f.id}
-                                          href={`/stock/fournisseurs/${id}/factures/${f.id}`}
+                                          href={LIENS.factureFournisseur(f.id)}
                                           className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
                                         <div className="col-span-2">
                                             <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
