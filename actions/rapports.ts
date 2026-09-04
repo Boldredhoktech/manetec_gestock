@@ -1,7 +1,19 @@
-'use server'
+// ═══════════════════════════════════════════════════════════════
+// PAS de directive 'use server' ici — et ce n'est pas un oubli.
+//
+// Ces fonctions ne sont appelées que par les routes PDF (app/api/v1/pdf)
+// et jamais depuis le navigateur. Tant que le fichier portait
+// 'use server', chacune était publiée comme Server Action, donc
+// appelable par requête directe — et comme toutes prennent `shopId` en
+// argument sans vérifier qui appelle, n'importe quelle boutique pouvait
+// lire le chiffre d'affaires, les salaires et les dettes d'une autre.
+//
+// L'autorisation est appliquée par `gardeRouteBoutique`
+// (lib/auth/garde-route.ts), qui fournit aussi le shop_id : il vient
+// TOUJOURS de la session, jamais du client.
+// ═══════════════════════════════════════════════════════════════
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
 import { format } from 'date-fns'
 import { fr } from 'date-fns/locale'
 
@@ -208,7 +220,7 @@ export async function getDonneesRecu(saleId: string, shopId: string) {
         products(nom, unite)
       ),
       sale_payments(moyen_paiement, montant, reference)
-    `).eq('id', saleId).single(),
+    `).eq('id', saleId).eq('shop_id', shopId).single(),
         adminClient.from('shops').select(
             'nom, adresse, ville, telephone_1, telephone_2, email, ifu, rccm, devise, message_recu_thermique'
         ).eq('id', shopId).single(),

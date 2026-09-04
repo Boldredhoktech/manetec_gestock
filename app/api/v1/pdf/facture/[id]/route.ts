@@ -1,26 +1,23 @@
 // app/api/v1/pdf/facture/[id]/route.ts
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { renderToBuffer } from '@react-pdf/renderer'
 import { FacturePDF } from '@/lib/pdf/facture-pdf'
 import { getDonneesFacturePDF } from '@/actions/rapports'
-import { createClient } from '@/lib/supabase/server'
+import { gardeRouteBoutique } from '@/lib/auth/garde-route'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import React from 'react'
 
 export async function GET(
-    request: NextRequest,
+    request: Request,
     { params }: { params: Promise<{ id: string }> }
 ) {
     const { id } = await params
 
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const garde = await gardeRouteBoutique({ permissions: [PERMISSIONS.FACTURES_VOIR] })
+    if (garde.refus) return garde.refus
 
-    if (!user || user.user_metadata?.type_acteur !== 'shop') {
-        return new NextResponse('Non autorisé', { status: 401 })
-    }
-
-    const donnees = await getDonneesFacturePDF(id, user.user_metadata.shop_id)
+    const donnees = await getDonneesFacturePDF(id, garde.shopId)
     if (!donnees) return new NextResponse('Facture introuvable', { status: 404 })
 
     const buffer = await renderToBuffer(

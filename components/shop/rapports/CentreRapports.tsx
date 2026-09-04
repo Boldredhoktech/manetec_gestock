@@ -10,6 +10,8 @@ import {
 //import type { ArrowLeftRight } from 'lucide-react'
 import { ArrowLeftRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { usePermission } from '@/hooks/usePermission'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 interface Rapport {
     id:          string
@@ -20,6 +22,9 @@ interface Rapport {
     fond:        string
     getUrl:      (params: Record<string, string>) => string
     params?:     { key: string; label: string; type: string }[]
+    // Permission exigee par la route en plus de reports.generate.
+    // Sans elle, le bouton ouvrait un onglet qui repond 403.
+    permission:  string
 }
 
 const RAPPORTS: Rapport[] = [
@@ -31,6 +36,7 @@ const RAPPORTS: Rapport[] = [
         icone:       ShoppingCart,
         couleur:     'text-blue-600',
         fond:        'bg-blue-50 border-blue-200',
+        permission:  PERMISSIONS.VENTES_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-ventes?debut=${p.debut}&fin=${p.fin}`,
         params: [
             { key: 'debut', label: 'Date début', type: 'date' },
@@ -44,6 +50,7 @@ const RAPPORTS: Rapport[] = [
         icone:       Users,
         couleur:     'text-purple-600',
         fond:        'bg-purple-50 border-purple-200',
+        permission:  PERMISSIONS.CLIENTS_VOIR,
         getUrl:      () => `/api/v1/pdf/rapport-clients`,
     },
     // ── BLOC 1B ──────────────────────────────────────
@@ -54,6 +61,7 @@ const RAPPORTS: Rapport[] = [
         icone:       Package,
         couleur:     'text-teal-600',
         fond:        'bg-teal-50 border-teal-200',
+        permission:  PERMISSIONS.STOCK_VOIR,
         getUrl:      () => `/api/v1/pdf/rapport-stock`,
     },
     {
@@ -63,6 +71,7 @@ const RAPPORTS: Rapport[] = [
         icone:       ArrowLeftRight,
         couleur:     'text-orange-600',
         fond:        'bg-orange-50 border-orange-200',
+        permission:  PERMISSIONS.STOCK_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-mouvements?debut=${p.debut}&fin=${p.fin}`,
         params: [
             { key: 'debut', label: 'Date début', type: 'date' },
@@ -76,6 +85,7 @@ const RAPPORTS: Rapport[] = [
         icone:       Truck,
         couleur:     'text-amber-600',
         fond:        'bg-amber-50 border-amber-200',
+        permission:  PERMISSIONS.FOURNISSEURS_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-fournisseurs?debut=${p.debut}&fin=${p.fin}`,
         params: [
             { key: 'debut', label: 'Date début', type: 'date' },
@@ -91,6 +101,7 @@ const RAPPORTS: Rapport[] = [
         icone:       TrendingUp,
         couleur:     'text-green-600',
         fond:        'bg-green-50 border-green-200',
+        permission:  PERMISSIONS.COMPTABILITE_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-pp?mois=${p.mois}&annee=${p.annee}`,
         params: [
             { key: 'mois',  label: 'Mois (1-12)', type: 'number' },
@@ -104,6 +115,7 @@ const RAPPORTS: Rapport[] = [
         icone:       Users,
         couleur:     'text-indigo-600',
         fond:        'bg-indigo-50 border-indigo-200',
+        permission:  PERMISSIONS.SALAIRES_GERER,
         getUrl:      (p) => `/api/v1/pdf/rapport-salaires?mois=${p.mois}&annee=${p.annee}`,
         params: [
             { key: 'mois',  label: 'Mois (1-12)', type: 'number' },
@@ -117,11 +129,14 @@ const RAPPORTS: Rapport[] = [
         icone:       AlertCircle,
         couleur:     'text-red-600',
         fond:        'bg-red-50 border-red-200',
+        permission:  PERMISSIONS.FACTURES_VOIR,
         getUrl:      () => `/api/v1/pdf/factures-impayees`,
     },
 ]
 
 export default function CentreRapports() {
+    const { peutFaire } = usePermission()
+    const rapports      = RAPPORTS.filter(r => peutFaire(r.permission))
     const [enAttente, setEnAttente] = useState<string | null>(null)
     const [params, setParams]       = useState<Record<string, Record<string, string>>>({})
 
@@ -168,8 +183,15 @@ export default function CentreRapports() {
                 Sélectionnez les paramètres puis cliquez sur Télécharger pour générer le rapport PDF.
             </p>
 
+            {rapports.length === 0 && (
+                <div className="text-center py-12 text-sm text-muted-foreground bg-card border border-border rounded-xl">
+                    Aucun rapport n&apos;est ouvert à votre rôle. Demandez à un administrateur
+                    de la boutique d&apos;étendre vos permissions.
+                </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {RAPPORTS.map(rapport => {
+                {rapports.map(rapport => {
                     const Icone = rapport.icone
                     const loading = enAttente === rapport.id
                     return (

@@ -6,6 +6,8 @@ import { DevisPDF } from '@/lib/pdf/devis-pdf'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDatePDF } from '@/lib/pdf/utils-pdf'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 import React from 'react'
 
 export async function GET(
@@ -19,6 +21,9 @@ export async function GET(
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
+    }
+    if (!aPermission(user, PERMISSIONS.FACTURES_VOIR)) {
+        return new NextResponse('Vous n\'avez pas la permission de consulter ce document.', { status: 403 })
     }
 
     const shopId      = user.user_metadata.shop_id as string

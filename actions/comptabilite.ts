@@ -375,8 +375,23 @@ export async function annulerInventaire(inventoryId: string, motif?: string) {
 }
 
 // ── Tableau de bord comptable ─────────────────────────────────
-export async function getTableauBordComptable(shopId: string, mois: number, annee: number) {
+// La boutique est lue DANS LA SESSION, jamais reçue en argument : ce
+// fichier porte 'use server', donc chaque fonction exportée est publiée
+// comme Server Action et reste appelable par requête directe. Tant que
+// `shopId` était un paramètre et qu'aucune vérification n'était faite,
+// n'importe qui pouvait demander le tableau de bord d'une autre boutique.
+// Renvoie null si l'appelant n'y a pas droit.
+export async function getTableauBordComptable(mois: number, annee: number) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return null
+    if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) return null
+
+    const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
+
+    if (!Number.isInteger(mois) || mois < 1 || mois > 12) return null
+    if (!Number.isInteger(annee) || annee < 2000 || annee > 2100) return null
 
     const debut = new Date(annee, mois - 1, 1).toISOString().split('T')[0]
     const fin   = new Date(annee, mois, 0).toISOString().split('T')[0]

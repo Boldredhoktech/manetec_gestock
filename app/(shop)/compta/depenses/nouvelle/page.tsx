@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireDepense from '@/components/shop/compta/FormulaireDepense'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Nouvelle dépense' }
 
@@ -12,6 +14,7 @@ export default async function PageNouvelleDepense() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.DEPENSES_CREER)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
     const { data: categories } = await adminClient

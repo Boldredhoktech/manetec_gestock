@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import FormulaireEmploye from '@/components/shop/compta/FormulaireEmploye'
+import { aPermission } from '@/lib/auth/permissions-serveur'
+import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Nouvel employé' }
 
@@ -11,6 +13,7 @@ export default async function PageNouvelEmploye() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
+    if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) redirect('/admin/dashboard')
 
     return (
         <div className="flex flex-col min-h-screen">

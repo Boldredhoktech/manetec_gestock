@@ -131,7 +131,7 @@ export async function connexionBoutique(formData: FormData) {
     // Trouver la boutique
     const { data: shop } = await adminClient
         .from('shops')
-        .select('id, est_active, plan, plan_expire_le')
+        .select('id, nom, est_active, plan, plan_expire_le')
         .eq('public_id', shopPublicId.toUpperCase().trim())
         .single()
 
@@ -212,35 +212,72 @@ export async function connexionBoutique(formData: FormData) {
     const permissionsEtendues = permissions?.map(p => p.permission) ?? []
 
     // Créer session Supabase Auth
+    //
+    // Le JWT porte le rôle et les permissions étendues, et c'est lui que
+    // lisent `aPermission` (serveur) et `usePermission` (client). Ces
+    // métadonnées n'étaient écrites qu'à la CRÉATION du compte Auth et
+    // jamais ensuite : accorder ou retirer une permission, promouvoir ou
+    // rétrograder un utilisateur n'avait donc aucun effet, même après
+    // reconnexion. On les réécrit à chaque connexion, avant de signer,
+    // pour que le jeton émis reflète la base.
     const supabase = await createClient()
     const emailVirtuel = `shop_${utilisateur.id}@internal.manetec.app`
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: emailVirtuel,
-        password: utilisateur.id,
-    })
+    const metadonnees = {
+        type_acteur:          'shop',
+        role:                 utilisateur.role,
+        user_id:              utilisateur.id,
+        public_id:            utilisateur.public_id,
+        nom_complet:          utilisateur.nom_complet,
+        shop_id:              shop.id,
+        shop_public_id:       shopPublicId,
+        shop_nom:             shop.nom,
+        shop_plan:            shop.plan,
+        permissions_etendues: permissionsEtendues,
+    }
+
+    const { data: premiereTentative, error: signInError } =
+        await supabase.auth.signInWithPassword({
+            email:    emailVirtuel,
+            password: utilisateur.id,
+        })
 
     if (signInError) {
-        await adminClient.auth.admin.createUser({
-            email: emailVirtuel,
-            password: utilisateur.id,
-            user_metadata: {
-                type_acteur: 'shop',
-                role: utilisateur.role,
-                user_id: utilisateur.id,
-                public_id: utilisateur.public_id,
-                nom_complet: utilisateur.nom_complet,
-                shop_id: shop.id,
-                shop_public_id: shopPublicId,
-                permissions_etendues: permissionsEtendues,
-            },
+        // Compte Auth inexistant : on le crée déjà à jour.
+        const { error: erreurCreation } = await adminClient.auth.admin.createUser({
+            email:         emailVirtuel,
+            password:      utilisateur.id,
+            user_metadata: metadonnees,
             email_confirm: true,
         })
 
-        await supabase.auth.signInWithPassword({
-            email: emailVirtuel,
+        if (erreurCreation) {
+            return { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
+        }
+
+        const { error: erreurSecondeSignature } = await supabase.auth.signInWithPassword({
+            email:    emailVirtuel,
             password: utilisateur.id,
         })
+
+        if (erreurSecondeSignature) {
+            return { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
+        }
+    } else {
+        // Compte existant : on rafraîchit les métadonnées, puis on
+        // resigne — le jeton déjà émis porte encore les anciennes.
+        await adminClient.auth.admin.updateUserById(premiereTentative.user.id, {
+            user_metadata: metadonnees,
+        })
+
+        const { error: erreurResignature } = await supabase.auth.signInWithPassword({
+            email:    emailVirtuel,
+            password: utilisateur.id,
+        })
+
+        if (erreurResignature) {
+            return { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
+        }
     }
 
     // Journaliser

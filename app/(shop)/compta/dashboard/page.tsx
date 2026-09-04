@@ -20,9 +20,8 @@ export default async function PageDashboardComptable() {
     const mois       = maintenant.getMonth() + 1
     const annee      = maintenant.getFullYear()
 
-    const donnees = await getTableauBordComptable(
-        user.user_metadata.shop_id, mois, annee
-    )
+    const donnees = await getTableauBordComptable(mois, annee)
+    if (!donnees) redirect('/admin/dashboard')
 
     return (
         <div className="flex flex-col min-h-screen">
