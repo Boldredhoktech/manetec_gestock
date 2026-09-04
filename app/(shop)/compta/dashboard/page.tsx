@@ -10,15 +10,31 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Dashboard Comptable' }
 
-export default async function PageDashboardComptable() {
+// Le mois se choisit. Avant, il était calculé sur l'horloge du serveur
+// sans aucun sélecteur : le 1er du mois l'écran était vide et le mois
+// écoulé devenait inconsultable — précisément quand on veut le lire.
+function periodeDemandee(mois?: string, annee?: string) {
+    const maintenant = new Date()
+    const m = Number(mois)
+    const a = Number(annee)
+    return {
+        mois:  Number.isInteger(m) && m >= 1 && m <= 12 ? m : maintenant.getMonth() + 1,
+        annee: Number.isInteger(a) && a >= 2000 && a <= 2100 ? a : maintenant.getFullYear(),
+    }
+}
+
+export default async function PageDashboardComptable({
+    searchParams,
+}: {
+    searchParams: Promise<{ mois?: string; annee?: string }>
+}) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
     if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) redirect('/admin/dashboard')
 
-    const maintenant = new Date()
-    const mois       = maintenant.getMonth() + 1
-    const annee      = maintenant.getFullYear()
+    const params          = await searchParams
+    const { mois, annee } = periodeDemandee(params.mois, params.annee)
 
     const donnees = await getTableauBordComptable(mois, annee)
     if (!donnees) redirect('/admin/dashboard')
@@ -28,9 +44,7 @@ export default async function PageDashboardComptable() {
             <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
                 <h1 className="text-xl font-bold text-foreground">Tableau de bord comptable</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                    Mois en cours — {new Date(annee, mois - 1).toLocaleDateString('fr-FR', {
-                    month: 'long', year: 'numeric'
-                })}
+                    Entrées, sorties et ventilation de la caisse
                 </p>
             </header>
             <main className="flex-1 p-4 sm:p-6">

@@ -414,9 +414,7 @@ export async function annulerInventaire(inventoryId: string, motif?: string) {
 // ── Tableau de bord comptable ─────────────────────────────────
 // La boutique est lue DANS LA SESSION, jamais reçue en argument : ce
 // fichier porte 'use server', donc chaque fonction exportée est publiée
-// comme Server Action et reste appelable par requête directe. Tant que
-// `shopId` était un paramètre et qu'aucune vérification n'était faite,
-// n'importe qui pouvait demander le tableau de bord d'une autre boutique.
+// comme Server Action et reste appelable par requête directe.
 // Renvoie null si l'appelant n'y a pas droit.
 export async function getTableauBordComptable(mois: number, annee: number) {
     const supabase = await createClient()
@@ -430,8 +428,8 @@ export async function getTableauBordComptable(mois: number, annee: number) {
     if (!Number.isInteger(mois) || mois < 1 || mois > 12) return null
     if (!Number.isInteger(annee) || annee < 2000 || annee > 2100) return null
 
-    const debut = new Date(annee, mois - 1, 1).toISOString().split('T')[0]
-    const fin   = new Date(annee, mois, 0).toISOString().split('T')[0]
+    const debut = `${annee}-${String(mois).padStart(2, '0')}-01`
+    const fin   = new Date(Date.UTC(annee, mois, 0)).toISOString().split('T')[0]
 
     const [
         { data: ventes },
@@ -439,12 +437,14 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         { data: salaires },
         { data: paiementsFournisseurs },
         { data: paiementsFactures },
+        { data: inventaires },
+        { data: ventilationBrute },
     ] = await Promise.all([
         adminClient.from('sales')
-            .select('montant_total, created_at')
+            .select('montant_total, credit_accorde, created_at')
             .eq('shop_id', shopId).eq('statut', 'completee')
             .gte('created_at', debut).lte('created_at', fin + 'T23:59:59'),
-        // Les ecritures annulees restent visibles a l'ecran, barrees,
+        // Les écritures annulées restent visibles à l'écran, barrées,
         // mais sortent de tous les totaux.
         adminClient.from('expenses')
             .select('montant, date_depense, libelle, expense_categories(nom)')
@@ -463,22 +463,63 @@ export async function getTableauBordComptable(mois: number, annee: number) {
             .select('montant, date_paiement')
             .eq('shop_id', shopId)
             .gte('date_paiement', debut).lte('date_paiement', fin),
+        // date_paiement, et non created_at : la colonne existait depuis
+        // l'origine sans qu'aucun filtre s'en serve.
         adminClient.from('facture_payments')
-            .select('montant, created_at')
+            .select('montant, date_paiement')
             .eq('shop_id', shopId)
-            .gte('created_at', debut).lte('created_at', fin + 'T23:59:59'),
+            .gte('date_paiement', debut).lte('date_paiement', fin),
+        // Variation de la valeur du stock constatée aux inventaires
+        // validés : ce n'est PAS de la trésorerie, d'où sa présentation
+        // à part — mais le tableau de bord doit dire la même chose que
+        // le rapport Profits & Pertes, qui l'affiche depuis le Lot 3 Stock.
+        adminClient.from('inventories')
+            .select('valeur_pertes, valeur_gains')
+            .eq('shop_id', shopId)
+            .eq('statut', 'valide')
+            .gte('valide_le', debut + 'T00:00:00')
+            .lte('valide_le', fin + 'T23:59:59'),
+        // Cinq sources d'argent agrégées par moyen de paiement en une
+        // seule requête, cumul compris (voir migration 022).
+        adminClient.rpc('ventilation_caisse', {
+            p_shop_id: shopId, p_debut: debut, p_fin: fin,
+        }),
     ])
 
-    const totalVentes      = ventes?.reduce((a, v) => a + v.montant_total, 0) ?? 0
-    const totalDepenses    = depenses?.reduce((a, d) => a + d.montant, 0) ?? 0
-    const totalSalaires    = salaires?.reduce((a, s) => a + s.montant_net, 0) ?? 0
+    const totalVentes       = ventes?.reduce((a, v) => a + v.montant_total, 0) ?? 0
+    const creditAccorde     = ventes?.reduce((a, v) => a + (v.credit_accorde ?? 0), 0) ?? 0
+    const totalDepenses     = depenses?.reduce((a, d) => a + d.montant, 0) ?? 0
+    const totalSalaires     = salaires?.reduce((a, s) => a + s.montant_net, 0) ?? 0
     const totalFournisseurs = paiementsFournisseurs?.reduce((a, p) => a + p.montant, 0) ?? 0
-    const totalFactures    = paiementsFactures?.reduce((a, p) => a + p.montant, 0) ?? 0
-    const totalEntrees     = totalVentes + totalFactures
-    const totalSorties     = totalDepenses + totalSalaires + totalFournisseurs
-    const resultat         = totalEntrees - totalSorties
+    const totalFactures     = paiementsFactures?.reduce((a, p) => a + p.montant, 0) ?? 0
+    const totalEntrees      = totalVentes + totalFactures
+    const totalSorties      = totalDepenses + totalSalaires + totalFournisseurs
+    const resultat          = totalEntrees - totalSorties
+
+    const pertesStock = inventaires?.reduce((a, i) => a + (i.valeur_pertes ?? 0), 0) ?? 0
+    const gainsStock  = inventaires?.reduce((a, i) => a + (i.valeur_gains  ?? 0), 0) ?? 0
+
+    type LigneVentilation = {
+        moyen: string
+        entrees_periode: number
+        sorties_periode: number
+        entrees_cumul:   number
+        sorties_cumul:   number
+    }
+
+    const ventilation = ((ventilationBrute ?? []) as LigneVentilation[]).map(l => ({
+        moyen:          l.moyen,
+        entreesPeriode: Number(l.entrees_periode),
+        sortiesPeriode: Number(l.sorties_periode),
+        netPeriode:     Number(l.entrees_periode) - Number(l.sorties_periode),
+        solde:          Number(l.entrees_cumul) - Number(l.sorties_cumul),
+    }))
+
+    const MOIS_LABELS_FR = ['','Janvier','Février','Mars','Avril','Mai','Juin',
+        'Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 
     return {
+        periode: { mois, annee, libelle: `${MOIS_LABELS_FR[mois]} ${annee}` },
         totalVentes,
         totalFactures,
         totalEntrees,
@@ -487,8 +528,16 @@ export async function getTableauBordComptable(mois: number, annee: number) {
         totalFournisseurs,
         totalSorties,
         resultat,
-        nbVentes:   ventes?.length ?? 0,
-        depenses:   depenses ?? [],
+        // Le POS enregistre la totalité de la vente comme encaissée même
+        // quand une part est accordée à crédit : tant que ce n'est pas
+        // repris au module POS, la ventilation surestime les entrées de
+        // ce montant. On l'affiche plutôt que de le taire.
+        creditAccorde,
+        variationStock: { pertes: pertesStock, gains: gainsStock, net: gainsStock - pertesStock },
+        resultatEconomique: resultat + (gainsStock - pertesStock),
+        ventilation,
+        nbVentes: ventes?.length ?? 0,
+        depenses: depenses ?? [],
     }
 }
 

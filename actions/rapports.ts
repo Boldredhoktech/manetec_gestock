@@ -60,13 +60,13 @@ export async function getDonneesRapportVentes(
     const { data: paiementsFacture } = await adminClient
         .from('facture_payments')
         .select(`
-      montant, moyen_paiement, created_at,
+      montant, moyen_paiement, date_paiement,
       factures(public_id, clients(nom))
     `)
         .eq('shop_id', shopId)
-        .gte('created_at', debut + 'T00:00:00')
-        .lte('created_at', fin + 'T23:59:59')
-        .order('created_at', { ascending: false })
+        .gte('date_paiement', debut)
+        .lte('date_paiement', fin)
+        .order('date_paiement', { ascending: false })
 
     // Top produits
     const { data: topProduits } = await adminClient
@@ -120,7 +120,7 @@ export async function getDonneesRapportVentes(
     // Ventes sur facture (encaissements)
     const ventesFacture = (paiementsFacture ?? []).map((p: any) => ({
         facture_public_id: (p.factures as any)?.public_id ?? '—',
-        date:              format(new Date(p.created_at), 'dd/MM/yyyy HH:mm', { locale: fr }),
+        date:              formatFR(p.date_paiement),
         client_nom:        ((p.factures as any)?.clients as any)?.nom ?? null,
         moyen:             p.moyen_paiement,
         montant:           p.montant,
@@ -761,10 +761,11 @@ export async function getDonneesRapportPP(
         adminClient.from('supplier_payments').select('montant')
             .eq('shop_id', shopId)
             .gte('date_paiement', debut).lte('date_paiement', fin),
+        // date_paiement, et non created_at : la date reelle fait foi,
+        // meme regle que les salaires depuis la migration 020.
         adminClient.from('facture_payments').select('montant')
             .eq('shop_id', shopId)
-            .gte('created_at', debut + 'T00:00:00')
-            .lte('created_at', fin + 'T23:59:59'),
+            .gte('date_paiement', debut).lte('date_paiement', fin),
     ])
 
     // Écarts d'inventaire validés sur la période. Ce ne sont PAS des
