@@ -1,7 +1,6 @@
 // app/api/v1/pdf/rapport-clients/route.ts
 
-import { NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { RapportClientsPDF } from '@/lib/pdf/rapport-clients'
 import { getDonneesRapportClients } from '@/actions/rapports'
 import { gardeRouteBoutique } from '@/lib/auth/garde-route'
@@ -15,15 +14,11 @@ export async function GET() {
     })
     if (garde.refus) return garde.refus
 
-    const donnees = await getDonneesRapportClients(garde.shopId)
-    const buffer  = await renderToBuffer(
-        React.createElement(RapportClientsPDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': 'inline; filename="rapport-clients.pdf"',
+    return reponsePDF(
+        `rapport-clients.pdf`,
+        async () => {
+            const donnees = await getDonneesRapportClients(garde.shopId)
+            return React.createElement(RapportClientsPDF, { donnees })
         },
-    })
+    )
 }

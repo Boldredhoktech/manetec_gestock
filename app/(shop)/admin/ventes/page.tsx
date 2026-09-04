@@ -52,7 +52,7 @@ export default async function PageVentes({
         .select(
             `id, public_id, statut, created_at, montant_total,
              credit_accorde, motif_annulation,
-             clients(nom), shop_users(nom_complet),
+             clients(nom), shop_users!sales_vendeur_id_fkey(nom_complet),
              sale_items(id)`,
             { count: 'exact' },
         )

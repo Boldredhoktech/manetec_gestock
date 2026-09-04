@@ -18,11 +18,21 @@ export default async function PageFournisseurs() {
     if (!aPermission(user, PERMISSIONS.FOURNISSEURS_VOIR)) redirect('/admin/dashboard')
 
     const adminClient = createAdminClient()
-    const { data: fournisseurs } = await adminClient
+
+    // La colonne s'appelle « solde_dû », avec son accent. Ecrite ici
+    // « solde_du », elle n'existait pas : PostgREST rendait une erreur,
+    // le `?? []` la changeait en liste vide, et la page annoncait
+    // « 0 fournisseur(s) » sur une boutique qui en comptait six.
+    // L'alias PostgREST rend le nom lisible cote TypeScript.
+    const { data: fournisseurs, error } = await adminClient
         .from('suppliers')
-        .select('id, public_id, nom, telephone, email, solde_du, est_actif, created_at')
+        .select('id, public_id, nom, telephone, email, solde_du:"solde_dû", est_actif, created_at')
         .eq('shop_id', user.user_metadata.shop_id)
         .order('nom')
+
+    if (error) {
+        throw new Error(`Liste des fournisseurs illisible : ${error.message}`)
+    }
 
     return (
         <div className="flex flex-col min-h-screen">

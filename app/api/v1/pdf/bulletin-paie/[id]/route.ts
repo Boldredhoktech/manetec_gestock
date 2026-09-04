@@ -1,7 +1,6 @@
 // app/api/v1/pdf/bulletin-paie/[id]/route.ts
 
-import { NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { BulletinPaiePDF } from '@/lib/pdf/bulletin-paie'
 import { getDonneesBulletinPaie } from '@/actions/rapports'
 import { gardeRouteBoutique } from '@/lib/auth/garde-route'
@@ -19,17 +18,16 @@ export async function GET(
     })
     if (garde.refus) return garde.refus
 
-    const donnees = await getDonneesBulletinPaie(id, garde.shopId)
-    if (!donnees) return new NextResponse('Versement introuvable', { status: 404 })
-
-    const buffer = await renderToBuffer(
-        React.createElement(BulletinPaiePDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': `inline; filename="bulletin-${donnees.versement.public_id}.pdf"`,
+    return reponsePDF(
+        `bulletin-de-paie.pdf`,
+        async () => {
+            const donnees = await getDonneesBulletinPaie(id, garde.shopId)
+            if (!donnees) return null
+            return {
+                element:    React.createElement(BulletinPaiePDF, { donnees }),
+                nomFichier: `bulletin-${donnees.versement.public_id}.pdf`,
+            }
         },
-    })
+        'Versement introuvable',
+    )
 }

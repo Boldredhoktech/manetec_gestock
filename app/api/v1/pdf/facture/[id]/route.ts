@@ -1,7 +1,6 @@
 // app/api/v1/pdf/facture/[id]/route.ts
 
-import { NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { FacturePDF } from '@/lib/pdf/facture-pdf'
 import { getDonneesFacturePDF } from '@/actions/rapports'
 import { gardeRouteBoutique } from '@/lib/auth/garde-route'
@@ -17,17 +16,16 @@ export async function GET(
     const garde = await gardeRouteBoutique({ permissions: [PERMISSIONS.FACTURES_VOIR] })
     if (garde.refus) return garde.refus
 
-    const donnees = await getDonneesFacturePDF(id, garde.shopId)
-    if (!donnees) return new NextResponse('Facture introuvable', { status: 404 })
-
-    const buffer = await renderToBuffer(
-        React.createElement(FacturePDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': `inline; filename="facture-${donnees.facture.public_id}.pdf"`,
+    return reponsePDF(
+        `facture.pdf`,
+        async () => {
+            const donnees = await getDonneesFacturePDF(id, garde.shopId)
+            if (!donnees) return null
+            return {
+                element:    React.createElement(FacturePDF, { donnees }),
+                nomFichier: `facture-${donnees.facture.public_id}.pdf`,
+            }
         },
-    })
+        'Facture introuvable',
+    )
 }

@@ -32,7 +32,7 @@ export default async function PageDetailVente({
         .select(`
             *,
             clients(nom, public_id, telephone),
-            shop_users(nom_complet),
+            shop_users!sales_vendeur_id_fkey(nom_complet),
             sale_items(
                 id, quantite, prix_unitaire, remise_pct,
                 montant_ligne, imei, note,

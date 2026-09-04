@@ -1,7 +1,7 @@
 // app/api/v1/pdf/rapport-pp/route.ts
 
-import { NextRequest, NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { NextRequest } from 'next/server'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { RapportProfitPertesPDF } from '@/lib/pdf/rapport-profits-pertes'
 import { getDonneesRapportPP } from '@/actions/rapports'
 import { gardeRouteBoutique, moisAnneeDepuisURL, estRefus } from '@/lib/auth/garde-route'
@@ -18,15 +18,11 @@ export async function GET(request: NextRequest) {
     const periode = moisAnneeDepuisURL(request.nextUrl.searchParams)
     if (estRefus(periode)) return periode
 
-    const donnees = await getDonneesRapportPP(garde.shopId, periode.mois, periode.annee)
-    const buffer  = await renderToBuffer(
-        React.createElement(RapportProfitPertesPDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': `inline; filename="rapport-pp-${periode.mois}-${periode.annee}.pdf"`,
+    return reponsePDF(
+        `rapport-pp-${periode.mois}-${periode.annee}.pdf`,
+        async () => {
+            const donnees = await getDonneesRapportPP(garde.shopId, periode.mois, periode.annee)
+            return React.createElement(RapportProfitPertesPDF, { donnees })
         },
-    })
+    )
 }

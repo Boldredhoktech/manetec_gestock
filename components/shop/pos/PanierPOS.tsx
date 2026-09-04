@@ -241,18 +241,36 @@ export default function PanierPOS({
 
             {/* ── REMISE GLOBALE ────────────────────────────── */}
             <div className="px-3 py-2 bg-[#f0f4ff] border-t border-gray-200 shrink-0">
+{/* Le pourcentage se SAISIT. Le curseur demandait de viser
+                    7,5 % au pixel pres, sur un ecran tactile de comptoir :
+                    on tapait le chiffre dans sa tete et on n'arrivait pas
+                    a le poser. Le plafond reste applique, mais il est dit
+                    plutot que subi. */}
                 <div className="flex items-center gap-2 mb-2">
-                    <Tag className="w-3.5 h-3.5 text-[#15335a]" />
-                    <span className="text-xs font-bold text-[#15335a]">Remise globale</span>
-                    <span className="text-xs text-gray-400">(max {remiseMax}%)</span>
-                    <div className="flex-1 flex items-center gap-2">
-                        <input type="range" min="0" max={remiseMax} step="0.5"
-                               value={remiseGlobalePct}
-                               onChange={e => onRemiseChange(Math.min(parseFloat(e.target.value), remiseMax))}
-                               className="flex-1 accent-[#15335a] h-1.5" />
-                        <span className="text-xs font-black text-[#15335a] w-8 text-right">
-              {remiseGlobalePct}%
-            </span>
+                    <Tag className="w-3.5 h-3.5 text-[#15335a] shrink-0" />
+                    <label htmlFor="remise-globale" className="text-xs font-bold text-[#15335a]">
+                        Remise globale
+                    </label>
+                    <div className="ml-auto flex items-center gap-1.5">
+                        <div className="relative">
+                            <ChampNombre
+                                id="remise-globale"
+                                value={remiseGlobalePct}
+                                onChange={valeur => onRemiseChange(Math.max(0, Math.min(valeur, remiseMax)))}
+                                aria-label={`Remise globale en pourcentage, maximum ${remiseMax}`}
+                                className={`w-20 pl-2 pr-6 py-1.5 bg-white border-2 rounded-lg text-sm font-black
+                                    text-right tabular-nums focus:outline-none focus:ring-2
+                                    ${remiseGlobalePct > 0
+                                        ? 'border-[#15335a] text-[#15335a] focus:ring-[#15335a]/30'
+                                        : 'border-gray-200 text-gray-700 focus:ring-[#15335a]/20'}`}
+                            />
+                            <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400 pointer-events-none">
+                                %
+                            </span>
+                        </div>
+                        <span className="text-[10px] text-gray-400 whitespace-nowrap">
+                            max {remiseMax}%
+                        </span>
                     </div>
                 </div>
                 <div className="relative">

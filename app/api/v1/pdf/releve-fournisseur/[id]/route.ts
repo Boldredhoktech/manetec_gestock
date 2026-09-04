@@ -1,7 +1,7 @@
 // app/api/v1/pdf/releve-fournisseur/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { ReleveFournisseurPDF } from '@/lib/pdf/releve-fournisseur'
 import { getDonneesReleveFournisseur } from '@/actions/rapports'
 import { createClient } from '@/lib/supabase/server'
@@ -28,20 +28,14 @@ export async function GET(
     const debut = searchParams.get('debut') ?? undefined
     const fin   = searchParams.get('fin')   ?? undefined
 
-    const donnees = await getDonneesReleveFournisseur(id, user.user_metadata.shop_id, debut, fin)
-
-    if (!donnees.fournisseur) {
-        return new NextResponse('Fournisseur introuvable', { status: 404 })
-    }
-
-    const buffer = await renderToBuffer(
-        React.createElement(ReleveFournisseurPDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': `inline; filename="releve-${donnees.fournisseur.public_id}.pdf"`,
+    return reponsePDF(
+        `releve-fournisseur.pdf`,
+        async () => {
+            const donnees = await getDonneesReleveFournisseur(id, user.user_metadata.shop_id, debut, fin)
+            return {
+                element:    React.createElement(ReleveFournisseurPDF, { donnees }),
+                nomFichier: `releve-${donnees.fournisseur.public_id}.pdf`,
+            }
         },
-    })
+    )
 }

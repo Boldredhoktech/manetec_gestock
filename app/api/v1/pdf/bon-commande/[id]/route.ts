@@ -1,7 +1,7 @@
 // app/api/v1/pdf/bon-commande/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { BonCommandePDF } from '@/lib/pdf/bon-commande'
 import { getDonneesBonCommande } from '@/actions/rapports'
 import { createClient } from '@/lib/supabase/server'
@@ -24,17 +24,16 @@ export async function GET(
         return new NextResponse('Permission insuffisante', { status: 403 })
     }
 
-    const donnees = await getDonneesBonCommande(id, user.user_metadata.shop_id)
-    if (!donnees) return new NextResponse('Bon de commande introuvable', { status: 404 })
-
-    const buffer = await renderToBuffer(
-        React.createElement(BonCommandePDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': `inline; filename="${donnees.bon.public_id}.pdf"`,
+    return reponsePDF(
+        `bon-de-commande.pdf`,
+        async () => {
+            const donnees = await getDonneesBonCommande(id, user.user_metadata.shop_id)
+            if (!donnees) return null
+            return {
+                element:    React.createElement(BonCommandePDF, { donnees }),
+                nomFichier: `${donnees.bon.public_id}.pdf`,
+            }
         },
-    })
+        'Bon de commande introuvable',
+    )
 }

@@ -1,7 +1,7 @@
 // app/api/v1/pdf/rapport-ventes/route.ts
 
-import { NextRequest, NextResponse } from 'next/server'
-import { renderToBuffer } from '@react-pdf/renderer'
+import { NextRequest } from 'next/server'
+import { reponsePDF } from '@/lib/pdf/reponse'
 import { RapportVentesPDF } from '@/lib/pdf/rapport-ventes'
 import { getDonneesRapportVentes } from '@/actions/rapports'
 import { gardeRouteBoutique, periodeDepuisURL, estRefus } from '@/lib/auth/garde-route'
@@ -18,15 +18,11 @@ export async function GET(request: NextRequest) {
     const periode = periodeDepuisURL(request.nextUrl.searchParams)
     if (estRefus(periode)) return periode
 
-    const donnees = await getDonneesRapportVentes(garde.shopId, periode.debut, periode.fin)
-    const buffer  = await renderToBuffer(
-        React.createElement(RapportVentesPDF, { donnees }) as React.ReactElement<any>
-    )
-
-    return new NextResponse(new Uint8Array(buffer), {
-        headers: {
-            'Content-Type':        'application/pdf',
-            'Content-Disposition': `inline; filename="rapport-ventes-${periode.debut}.pdf"`,
+    return reponsePDF(
+        `rapport-ventes-${periode.debut}.pdf`,
+        async () => {
+            const donnees = await getDonneesRapportVentes(garde.shopId, periode.debut, periode.fin)
+            return React.createElement(RapportVentesPDF, { donnees })
         },
-    })
+    )
 }

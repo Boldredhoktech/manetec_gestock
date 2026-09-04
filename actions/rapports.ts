@@ -57,7 +57,7 @@ export async function getDonneesRapportVentes(
       id, public_id, statut, montant_total, created_at,
       credit_accorde, credit_utilise, advance_utilise, change_utilise,
       clients(nom),
-      shop_users(nom_complet),
+      shop_users!sales_vendeur_id_fkey(nom_complet),
       sale_items(id),
       sale_payments(moyen_paiement, montant)
     `)
@@ -247,7 +247,7 @@ export async function getDonneesRecu(saleId: string, shopId: string) {
       montant_tva, montant_total, montant_recu, montant_rendu,
       credit_accorde, credit_utilise, advance_utilise,
       clients(nom),
-      shop_users(nom_complet),
+      shop_users!sales_vendeur_id_fkey(nom_complet),
       sale_items(
         quantite, prix_unitaire, remise_pct, montant_ligne, imei, tva_pct,
         products(nom, unite)

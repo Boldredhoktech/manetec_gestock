@@ -34,7 +34,10 @@ export default async function PageFacturesFournisseur({ params }: Props) {
 
     const [{ data: fournisseur }, { data: factures }, { data: boutique }] = await Promise.all([
         adminClient.from('suppliers')
-            .select('id, nom, public_id, solde_du')
+            // « solde_dû » porte un accent : sans l'alias, la requete
+            // echouait et la page repondait 404 sur un fournisseur qui
+            // existe bel et bien.
+            .select('id, nom, public_id, solde_du:"solde_dû"')
             .eq('id', id).eq('shop_id', shopId).single(),
         adminClient.from('factures_fournisseurs')
             .select('id, public_id, statut, date_facture, date_echeance, reference_fourn, montant_ttc, montant_paye, montant_restant')
