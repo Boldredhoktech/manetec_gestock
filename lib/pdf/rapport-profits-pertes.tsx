@@ -1,71 +1,26 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { Text, View } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
-import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import type { BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import {
+    DocumentRapport, TableauRapport, SectionTitre, NotePDF, type Colonne,
+} from '@/lib/pdf/template'
 
-const styles = StyleSheet.create({
-    page: {
-        fontFamily: 'Helvetica', fontSize: 9,
-        color: couleurs.texte, padding: 30, backgroundColor: '#fff',
-    },
-    entete: {
-        display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        marginBottom: 20, paddingBottom: 12,
-        borderBottomWidth: 2, borderBottomColor: couleurs.primaire,
-    },
-    titreBoutique: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    infoBoutique: { fontSize: 8, color: couleurs.texteFaible, marginTop: 2 },
-    titrePage: { fontSize: 11, fontFamily: 'Helvetica-Bold', textAlign: 'right', marginBottom: 2 },
-    infoGrise: { fontSize: 8, color: couleurs.texteFaible, textAlign: 'right' },
-    resultatBlock: {
-        padding: 16, borderRadius: 8, marginBottom: 20,
-        alignItems: 'center',
-    },
-    resultatLabel: { fontSize: 11, fontFamily: 'Helvetica-Bold', marginBottom: 6 },
-    resultatVal: { fontSize: 28, fontFamily: 'Helvetica-Bold' },
-    colonnes: { display: 'flex', flexDirection: 'row', gap: 12, marginBottom: 16 },
-    colonne: { flex: 1 },
-    colonneTitre: {
-        fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#fff',
-        padding: 8, borderRadius: 4, marginBottom: 0, textAlign: 'center',
-    },
-    ligneCompte: {
-        display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        padding: '5 8', borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    ligneCompteImp: { backgroundColor: couleurs.fondClair },
-    ligneLabel: { fontSize: 8, color: couleurs.texte },
-    ligneVal: { fontSize: 8, fontFamily: 'Helvetica-Bold', color: couleurs.texte },
-    totalColonne: {
-        display: 'flex', flexDirection: 'row', justifyContent: 'space-between',
-        padding: '7 8', borderTopWidth: 2, borderTopColor: couleurs.primaire,
-        marginTop: 2,
-    },
-    totalLabel: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    totalVal:   { fontSize: 9, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    sectionTitre: {
-        fontSize: 10, fontFamily: 'Helvetica-Bold', color: couleurs.primaire,
-        marginTop: 14, marginBottom: 6, paddingBottom: 3,
-        borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    tableauEntete: {
-        display: 'flex', flexDirection: 'row',
-        backgroundColor: couleurs.primaire, padding: 6, borderRadius: 4,
-    },
-    cellEnt: { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
-    ligne: {
-        display: 'flex', flexDirection: 'row',
-        padding: 5, borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    ligneImp: { backgroundColor: couleurs.fondClair },
-    cell: { fontSize: 8, color: couleurs.texte },
-    pied: {
-        position: 'absolute', bottom: 20, left: 30, right: 30,
-        textAlign: 'center', fontSize: 7, color: couleurs.texteFaible,
-        borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 6,
-    },
-})
+// ══════════════════════════════════════════════════════════════
+// Compte de résultat — repris sur le gabarit commun (D2).
+//
+// C'est le seul rapport qui n'est pas une liste : le résultat et les
+// deux colonnes entrées/sorties restent dessinés à la main, parce
+// qu'ils ne sont pas un tableau. Les deux vraies listes du document
+// — le détail des dépenses et l'évolution sur six mois — passent, elles,
+// par le tableau commun.
+//
+// Ce document est un relevé de TRÉSORERIE : il compte l'argent entré,
+// pas le montant facturé. Ce qui a été vendu sans entrer en caisse
+// est rappelé sous le total, pour qu'aucun chiffre ne disparaisse en
+// silence.
+// ══════════════════════════════════════════════════════════════
 
 interface DonneesRapportPP {
     boutique: BoutiqueEntete & { devise: string }
@@ -97,204 +52,194 @@ interface DonneesRapportPP {
     evolution_mois:   { mois: string; entrees: number; sorties: number; resultat: number }[]
 }
 
-function fmt(n: number, d: string) {
-    return formatMontantPDF(n, d)
-}
-
 export function RapportProfitPertesPDF({ donnees }: { donnees: DonneesRapportPP }) {
-    const d = donnees.boutique.devise
+    const d   = donnees.boutique.devise
+    const fmt = (n: number) => formatMontantPDF(n, d)
+
     const positif = donnees.resultat >= 0
+    const teinte  = positif ? couleurs.vert : couleurs.rouge
+    const signe   = (n: number) => `${n >= 0 ? '+' : '-'}${fmt(Math.abs(n))}`
 
-    return (
-        <Document>
-            <Page size="A4" style={styles.page}>
+    const stock = donnees.variation_stock
+    const aDuStock = !!stock && (stock.pertes > 0 || stock.gains > 0)
 
-                {/* EN-TÊTE */}
-                <EnteteRapportPDF boutique={donnees.boutique} titre="COMPTE DE RÉSULTAT" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
-
-                {/* RÉSULTAT NET */}
-                <View style={[styles.resultatBlock, {
-                    backgroundColor: positif ? '#f0fdf4' : '#fef2f2',
-                }]}>
-                    <Text style={[styles.resultatLabel, { color: positif ? couleurs.vert : couleurs.rouge }]}>
-                        {positif ? 'BÉNÉFICE NET' : 'DÉFICIT NET'}
+    function Colonne2({ titre, fond, lignes, total, couleurLigne }: {
+        titre: string
+        fond:  string
+        lignes: { label: string; val: number }[]
+        total: number
+        couleurLigne: string
+    }) {
+        return (
+            <View style={{ flex: 1 }}>
+                <Text style={{
+                    fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#fff',
+                    backgroundColor: fond, padding: 6, borderRadius: 4, textAlign: 'center',
+                }}>
+                    {titre}
+                </Text>
+                {lignes.map((l, i) => (
+                    <View key={i} style={{
+                        flexDirection: 'row', justifyContent: 'space-between',
+                        padding: 5, borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
+                        backgroundColor: i % 2 !== 0 ? couleurs.fondClair : undefined,
+                    }}>
+                        <Text style={{ fontSize: 8 }}>{l.label}</Text>
+                        <Text style={{ fontSize: 8, fontFamily: 'Helvetica-Bold', color: couleurLigne }}>
+                            {fmt(l.val)}
+                        </Text>
+                    </View>
+                ))}
+                <View style={{
+                    flexDirection: 'row', justifyContent: 'space-between',
+                    padding: 6, borderTopWidth: 2, borderTopColor: couleurs.primaire,
+                }}>
+                    <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: couleurs.primaire }}>
+                        TOTAL
                     </Text>
-                    <Text style={[styles.resultatVal, { color: positif ? couleurs.vert : couleurs.rouge }]}>
-                        {positif ? '+' : '-'}{fmt(Math.abs(donnees.resultat), d)}
-                    </Text>
-                    <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 4 }}>
-                        Base trésorerie : encaissements et décaissements de la période
+                    <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', color: couleurLigne }}>
+                        {fmt(total)}
                     </Text>
                 </View>
+            </View>
+        )
+    }
 
-                {/* VARIATION DE VALEUR DU STOCK — hors trésorerie */}
-                {donnees.variation_stock &&
-                 (donnees.variation_stock.pertes > 0 || donnees.variation_stock.gains > 0) && (
+    const colEvolution: Colonne<DonneesRapportPP['evolution_mois'][number]>[] = [
+        { entete: 'Mois', largeur: '28%', gras: true, rendu: m => m.mois },
+        { entete: 'Entrées', largeur: '24%', align: 'right',
+          rendu: m => fmt(m.entrees), couleur: () => couleurs.vert },
+        { entete: 'Sorties', largeur: '24%', align: 'right',
+          rendu: m => fmt(m.sorties), couleur: () => couleurs.rouge },
+        { entete: 'Résultat', largeur: '24%', align: 'right', gras: true,
+          rendu: m => signe(m.resultat),
+          couleur: m => m.resultat >= 0 ? couleurs.vert : couleurs.rouge },
+    ]
+
+    return (
+        <DocumentRapport
+            boutique={donnees.boutique}
+            titre="COMPTE DE RÉSULTAT"
+            sousTitre={donnees.periode}
+            genereLe={donnees.genere_le}
+            pied={`${donnees.boutique.nom} — Compte de résultat — ${donnees.genere_le} — Manetec Gestock`}
+        >
+            {/* ── Le résultat, en tête ─────────────────────── */}
+            <View style={{
+                backgroundColor: positif ? '#f0fdf4' : '#fef2f2',
+                padding: 14, borderRadius: 6, marginBottom: 14, alignItems: 'center',
+            }}>
+                <Text style={{ fontSize: 10, fontFamily: 'Helvetica-Bold', color: teinte }}>
+                    {positif ? 'BÉNÉFICE NET' : 'DÉFICIT NET'}
+                </Text>
+                <Text style={{ fontSize: 22, fontFamily: 'Helvetica-Bold', color: teinte, marginTop: 2 }}>
+                    {signe(donnees.resultat)}
+                </Text>
+                <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 4 }}>
+                    Base trésorerie : encaissements et décaissements de la période
+                </Text>
+            </View>
+
+            {/* ── Entrées et sorties, côte à côte ──────────── */}
+            <View style={{ flexDirection: 'row', gap: 10, marginBottom: 4 }}>
+                <Colonne2
+                    titre="PRODUITS (ENTRÉES)"
+                    fond={couleurs.vert}
+                    couleurLigne={couleurs.vert}
+                    lignes={[
+                        { label: 'Ventes POS encaissées', val: donnees.entrees.ventes_pos },
+                        { label: 'Règlements de facture', val: donnees.entrees.paiements_factures },
+                    ]}
+                    total={donnees.entrees.total}
+                />
+                <Colonne2
+                    titre="CHARGES (SORTIES)"
+                    fond={couleurs.rouge}
+                    couleurLigne={couleurs.rouge}
+                    lignes={[
+                        { label: 'Dépenses d’exploitation', val: donnees.sorties.depenses },
+                        { label: 'Salaires versés',         val: donnees.sorties.salaires },
+                        { label: 'Fournisseurs payés',      val: donnees.sorties.fournisseurs },
+                    ]}
+                    total={donnees.sorties.total}
+                />
+            </View>
+
+            {(donnees.non_encaisse_pos ?? 0) > 0 && (
+                <NotePDF>
+                    Facturé au comptoir sur la période : {fmt(donnees.ventes_facturees ?? 0)} —
+                    dont {fmt(donnees.non_encaisse_pos ?? 0)} non encaissés (crédit accordé,
+                    soldes clients). Ce relevé ne compte que l&apos;argent entré.
+                </NotePDF>
+            )}
+
+            {/* ── Variation du stock, hors trésorerie ──────── */}
+            {aDuStock && (
+                <>
+                    <SectionTitre>Variation de la valeur du stock (hors trésorerie)</SectionTitre>
                     <View style={{
-                        borderWidth: 1, borderColor: '#e5e7eb', borderRadius: 4,
-                        padding: 10, marginBottom: 14,
+                        borderWidth: 1, borderColor: couleurs.bordure,
+                        borderRadius: 4, padding: 10, marginBottom: 4,
                     }}>
-                        <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', marginBottom: 6 }}>
-                            Variation de la valeur du stock (hors trésorerie)
-                        </Text>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                            <Text style={{ fontSize: 9 }}>Pertes constatées aux inventaires</Text>
-                            <Text style={{ fontSize: 9, color: couleurs.rouge }}>
-                                -{fmt(donnees.variation_stock.pertes, d)}
-                            </Text>
-                        </View>
-                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
-                            <Text style={{ fontSize: 9 }}>Gains constatés aux inventaires</Text>
-                            <Text style={{ fontSize: 9, color: couleurs.vert }}>
-                                +{fmt(donnees.variation_stock.gains, d)}
-                            </Text>
-                        </View>
+                        {[
+                            { label: 'Pertes constatées aux inventaires', val: -stock!.pertes, coul: couleurs.rouge },
+                            { label: 'Gains constatés aux inventaires',   val:  stock!.gains,  coul: couleurs.vert },
+                        ].map((l, i) => (
+                            <View key={i} style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 3 }}>
+                                <Text style={{ fontSize: 9 }}>{l.label}</Text>
+                                <Text style={{ fontSize: 9, color: l.coul }}>{signe(l.val)}</Text>
+                            </View>
+                        ))}
                         <View style={{
                             flexDirection: 'row', justifyContent: 'space-between',
-                            borderTopWidth: 1, borderTopColor: '#e5e7eb', paddingTop: 4, marginTop: 3,
+                            borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 4, marginTop: 2,
                         }}>
                             <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold' }}>
-                                Résultat économique (résultat de caisse + variation de stock)
+                                Résultat économique
                             </Text>
                             <Text style={{
                                 fontSize: 9, fontFamily: 'Helvetica-Bold',
                                 color: (donnees.resultat_economique ?? 0) >= 0 ? couleurs.vert : couleurs.rouge,
                             }}>
-                                {(donnees.resultat_economique ?? 0) >= 0 ? '+' : '-'}
-                                {fmt(Math.abs(donnees.resultat_economique ?? 0), d)}
+                                {signe(donnees.resultat_economique ?? 0)}
                             </Text>
                         </View>
                     </View>
-                )}
+                    <NotePDF>
+                        Les écarts d&apos;inventaire ne sont PAS de la trésorerie : aucun argent
+                        n&apos;est entré ni sorti. Ils sont présentés à part pour que le résultat
+                        de caisse reste lisible tel quel.
+                    </NotePDF>
+                </>
+            )}
 
-                {/* ENTRÉES / SORTIES */}
-                <View style={styles.colonnes}>
+            {donnees.detail_depenses.length > 0 && (
+                <>
+                    <SectionTitre>Détail des dépenses par catégorie</SectionTitre>
+                    <TableauRapport
+                        colonnes={[
+                            { entete: 'Catégorie', largeur: '65%',
+                              rendu: c => c.categorie || 'Sans catégorie' },
+                            { entete: 'Montant', largeur: '35%', align: 'right', gras: true,
+                              rendu: c => fmt(c.montant), couleur: () => couleurs.rouge },
+                        ]}
+                        lignes={donnees.detail_depenses}
+                        totaux={['TOTAL', fmt(donnees.sorties.depenses)]}
+                    />
+                </>
+            )}
 
-                    {/* ENTRÉES */}
-                    <View style={styles.colonne}>
-                        <Text style={[styles.colonneTitre, { backgroundColor: couleurs.vert }]}>
-                            PRODUITS (ENTRÉES)
-                        </Text>
-                        {[
-                            { label: 'Ventes POS encaissées', val: donnees.entrees.ventes_pos },
-                            { label: 'Paiements factures',    val: donnees.entrees.paiements_factures },
-                        ].map((ligne, i) => (
-                            <View key={i} style={[styles.ligneCompte, i % 2 !== 0 ? styles.ligneCompteImp : {}]}>
-                                <Text style={styles.ligneLabel}>{ligne.label}</Text>
-                                <Text style={[styles.ligneVal, { color: couleurs.vert }]}>
-                                    {fmt(ligne.val, d)}
-                                </Text>
-                            </View>
-                        ))}
-                        <View style={styles.totalColonne}>
-                            <Text style={styles.totalLabel}>TOTAL ENTRÉES</Text>
-                            <Text style={[styles.totalVal, { color: couleurs.vert }]}>
-                                {fmt(donnees.entrees.total, d)}
-                            </Text>
-                        </View>
-                        {/* Ce releve compte l'argent ENTRE. Ce qui a ete
-                            vendu sans entrer en caisse est rappele ici, pour
-                            qu'aucun chiffre ne disparaisse en silence. */}
-                        {(donnees.non_encaisse_pos ?? 0) > 0 && (
-                            <Text style={{
-                                fontSize: 7, color: couleurs.texteFaible,
-                                marginTop: 5, lineHeight: 1.4,
-                            }}>
-                                Facturé au comptoir sur la période :{' '}
-                                {fmt(donnees.ventes_facturees ?? 0, d)} — dont{' '}
-                                {fmt(donnees.non_encaisse_pos ?? 0, d)} non encaissés
-                                (crédit accordé, soldes clients).
-                            </Text>
-                        )}
-                    </View>
-
-                    {/* SORTIES */}
-                    <View style={styles.colonne}>
-                        <Text style={[styles.colonneTitre, { backgroundColor: couleurs.rouge }]}>
-                            CHARGES (SORTIES)
-                        </Text>
-                        {[
-                            { label: 'Dépenses exploitation', val: donnees.sorties.depenses },
-                            { label: 'Salaires',              val: donnees.sorties.salaires },
-                            { label: 'Fournisseurs payés',    val: donnees.sorties.fournisseurs },
-                        ].map((ligne, i) => (
-                            <View key={i} style={[styles.ligneCompte, i % 2 !== 0 ? styles.ligneCompteImp : {}]}>
-                                <Text style={styles.ligneLabel}>{ligne.label}</Text>
-                                <Text style={[styles.ligneVal, { color: couleurs.rouge }]}>
-                                    {fmt(ligne.val, d)}
-                                </Text>
-                            </View>
-                        ))}
-                        <View style={styles.totalColonne}>
-                            <Text style={styles.totalLabel}>TOTAL SORTIES</Text>
-                            <Text style={[styles.totalVal, { color: couleurs.rouge }]}>
-                                {fmt(donnees.sorties.total, d)}
-                            </Text>
-                        </View>
-                    </View>
-
-                </View>
-
-                {/* DÉTAIL DÉPENSES PAR CATÉGORIE */}
-                {donnees.detail_depenses.length > 0 && (
-                    <>
-                        <Text style={styles.sectionTitre}>Détail des dépenses par catégorie</Text>
-                        <View style={styles.tableauEntete}>
-                            <Text style={[styles.cellEnt, { width: '65%' }]}>Catégorie</Text>
-                            <Text style={[styles.cellEnt, { width: '35%', textAlign: 'right' }]}>Montant</Text>
-                        </View>
-                        {donnees.detail_depenses.map((d_item, i) => (
-                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                                <Text style={[styles.cell, { width: '65%' }]}>
-                                    {d_item.categorie || 'Sans catégorie'}
-                                </Text>
-                                <Text style={[styles.cell, {
-                                    width: '35%', textAlign: 'right',
-                                    fontFamily: 'Helvetica-Bold', color: couleurs.rouge,
-                                }]}>
-                                    {fmt(d_item.montant, d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                {/* ÉVOLUTION MENSUELLE */}
-                {donnees.evolution_mois.length > 1 && (
-                    <>
-                        <Text style={styles.sectionTitre}>Évolution mensuelle</Text>
-                        <View style={styles.tableauEntete}>
-                            <Text style={[styles.cellEnt, { width: '28%' }]}>Mois</Text>
-                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Entrées</Text>
-                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Sorties</Text>
-                            <Text style={[styles.cellEnt, { width: '24%', textAlign: 'right' }]}>Résultat</Text>
-                        </View>
-                        {donnees.evolution_mois.map((m, i) => (
-                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]}>
-                                <Text style={[styles.cell, { width: '28%', fontFamily: 'Helvetica-Bold' }]}>
-                                    {m.mois}
-                                </Text>
-                                <Text style={[styles.cell, { width: '24%', textAlign: 'right', color: couleurs.vert }]}>
-                                    {fmt(m.entrees, d)}
-                                </Text>
-                                <Text style={[styles.cell, { width: '24%', textAlign: 'right', color: couleurs.rouge }]}>
-                                    {fmt(m.sorties, d)}
-                                </Text>
-                                <Text style={[styles.cell, {
-                                    width: '24%', textAlign: 'right', fontFamily: 'Helvetica-Bold',
-                                    color: m.resultat >= 0 ? couleurs.vert : couleurs.rouge,
-                                }]}>
-                                    {m.resultat >= 0 ? '+' : '-'}{fmt(Math.abs(m.resultat), d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                <Text style={styles.pied}>
-                    {donnees.boutique.nom} — Compte de résultat — {donnees.genere_le} — Manetec Gestock
-                </Text>
-            </Page>
-        </Document>
+            {donnees.evolution_mois.length > 1 && (
+                <>
+                    <SectionTitre>Évolution sur six mois</SectionTitre>
+                    <TableauRapport colonnes={colEvolution} lignes={donnees.evolution_mois} />
+                    <NotePDF>
+                        Cette courbe est calculée par la même fonction que le total ci-dessus :
+                        le point du mois en cours et le résultat de la page disent forcément
+                        la même chose.
+                    </NotePDF>
+                </>
+            )}
+        </DocumentRapport>
     )
 }

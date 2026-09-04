@@ -1,128 +1,43 @@
 import React from 'react'
-import {
-    Document, Page, Text, View, StyleSheet,
-} from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
-import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import type { BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import {
+    DocumentRapport, CartesStats, TableauRapport, SectionTitre, Encart, NotePDF,
+    type Colonne,
+} from '@/lib/pdf/template'
+import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
-const styles = StyleSheet.create({
-    page: {
-        fontFamily:  'Helvetica',
-        fontSize:    9,
-        color:       couleurs.texte,
-        padding:     30,
-        backgroundColor: '#fff',
-    },
-    entete: {
-        display:        'flex',
-        flexDirection:  'row',
-        justifyContent: 'space-between',
-        alignItems:     'flex-start',
-        marginBottom:   20,
-        paddingBottom:  12,
-        borderBottomWidth: 2,
-        borderBottomColor: couleurs.primaire,
-    },
-    titreBoutique: {
-        fontSize:   16,
-        fontFamily: 'Helvetica-Bold',
-        color:      couleurs.primaire,
-    },
-    sousTitreBoutique: {
-        fontSize:  8,
-        color:     couleurs.texteFaible,
-        marginTop: 2,
-    },
-    titrePage: {
-        fontSize:  11,
-        fontFamily: 'Helvetica-Bold',
-        color:      couleurs.texte,
-        marginBottom: 2,
-    },
-    periode: {
-        fontSize: 8,
-        color:    couleurs.texteFaible,
-    },
-    cartesStat: {
-        display:       'flex',
-        flexDirection: 'row',
-        gap:           8,
-        marginBottom:  16,
-    },
-    carte: {
-        flex:            1,
-        backgroundColor: couleurs.fondClair,
-        padding:         10,
-        borderRadius:    6,
-        borderLeftWidth: 3,
-        borderLeftColor: couleurs.accent,
-    },
-    carteLabel: {
-        fontSize:  7,
-        color:     couleurs.texteFaible,
-        marginBottom: 3,
-    },
-    carteValeur: {
-        fontSize:   13,
-        fontFamily: 'Helvetica-Bold',
-        color:      couleurs.primaire,
-    },
-    enteteTableau: {
-        display:         'flex',
-        flexDirection:   'row',
-        backgroundColor: couleurs.primaire,
-        padding:         6,
-        borderRadius:    4,
-        marginBottom:    0,
-    },
-    celluleEntete: {
-        fontFamily: 'Helvetica-Bold',
-        fontSize:   8,
-        color:      '#fff',
-    },
-    ligne: {
-        display:        'flex',
-        flexDirection:  'row',
-        padding:        5,
-        borderBottomWidth: 1,
-        borderBottomColor: couleurs.bordure,
-    },
-    ligneImpaire: {
-        backgroundColor: couleurs.fondClair,
-    },
-    cellule: {
-        fontSize: 8,
-        color:    couleurs.texte,
-    },
-    sectionTitre: {
-        fontSize:     10,
-        fontFamily:   'Helvetica-Bold',
-        color:        couleurs.primaire,
-        marginTop:    14,
-        marginBottom: 6,
-        paddingBottom: 3,
-        borderBottomWidth: 1,
-        borderBottomColor: couleurs.bordure,
-    },
-    pied: {
-        position:     'absolute',
-        bottom:       20,
-        left:         30,
-        right:        30,
-        textAlign:    'center',
-        fontSize:     7,
-        color:        couleurs.texteFaible,
-        borderTopWidth: 1,
-        borderTopColor: couleurs.bordure,
-        paddingTop:   6,
-    },
-})
+// ══════════════════════════════════════════════════════════════
+// Rapport de ventes — repris sur le gabarit commun (D2).
+//
+// Décision D1 : le document dit les DEUX chiffres, côte à côte. Le
+// facturé, c'est ce que la boutique a vendu ; l'encaissé, c'est ce
+// qui est réellement entré. Les deux sont vrais et répondent à des
+// questions différentes ; en cacher un force le gérant à faire le
+// calcul de tête.
+//
+// Le rapprochement qui les relie est imprimé sous les cartes :
+//   facturé - crédit accordé - soldes utilisés + ardoise remboursée
+//   = encaissé au comptoir
+// ══════════════════════════════════════════════════════════════
+
+const MOYENS_LABELS: Record<string, string> = Object.fromEntries(
+    MOYENS_PAIEMENT.map(m => [m.code, m.label]),
+)
+
+// Une vente n'a pas deux états mais trois : conclue, annulée,
+// remboursée. La coche et la croix en confondaient deux.
+const LIBELLES_STATUT: Record<string, string> = {
+    completee:  'Conclue',
+    annulee:    'Annulée',
+    remboursee: 'Remboursée',
+}
 
 interface VenteLigne {
     public_id:     string
     date:          string
-    client_nom:    string
+    client_nom:    string | null
     vendeur_nom:   string
     montant_total: number
     statut:        string
@@ -160,233 +75,137 @@ interface DonneesRapportVentes {
     par_moyen:     { moyen: string; montant: number }[]
 }
 
-// Une vente n'a pas deux etats mais trois : conclue, annulee,
-// remboursee. La coche et la croix en confondaient deux.
-const LIBELLES_STATUT: Record<string, string> = {
-    completee:  'Conclue',
-    annulee:    'Annulée',
-    remboursee: 'Remboursée',
-}
-
-function fmt(n: number, d: string) {
-    return formatMontantPDF(n, d)
-}
-
 export function RapportVentesPDF({ donnees }: { donnees: DonneesRapportVentes }) {
-    const { boutique, ventes, ventes_facture, top_produits, par_vendeur, par_moyen } = donnees
-    const d = boutique.devise
+    const d   = donnees.boutique.devise
+    const fmt = (n: number) => formatMontantPDF(n, d)
 
-    // Facturé - encaissé = crédit accordé + soldes utilisés - ardoise remboursée
     const ecartPos = donnees.ca_pos_facture - donnees.encaisse_pos
 
     const rapprochement = [
-        `${fmt(donnees.ca_pos_facture, d)} facturés`,
-        donnees.credit_accorde  > 0 ? `- ${fmt(donnees.credit_accorde, d)} accordés à crédit` : '',
-        donnees.soldes_utilises > 0 ? `- ${fmt(donnees.soldes_utilises, d)} réglés sur solde client` : '',
-        donnees.remb_ardoise    > 0 ? `+ ${fmt(donnees.remb_ardoise, d)} d'ardoise remboursée` : '',
-        `=  ${fmt(donnees.encaisse_pos, d)} entrés en caisse`,
+        `${fmt(donnees.ca_pos_facture)} facturés`,
+        donnees.credit_accorde  > 0 ? `- ${fmt(donnees.credit_accorde)} accordés à crédit` : '',
+        donnees.soldes_utilises > 0 ? `- ${fmt(donnees.soldes_utilises)} réglés sur solde client` : '',
+        donnees.remb_ardoise    > 0 ? `+ ${fmt(donnees.remb_ardoise)} d'ardoise remboursée` : '',
+        `=  ${fmt(donnees.encaisse_pos)} entrés en caisse`,
     ].filter(Boolean).join('  ')
 
-    const MOYENS_LABELS: Record<string, string> = {
-        cash: 'Espèces', wave: 'Wave', mtn_momo: 'MTN MoMo',
-        celtiis_cash: 'Celtiis', moov_money: 'Moov', bank_card: 'Carte', bank_transfer: 'Virement',
-    }
+    const colVentes: Colonne<VenteLigne>[] = [
+        { entete: 'N° vente', largeur: '18%', gras: true,
+          rendu: v => v.public_id, sousTexte: v => v.date },
+        { entete: 'Client', largeur: '26%',
+          rendu: v => v.client_nom || 'Anonyme', sousTexte: v => v.vendeur_nom },
+        { entete: 'Art.', largeur: '10%', align: 'center',
+          rendu: v => String(v.nb_articles) },
+        { entete: 'Montant', largeur: '24%', align: 'right', gras: true,
+          rendu: v => fmt(v.montant_total) },
+        { entete: 'Statut', largeur: '22%', align: 'center',
+          rendu: v => LIBELLES_STATUT[v.statut] ?? v.statut,
+          couleur: v => v.statut === 'completee' ? couleurs.vert : couleurs.rouge },
+    ]
+
+    const colFactures: Colonne<PaiementFactureLigne>[] = [
+        { entete: 'N° facture', largeur: '20%', gras: true,
+          rendu: p => p.facture_public_id, sousTexte: p => p.date },
+        { entete: 'Client', largeur: '32%', rendu: p => p.client_nom || '—' },
+        { entete: 'Moyen', largeur: '25%',
+          rendu: p => MOYENS_LABELS[p.moyen] ?? p.moyen },
+        { entete: 'Montant', largeur: '23%', align: 'right', gras: true,
+          rendu: p => fmt(p.montant) },
+    ]
 
     return (
-        <Document>
-            <Page size="A4" style={styles.page}>
+        <DocumentRapport
+            boutique={donnees.boutique}
+            titre="RAPPORT DE VENTES"
+            sousTitre={donnees.periode}
+            genereLe={donnees.genere_le}
+            pied={`${donnees.boutique.nom} — Rapport de ventes — ${donnees.genere_le} — Manetec Gestock`}
+        >
+            <CartesStats cartes={[
+                { label: `Facturé — ventes POS (${donnees.total_ventes})`,
+                  valeur: fmt(donnees.ca_pos_facture),
+                  note: donnees.total_ventes > 0
+                      ? `${fmt(donnees.ca_moyen)} par vente` : undefined },
+                { label: 'Encaissé — POS + factures',
+                  valeur: fmt(donnees.encaisse_total), couleur: couleurs.vert },
+                { label: `dont sur facture (${donnees.nb_paiements_factures})`,
+                  valeur: fmt(donnees.ca_factures), couleur: couleurs.orange },
+            ]} />
 
-                {/* EN-TÊTE */}
-                <EnteteRapportPDF boutique={boutique} titre="RAPPORT DE VENTES" sousTitre={donnees.periode} genereLe={donnees.genere_le} />
+            {ecartPos !== 0 && (
+                <Encart titre="Du facturé à l'encaissé, au comptoir" texte={rapprochement} />
+            )}
 
-                {/* STATISTIQUES — le facture et l'encaisse, cote a cote.
-                    Les deux chiffres sont vrais et repondent a deux questions
-                    differentes : ce que la boutique a vendu, ce qu'elle a touche. */}
-                <View style={styles.cartesStat}>
-                    <View style={styles.carte}>
-                        <Text style={styles.carteLabel}>
-                            Facture — ventes POS ({donnees.total_ventes})
-                        </Text>
-                        <Text style={styles.carteValeur}>{fmt(donnees.ca_pos_facture, d)}</Text>
-                    </View>
-                    <View style={[styles.carte, { borderLeftColor: couleurs.vert }]}>
-                        <Text style={styles.carteLabel}>Encaisse — POS + factures</Text>
-                        <Text style={[styles.carteValeur, { color: couleurs.vert }]}>
-                            {fmt(donnees.encaisse_total, d)}
-                        </Text>
-                    </View>
-                    <View style={[styles.carte, { borderLeftColor: couleurs.orange }]}>
-                        <Text style={styles.carteLabel}>
-                            dont sur facture ({donnees.nb_paiements_factures})
-                        </Text>
-                        <Text style={[styles.carteValeur, { color: couleurs.orange }]}>
-                            {fmt(donnees.ca_factures, d)}
-                        </Text>
-                    </View>
-                </View>
+            <SectionTitre>Ventes au comptoir ({donnees.ventes.length})</SectionTitre>
+            <TableauRapport
+                colonnes={colVentes}
+                lignes={donnees.ventes}
+                vide="Aucune vente au comptoir sur cette période."
+            />
 
-                {/* Le rapprochement : pourquoi les deux chiffres different */}
-                {ecartPos !== 0 && (
-                    <View style={{
-                        marginBottom: 10, paddingVertical: 6, paddingHorizontal: 8,
-                        backgroundColor: '#F7F8FA',
-                        borderLeftWidth: 2, borderLeftColor: couleurs.bordure,
-                    }}>
-                        <Text style={{ fontSize: 7.5, color: couleurs.texteFaible, marginBottom: 3 }}>
-                            Du facturé à l&apos;encaissé, au comptoir
-                        </Text>
-                        <Text style={{ fontSize: 8, color: couleurs.texte, lineHeight: 1.4 }}>
-                            {rapprochement}
-                        </Text>
-                    </View>
-                )}
+            <SectionTitre>Règlements de facture encaissés ({donnees.ventes_facture.length})</SectionTitre>
+            <TableauRapport
+                colonnes={colFactures}
+                lignes={donnees.ventes_facture}
+                vide="Aucun règlement de facture sur cette période."
+                totaux={donnees.ventes_facture.length > 0
+                    ? ['TOTAL', '', '', fmt(donnees.ca_factures)] : undefined}
+            />
 
-                {/* TABLEAU DES VENTES POS */}
-                <Text style={styles.sectionTitre}>Ventes POS (caisse)</Text>
-                <View style={styles.enteteTableau}>
-                    <Text style={[styles.celluleEntete, { width: '15%' }]}>N° Vente</Text>
-                    <Text style={[styles.celluleEntete, { width: '15%' }]}>Date</Text>
-                    <Text style={[styles.celluleEntete, { width: '19%' }]}>Client</Text>
-                    <Text style={[styles.celluleEntete, { width: '18%' }]}>Vendeur</Text>
-                    <Text style={[styles.celluleEntete, { width: '8%', textAlign: 'center' }]}>Art.</Text>
-                    <Text style={[styles.celluleEntete, { width: '12%', textAlign: 'right' }]}>Montant</Text>
-                    <Text style={[styles.celluleEntete, { width: '13%', textAlign: 'center' }]}>Statut</Text>
-                </View>
-                {ventes.map((v, i) => (
-                    <View key={v.public_id}
-                          style={[styles.ligne, i % 2 !== 0 ? styles.ligneImpaire : {}]}>
-                        <Text style={[styles.cellule, { width: '15%', fontFamily: 'Helvetica-Bold' }]}>
-                            {v.public_id}
-                        </Text>
-                        <Text style={[styles.cellule, { width: '15%' }]}>{v.date}</Text>
-                        <Text style={[styles.cellule, { width: '19%', maxLines: 1 }]}>
-                            {v.client_nom || 'Anonyme'}
-                        </Text>
-                        <Text style={[styles.cellule, { width: '18%', maxLines: 1 }]}>
-                            {v.vendeur_nom}
-                        </Text>
-                        <Text style={[styles.cellule, { width: '8%', textAlign: 'center' }]}>
-                            {v.nb_articles}
-                        </Text>
-                        <Text style={[styles.cellule, { width: '12%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                            {fmt(v.montant_total, d)}
-                        </Text>
-                        <Text style={[styles.cellule, {
-                            width: '13%', textAlign: 'center',
-                            color: v.statut === 'completee' ? couleurs.vert : couleurs.rouge,
-                        }]}>
-                            {LIBELLES_STATUT[v.statut] ?? v.statut}
-                        </Text>
-                    </View>
-                ))}
-                {ventes.length === 0 && (
-                    <View style={styles.ligne}>
-                        <Text style={[styles.cellule, { width: '100%', color: couleurs.texteFaible }]}>
-                            Aucune vente POS sur la période.
-                        </Text>
-                    </View>
-                )}
+            {donnees.top_produits.length > 0 && (
+                <>
+                    <SectionTitre>Produits les plus vendus</SectionTitre>
+                    <TableauRapport
+                        colonnes={[
+                            { entete: 'Produit', largeur: '55%', rendu: p => p.nom },
+                            { entete: 'Qté vendue', largeur: '20%', align: 'center',
+                              rendu: p => String(p.quantite) },
+                            { entete: 'CA généré', largeur: '25%', align: 'right', gras: true,
+                              rendu: p => fmt(p.ca) },
+                        ]}
+                        lignes={donnees.top_produits.slice(0, 10)}
+                    />
+                </>
+            )}
 
-                {/* VENTES SUR FACTURE (ENCAISSEMENTS) */}
-                {ventes_facture.length > 0 && (
-                    <>
-                        <Text style={styles.sectionTitre}>Ventes sur facture (encaissements)</Text>
-                        <View style={styles.enteteTableau}>
-                            <Text style={[styles.celluleEntete, { width: '18%' }]}>N° Facture</Text>
-                            <Text style={[styles.celluleEntete, { width: '20%' }]}>Date</Text>
-                            <Text style={[styles.celluleEntete, { width: '30%' }]}>Client</Text>
-                            <Text style={[styles.celluleEntete, { width: '17%' }]}>Moyen</Text>
-                            <Text style={[styles.celluleEntete, { width: '15%', textAlign: 'right' }]}>Montant</Text>
-                        </View>
-                        {ventes_facture.map((p, i) => (
-                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImpaire : {}]}>
-                                <Text style={[styles.cellule, { width: '18%', fontFamily: 'Helvetica-Bold' }]}>
-                                    {p.facture_public_id}
-                                </Text>
-                                <Text style={[styles.cellule, { width: '20%' }]}>{p.date}</Text>
-                                <Text style={[styles.cellule, { width: '30%', maxLines: 1 }]}>
-                                    {p.client_nom || '—'}
-                                </Text>
-                                <Text style={[styles.cellule, { width: '17%' }]}>
-                                    {MOYENS_LABELS[p.moyen] ?? p.moyen}
-                                </Text>
-                                <Text style={[styles.cellule, { width: '15%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                                    {fmt(p.montant, d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
+            {donnees.par_vendeur.length > 0 && (
+                <>
+                    <SectionTitre>Par vendeur</SectionTitre>
+                    <TableauRapport
+                        colonnes={[
+                            { entete: 'Vendeur', largeur: '50%', rendu: v => v.nom },
+                            { entete: 'Nb ventes', largeur: '25%', align: 'center',
+                              rendu: v => String(v.nb_ventes) },
+                            { entete: 'Facturé', largeur: '25%', align: 'right', gras: true,
+                              rendu: v => fmt(v.ca) },
+                        ]}
+                        lignes={donnees.par_vendeur}
+                    />
+                </>
+            )}
 
-                {/* TOP PRODUITS */}
-                {top_produits.length > 0 && (
-                    <>
-                        <Text style={styles.sectionTitre}>Top produits</Text>
-                        <View style={styles.enteteTableau}>
-                            <Text style={[styles.celluleEntete, { width: '55%' }]}>Produit</Text>
-                            <Text style={[styles.celluleEntete, { width: '20%', textAlign: 'center' }]}>Qté vendue</Text>
-                            <Text style={[styles.celluleEntete, { width: '25%', textAlign: 'right' }]}>CA généré</Text>
-                        </View>
-                        {top_produits.slice(0, 10).map((p, i) => (
-                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImpaire : {}]}>
-                                <Text style={[styles.cellule, { width: '55%' }]}>{p.nom}</Text>
-                                <Text style={[styles.cellule, { width: '20%', textAlign: 'center' }]}>{p.quantite}</Text>
-                                <Text style={[styles.cellule, { width: '25%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                                    {fmt(p.ca, d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
+            {donnees.par_moyen.length > 0 && (
+                <>
+                    <SectionTitre>Encaissements par moyen de paiement</SectionTitre>
+                    <TableauRapport
+                        colonnes={[
+                            { entete: 'Moyen', largeur: '60%',
+                              rendu: m => MOYENS_LABELS[m.moyen] ?? m.moyen },
+                            { entete: 'Montant encaissé', largeur: '40%', align: 'right', gras: true,
+                              rendu: m => fmt(m.montant) },
+                        ]}
+                        lignes={donnees.par_moyen}
+                        totaux={['TOTAL', fmt(donnees.encaisse_total)]}
+                    />
+                </>
+            )}
 
-                {/* PAR VENDEUR */}
-                {par_vendeur.length > 0 && (
-                    <>
-                        <Text style={styles.sectionTitre}>Performance par vendeur</Text>
-                        <View style={styles.enteteTableau}>
-                            <Text style={[styles.celluleEntete, { width: '50%' }]}>Vendeur</Text>
-                            <Text style={[styles.celluleEntete, { width: '25%', textAlign: 'center' }]}>Nb ventes</Text>
-                            <Text style={[styles.celluleEntete, { width: '25%', textAlign: 'right' }]}>CA total</Text>
-                        </View>
-                        {par_vendeur.map((v, i) => (
-                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImpaire : {}]}>
-                                <Text style={[styles.cellule, { width: '50%' }]}>{v.nom}</Text>
-                                <Text style={[styles.cellule, { width: '25%', textAlign: 'center' }]}>{v.nb_ventes}</Text>
-                                <Text style={[styles.cellule, { width: '25%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                                    {fmt(v.ca, d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                {/* PAR MOYEN DE PAIEMENT */}
-                {par_moyen.length > 0 && (
-                    <>
-                        <Text style={styles.sectionTitre}>Encaissements par moyen de paiement</Text>
-                        <View style={styles.enteteTableau}>
-                            <Text style={[styles.celluleEntete, { width: '60%' }]}>Moyen</Text>
-                            <Text style={[styles.celluleEntete, { width: '40%', textAlign: 'right' }]}>Montant encaissé</Text>
-                        </View>
-                        {par_moyen.map((m, i) => (
-                            <View key={i} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImpaire : {}]}>
-                                <Text style={[styles.cellule, { width: '60%' }]}>
-                                    {MOYENS_LABELS[m.moyen] ?? m.moyen}
-                                </Text>
-                                <Text style={[styles.cellule, { width: '40%', textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                                    {fmt(m.montant, d)}
-                                </Text>
-                            </View>
-                        ))}
-                    </>
-                )}
-
-                {/* PIED DE PAGE */}
-                <Text style={styles.pied}>
-                    {boutique.nom} — Rapport généré le {donnees.genere_le} — Manetec Gestock
-                </Text>
-
-            </Page>
-        </Document>
+            <NotePDF>
+                Les ventes annulées figurent dans la liste avec leur statut, mais elles
+                sortent du chiffre d&apos;affaires et de la ventilation par moyen : elles
+                n&apos;ont rien encaissé. La colonne « Par vendeur » compte le FACTURÉ,
+                pour mesurer ce qui a été vendu et non ce qui est rentré.
+            </NotePDF>
+        </DocumentRapport>
     )
 }
