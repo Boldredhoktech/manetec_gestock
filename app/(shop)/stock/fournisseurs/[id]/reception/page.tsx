@@ -32,7 +32,12 @@ export default async function PageNouvelleReception({ params }: Props) {
             adminClient.from('purchase_orders')
                 .select('id, public_id, purchase_order_items(id, product_id, designation, quantite_cmd, quantite_recue, prix_unitaire, products(nom, unite))')
                 .eq('supplier_id', id).eq('shop_id', shopId)
-                .in('statut', ['envoye', 'partiellement_recu']),
+                // Vocabulaire de la base : « soumis » = envoyé au
+                // fournisseur, « recu_partiel » = servi en partie.
+                // L'écran cherchait « envoye » et « partiellement_recu »,
+                // deux valeurs que la contrainte interdit : la liste des
+                // bons à réceptionner était donc toujours vide.
+                .in('statut', ['soumis', 'recu_partiel']),
         ])
 
     if (!fournisseur) notFound()

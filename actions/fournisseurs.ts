@@ -66,8 +66,10 @@ export async function creerFournisseur(formData: FormData) {
 }
 
 // ── Créer un bon de commande ───────────────────────────────────
-// REMPLACEZ la fonction creerBonCommande dans actions/fournisseurs.ts par celle-ci :
-
+// Le bon de commande est facultatif : réception et facture
+// fonctionnent sans lui. Il naît en brouillon, puis se soumet au
+// fournisseur. Les statuts de réception sont posés par
+// enregistrer_reception(), jamais à la main.
 export async function creerBonCommande(
     supplierId:    string,
     warehouseId:   string,
@@ -75,10 +77,6 @@ export async function creerBonCommande(
     notes:         string,
     lignes: { product_id: string; designation: string; quantite: number; prix_unitaire: number }[]
 ) {
-    console.log('═══════════════════════════════════════════════')
-    console.log('[BON COMMANDE] Début création')
-    console.log('[BON COMMANDE] Paramètres :', { supplierId, warehouseId, dateLivraison, nbLignes: lignes.length })
-
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -90,17 +88,15 @@ export async function creerBonCommande(
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
 
     const montantTotal = lignes.reduce((acc, l) => acc + l.quantite * l.prix_unitaire, 0)
-    console.log('[BON COMMANDE] Montant total :', montantTotal)
 
     // Générer public_id
     const { data: publicId, error: erreurPid } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'PO' })
 
     if (erreurPid || !publicId) {
-        console.error('[BON COMMANDE] ❌ Erreur generate_public_id :', erreurPid)
-        return { erreur: `Erreur génération ID : ${erreurPid?.message ?? 'null'}` }
+        console.error('ERREUR BON COMMANDE (public_id):', erreurPid)
+        return { erreur: 'Erreur lors de la génération du numéro de bon de commande.' }
     }
-    console.log('[BON COMMANDE] ✓ public_id généré :', publicId)
 
     // Créer le bon de commande
     const { data: po, error: erreurPO } = await adminClient
@@ -109,7 +105,7 @@ export async function creerBonCommande(
             public_id:      publicId,
             shop_id:        shopId,
             supplier_id:    supplierId,
-            warehouse_id:   warehouseId,
+            warehouse_id:   warehouseId || null,
             statut:         'brouillon',
             date_commande:  new Date().toISOString().split('T')[0],
             date_livraison: dateLivraison || null,
@@ -121,22 +117,14 @@ export async function creerBonCommande(
         .single()
 
     if (erreurPO || !po) {
-        console.error('[BON COMMANDE] ❌ Erreur INSERT purchase_orders :', {
-            message: erreurPO?.message,
-            code:    erreurPO?.code,
-            details: erreurPO?.details,
-            hint:    erreurPO?.hint,
-        })
-        return {
-            erreur: `Erreur création BC : ${erreurPO?.message ?? 'null'} | code : ${erreurPO?.code ?? '?'} | détails : ${erreurPO?.details ?? '?'}`,
-        }
+        console.error('ERREUR BON COMMANDE (insert):', erreurPO)
+        return { erreur: 'Erreur lors de la création du bon de commande.' }
     }
-    console.log('[BON COMMANDE] ✓ BC créé — id :', po.id)
 
     // Créer les lignes
     const lignesPayload = lignes.map((l, i) => ({
         shop_id:           shopId,
-        purchase_order_id: po.id,   // ← nom correct selon la migration
+        purchase_order_id: po.id,
         product_id:        l.product_id || null,
         designation:       l.designation,
         quantite_cmd:      l.quantite,
@@ -145,33 +133,53 @@ export async function creerBonCommande(
         montant_ligne:     l.quantite * l.prix_unitaire,
     }))
 
-    console.log('[BON COMMANDE] INSERT purchase_order_items avec', lignesPayload.length, 'lignes')
-    console.log('[BON COMMANDE] Première ligne sample :', lignesPayload[0])
-
     const { error: erreurItems } = await adminClient
         .from('purchase_order_items')
         .insert(lignesPayload)
 
     if (erreurItems) {
-        console.error('[BON COMMANDE] ❌ Erreur INSERT purchase_order_items :', {
-            message: erreurItems.message,
-            code:    erreurItems.code,
-            details: erreurItems.details,
-            hint:    erreurItems.hint,
-        })
-        // Rollback le BC
-        await adminClient.from('purchase_orders').delete().eq('id', po.id)
-        return {
-            erreur: `Erreur lignes BC : ${erreurItems.message} | code : ${erreurItems.code} | détails : ${erreurItems.details ?? '?'}`,
-        }
+        console.error('ERREUR BON COMMANDE (lignes):', erreurItems)
+        await adminClient.from('purchase_orders').delete().eq('id', po.id).eq('shop_id', shopId)
+        return { erreur: 'Erreur lors de l\'enregistrement des lignes du bon de commande.' }
     }
 
-    console.log('[BON COMMANDE] ✓ Lignes créées')
-    console.log('[BON COMMANDE] ✅ Succès complet')
-    console.log('═══════════════════════════════════════════════')
+    revalidatePath('/stock/bons-de-commande')
+    revalidatePath(`/stock/fournisseurs/${supplierId}`)
+    return { succes: true, po_id: po.id as string, public_id: po.public_id as string }
+}
 
-    revalidatePath(`/stock/fournisseurs/${supplierId}/bons-de-commande`)
-    return { succes: true, po_id: po.id, public_id: po.public_id }
+// ── Soumettre / annuler un bon de commande ─────────────────────
+// Les statuts de reception (recu_partiel, recu_total) sont poses par
+// enregistrer_reception() : ils ne passent pas par ici.
+export async function changerStatutBonCommande(
+    poId:   string,
+    statut: 'soumis' | 'annule',
+    motif?: string
+) {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.BONS_COMMANDE_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const adminClient = createAdminClient()
+
+    const { data: result, error } = await adminClient.rpc('changer_statut_bon_commande', {
+        p_shop_id: user.user_metadata.shop_id,
+        p_po_id:   poId,
+        p_statut:  statut,
+        p_user_id: user.user_metadata.user_id,
+        p_motif:   motif ?? null,
+    })
+
+    if (error) {
+        console.error('ERREUR STATUT BON COMMANDE:', error)
+        return { erreur: 'Erreur lors du changement de statut.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors du changement de statut.' }
+
+    revalidatePath('/stock/bons-de-commande')
+    revalidatePath(`/stock/bons-de-commande/${poId}`)
+    return { succes: true, statut: result.statut as string }
 }
 
 // ── Enregistrer une réception ──────────────────────────────────

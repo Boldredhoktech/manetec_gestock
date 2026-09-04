@@ -5,8 +5,9 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Plus, FileInput, PackageCheck, Phone, Mail, MapPin, Building2 } from 'lucide-react'
+import { ArrowLeft, Plus, FileInput, PackageCheck, Phone, Mail, MapPin, Building2, ClipboardList } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
+import CartePaiementFournisseur from '@/components/shop/fournisseurs/CartePaiementFournisseur'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
@@ -24,6 +25,7 @@ export default async function PageDetailFournisseur({ params }: Props) {
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
+    const peutPayer   = aPermission(user, PERMISSIONS.PAIEMENT_FOURNISSEUR)
 
     const { data: fournisseur } = await adminClient
         .from('suppliers')
@@ -85,7 +87,12 @@ export default async function PageDetailFournisseur({ params }: Props) {
                     </div>
 
                     {/* Boutons d'action */}
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                        <Link href={`/stock/bons-de-commande/nouveau?fournisseur=${id}`}
+                              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-sm rounded-xl transition-colors border border-white/20">
+                            <ClipboardList className="w-4 h-4" />
+                            Bon de commande
+                        </Link>
                         <Link href={`/stock/fournisseurs/${id}/reception`}
                               className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-sm rounded-xl transition-colors border border-white/20">
                             <PackageCheck className="w-4 h-4" />
@@ -268,6 +275,15 @@ export default async function PageDetailFournisseur({ params }: Props) {
                         </div>
                     )}
                 </div>
+
+                {/* Reglement libre du solde : cet ecran existait depuis
+                    le debut sans etre affiche nulle part, donc
+                    payerFournisseur() n'etait atteignable par personne. */}
+                {peutPayer && (
+                    <CartePaiementFournisseur
+                        fournisseur={{ id: fournisseur.id, solde_dû: fournisseur.solde_dû }}
+                    />
+                )}
 
             </main>
         </div>

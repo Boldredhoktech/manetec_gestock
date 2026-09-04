@@ -103,15 +103,13 @@ export default function FormulaireBonCommande({
         setEnAttente(false)
 
         if (res?.erreur) {
-            console.error('[BON COMMANDE] Erreur :', res.erreur)
             setErreur(res.erreur)
             return
         }
 
-        console.log('[BON COMMANDE] Succès :', res)
         setSucces(true)
         setTimeout(() => {
-            router.push(`/stock/fournisseurs/${supplierId}/bons-de-commande`)
+            router.push(`/stock/bons-de-commande/${res.po_id}`)
         }, 1000)
     }
 

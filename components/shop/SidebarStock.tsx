@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation'
 import {
     LayoutDashboard, Package, Tags, Award,
     Warehouse, BarChart3, LogOut, Truck,
-    ArrowLeftRight, SlidersHorizontal, Undo2,
+    ArrowLeftRight, SlidersHorizontal, Undo2, ClipboardList,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { deconnexion } from '@/actions/auth'
@@ -20,6 +20,7 @@ const NAVIGATION = [
     { label: 'Marques',      href: '/stock/marques',      icone: Award           },
     { label: 'Entrepôts',    href: '/stock/entrepots',    icone: Warehouse       },
     { label: 'Fournisseurs', href: '/stock/fournisseurs', icone: Truck           },
+    { label: 'Bons de commande', href: '/stock/bons-de-commande', icone: ClipboardList },
     { label: 'Transferts',   href: '/stock/transferts',   icone: ArrowLeftRight     },
     { label: 'Ajustements',  href: '/stock/ajustements',  icone: SlidersHorizontal  },
     { label: 'Retours',      href: '/stock/retours',      icone: Undo2              },
