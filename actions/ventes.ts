@@ -254,3 +254,84 @@ export async function getDetailVente(saleId: string) {
 
     return vente
 }
+// ══════════════════════════════════════════════════════════════
+// VIE DE LA VENTE
+//
+// Une vente conclue disparaissait : pas de liste, pas de fiche, aucun
+// moyen de la retrouver ni de la reprendre. Les statuts existaient dans
+// la base et personne ne les ecrivait.
+// ══════════════════════════════════════════════════════════════
+
+export type ResultatVente = {
+    erreur?:  string
+    succes?:  boolean
+    message?: string
+}
+
+// ── Annuler une vente ──────────────────────────────────────────
+export async function annulerVente(saleId: string, motif: string): Promise<ResultatVente> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    // Annuler une vente rend le stock et reprend les soldes : c'est le
+    // geste du retour, pas celui de la vente.
+    if (!aPermission(user, PERMISSIONS.VENTES_RETOUR)) {
+        return { erreur: 'Permission insuffisante pour annuler une vente.' }
+    }
+
+    const adminClient = createAdminClient()
+
+    const { data: result, error } = await adminClient.rpc('annuler_vente', {
+        p_shop_id: user.user_metadata.shop_id,
+        p_sale_id: saleId,
+        p_motif:   motif,
+        p_user_id: user.user_metadata.user_id,
+    })
+
+    if (error) {
+        console.error('ERREUR ANNULATION VENTE:', error)
+        return { erreur: 'Erreur lors de l\'annulation.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de l\'annulation.' }
+
+    revalidatePath('/pos')
+    revalidatePath('/admin/ventes')
+    revalidatePath(`/admin/ventes/${saleId}`)
+    revalidatePath('/compta/dashboard')
+    return { succes: true }
+}
+
+// ── Régler la partie financière d'un retour ────────────────────
+export async function reglerRetourVente(
+    retourId: string,
+    mode: 'avance' | 'rembourse' | 'avoir' | 'sans_suite',
+    note: string,
+): Promise<ResultatVente> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    if (!aPermission(user, PERMISSIONS.VENTES_RETOUR)) {
+        return { erreur: 'Permission insuffisante pour cette action.' }
+    }
+
+    const adminClient = createAdminClient()
+
+    const { data: result, error } = await adminClient.rpc('regler_retour_vente', {
+        p_shop_id:   user.user_metadata.shop_id,
+        p_retour_id: retourId,
+        p_mode:      mode,
+        p_note:      note ?? '',
+        p_user_id:   user.user_metadata.user_id,
+    })
+
+    if (error) {
+        console.error('ERREUR REGLEMENT RETOUR:', error)
+        return { erreur: 'Erreur lors du règlement du retour.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors du règlement.' }
+
+    revalidatePath('/stock/retours')
+    revalidatePath('/admin/clients')
+    revalidatePath('/compta/dashboard')
+    return { succes: true, message: result.message }
+}

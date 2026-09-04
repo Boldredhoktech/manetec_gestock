@@ -37,6 +37,7 @@ const NAVIGATION_SUPER_ADMIN = [
         groupe: 'Ventes',
         items: [
             { label: 'Caisse (POS)',   href: '/pos',                   icone: ShoppingCart },
+            { label: 'Ventes',         href: '/admin/ventes',          icone: Receipt      },
             { label: 'Factures',       href: '/admin/factures',        icone: FileText     },
             { label: 'Rapports',       href: '/admin/rapports',        icone: BarChart3    },
             { label: 'Communications', href: '/admin/communications',  icone: Send         },

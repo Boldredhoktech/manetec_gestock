@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { formatDate, formatMontant } from '@/lib/utils'
 import { Undo2 } from 'lucide-react'
 import FormulaireRetour from '@/components/shop/stock/FormulaireRetour'
+import ReglerRetour from '@/components/shop/stock/ReglerRetour'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
@@ -12,6 +13,7 @@ export const metadata: Metadata = { title: 'Retours' }
 
 const REGLEMENT_LABELS: Record<string, string> = {
     a_traiter:  'À traiter',
+    avance:     'Porté en avance',
     avoir:      'Avoir à établir',
     rembourse:  'Remboursé',
     sans_suite: 'Sans suite',
@@ -52,7 +54,7 @@ export default async function PageRetours() {
             .select('id, nom').eq('shop_id', shopId).order('nom'),
         adminClient.from('sale_returns')
             .select(`
-                id, public_id, motif, montant, reglement, created_at,
+                id, public_id, motif, montant, reglement, created_at, client_id,
                 clients(nom), warehouses(nom),
                 sale_return_items(quantite, products(nom))
             `)
@@ -126,11 +128,26 @@ export default async function PageRetours() {
                                                     <p className="text-sm font-bold text-gray-900">
                                                         {formatMontant(r.montant, devise)}
                                                     </p>
-                                                    <span className="inline-block mt-1 px-2 py-0.5 text-[11px] font-bold rounded-full bg-gray-100 text-gray-600">
+                                                    <span className={`inline-block mt-1 px-2 py-0.5 text-[11px] font-bold rounded-full ${
+                                                        r.reglement === 'a_traiter'
+                                                            ? 'bg-amber-100 text-amber-700'
+                                                            : 'bg-gray-100 text-gray-600'
+                                                    }`}>
                                                         {REGLEMENT_LABELS[r.reglement] ?? r.reglement}
                                                     </span>
                                                 </div>
                                             </div>
+
+                                            {/* La partie stock etait faite, la partie
+                                                financiere ne l'etait jamais. */}
+                                            {r.reglement === 'a_traiter' && peutRetourClient && (
+                                                <ReglerRetour
+                                                    retourId={r.id}
+                                                    montant={r.montant}
+                                                    devise={devise}
+                                                    aUnClient={Boolean(r.client_id)}
+                                                />
+                                            )}
                                         </li>
                                     ))}
                                 </ul>
