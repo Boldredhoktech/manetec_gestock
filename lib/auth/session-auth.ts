@@ -22,7 +22,8 @@
 import { randomBytes } from 'node:crypto'
 import type { EmailOtpType } from '@supabase/supabase-js'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
 
 const ECHEC = { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
 
@@ -30,6 +31,40 @@ const ECHEC = { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
 function echec(etape: string, erreur?: { message?: string; code?: string; status?: number } | null) {
     console.error(`[SESSION AUTH] échec « ${etape} » — ${erreur?.status ?? ''} ${erreur?.code ?? ''} ${erreur?.message ?? ''}`)
     return ECHEC
+}
+
+/**
+ * Client qui ouvre une session NEUVE, sans relire celle du navigateur.
+ *
+ * Constaté le 2026-10-12 : avec le client habituel, la session déjà
+ * présente dans les cookies (expirée) était rafraîchie pendant la
+ * connexion, et ce rafraîchissement ÉCRASAIT la nouvelle session —
+ * l'administrateur plateforme se retrouvait connecté comme l'ancien
+ * utilisateur boutique. Sur un poste de caisse partagé, le caissier B
+ * aurait hérité de l'identité du caissier A.
+ * Ici : les anciens cookies de session sont effacés (y compris les
+ * morceaux « .0 », « .1 » qu'une session plus courte ne réécrirait pas),
+ * et le client ne lit aucun cookie entrant.
+ */
+async function clientSessionNeuve() {
+    const magasin = await cookies()
+    for (const c of magasin.getAll()) {
+        if (c.name.startsWith('sb-') && c.name.includes('-auth-token')) magasin.delete(c.name)
+    }
+
+    return createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        {
+            cookies: {
+                getAll: () => [],
+                setAll: (aEcrire: { name: string; value: string; options?: Record<string, unknown> }[]) => {
+                    aEcrire.forEach(({ name, value, options }) =>
+                        magasin.set(name, value, options as Parameters<typeof magasin.set>[2]))
+                },
+            },
+        },
+    )
 }
 
 /** Secret jetable : personne ne le connaît, pas même le serveur ensuite. */
@@ -84,7 +119,7 @@ export async function ouvrirSessionAuth(
         return echec('lien à usage unique', erreurLienFinal)
     }
 
-    const supabase = await createClient()
+    const supabase = await clientSessionNeuve()
     const { error: erreurSession } = await supabase.auth.verifyOtp({
         token_hash: lienFinal.properties.hashed_token,
         type:       lienFinal.properties.verification_type as EmailOtpType,
