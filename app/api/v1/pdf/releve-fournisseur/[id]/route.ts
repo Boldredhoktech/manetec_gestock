@@ -1,6 +1,7 @@
 // app/api/v1/pdf/releve-fournisseur/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { refusAbonnementRoute } from '@/lib/abonnement/etat'
 import { reponsePDF } from '@/lib/pdf/reponse'
 import { ReleveFournisseurPDF } from '@/lib/pdf/releve-fournisseur'
 import { getDonneesReleveFournisseur } from '@/actions/rapports'
@@ -20,6 +21,8 @@ export async function GET(
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
     }
+    const refusLicence = await refusAbonnementRoute(user)
+    if (refusLicence) return refusLicence
     if (!aPermission(user, PERMISSIONS.FOURNISSEURS_VOIR)) {
         return new NextResponse('Permission insuffisante', { status: 403 })
     }

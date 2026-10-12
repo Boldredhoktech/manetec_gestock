@@ -1,6 +1,7 @@
 // app/api/v1/upload/logo/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { uploadImageCloudinary } from '@/lib/cloudinary'
@@ -15,6 +16,8 @@ export async function POST(request: NextRequest) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return NextResponse.json({ erreur: 'Non autorisé.' }, { status: 401 })
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return NextResponse.json({ erreur: refusLicence }, { status: 403 })
 
     if (!estAdminComplet(user.user_metadata?.role)) {
         return NextResponse.json({ erreur: 'Réservé aux administrateurs.' }, { status: 403 })

@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
@@ -31,6 +32,8 @@ export async function creerDevis(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -125,6 +128,8 @@ export async function convertirDevisEnFacture(devisId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -172,6 +177,8 @@ export async function creerFactureDirecte(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -259,6 +266,8 @@ export async function payerFacture(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_PAIEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient  = createAdminClient()
@@ -317,6 +326,8 @@ export async function creerAvoir(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.AVOIRS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
@@ -375,6 +386,8 @@ export async function modifierStatutDevis(devisId: string, statut: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -434,6 +447,8 @@ export async function annulerFacture(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
@@ -461,6 +476,8 @@ export async function modifierPaiementFacture(formData: FormData): Promise<Resul
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_PAIEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient  = createAdminClient()
@@ -505,6 +522,8 @@ export async function annulerPaiementFacture(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_PAIEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
@@ -545,6 +564,8 @@ export async function modifierDevis(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()

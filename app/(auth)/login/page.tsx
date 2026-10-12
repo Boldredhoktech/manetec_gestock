@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { AlertTriangle } from 'lucide-react'
 import FormulaireConnexionBoutique from '@/components/shared/FormulaireConnexionBoutique'
 import { ENTREPRISE } from '@/lib/config/entreprise'
+import { MESSAGES_ABONNEMENT } from '@/lib/abonnement/etat'
 
 export const metadata: Metadata = {
     title: `Connexion — ${ENTREPRISE.produit}`,
@@ -19,9 +20,9 @@ export default async function PageLoginBoutique({
 }) {
     const { suspendu, inactif } = await searchParams
     const messageSuspension = suspendu === 'expire'
-        ? 'L\'abonnement de votre boutique a expiré. Contactez Manetec Inter BJ pour le renouveler.'
+        ? MESSAGES_ABONNEMENT.expire
         : suspendu === 'desactive'
-            ? 'Votre boutique a été désactivée. Contactez Manetec Inter BJ.'
+            ? MESSAGES_ABONNEMENT.desactive
             : inactif === '1'
                 ? 'Vous avez été déconnecté après 10 heures d\'inactivité. Reconnectez-vous.'
                 : null

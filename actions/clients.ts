@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
@@ -15,6 +16,8 @@ export async function creerClient(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.CLIENTS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -99,6 +102,8 @@ export async function operationSoldeClient(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.CLIENTS_ACCES_COMPLET)) {
         return { erreur: 'Permission insuffisante pour cette action.' }
     }
@@ -142,6 +147,8 @@ export async function modifierClient(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.CLIENTS_ACCES_COMPLET)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
@@ -193,6 +200,8 @@ export async function toggleActivationClient(
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.CLIENTS_ACCES_COMPLET)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()

@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 
 interface Props {
     nomBoutique:   string
@@ -58,7 +59,7 @@ export function EmailBienvenueBoutions({
                                     Bienvenue sur Manetec Gestock
                                 </h1>
                                 <p style={{ color: 'rgba(255,255,255,0.8)', margin: '8px 0 0', fontSize: '14px' }}>
-                                    Propulsé par Manetec Inter BJ
+                                    Propulsé par {ENTREPRISE.nom}
                                 </p>
                             </td>
                         </tr>
@@ -171,7 +172,7 @@ export function EmailBienvenueBoutions({
                                 textAlign: 'center',
                             }}>
                                 <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
-                                    Manetec Inter BJ · Manetec Gestock
+                                    {ENTREPRISE.nom} · Manetec Gestock
                                 </p>
                                 <p style={{ color: '#94a3b8', fontSize: '11px', margin: '4px 0 0' }}>
                                     Cet email a été envoyé automatiquement. Ne pas répondre.

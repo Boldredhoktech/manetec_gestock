@@ -1,6 +1,7 @@
 // middleware.ts
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { etatAbonnement, peutEntrerBoutiqueExpiree, CHEMIN_ABONNEMENT } from '@/lib/abonnement/regle'
 
 // ── Routes publiques — accessibles sans authentification ───────
 const ROUTES_PUBLIQUES = [
@@ -116,6 +117,33 @@ export async function middleware(request: NextRequest) {
         if (inactiviteExpiree()) {
             return reponseDeconnexion(request, '/login?inactif=1')
         }
+
+        // ── Licence (D3) ───────────────────────────────────────
+        // Contrôlée ICI et non dans le layout : en App Router, un layout
+        // n'est pas réexécuté lors d'une navigation côté client, donc un
+        // lien de la sidebar échappait au contrôle. Le middleware voit
+        // chaque requête. Lu en base (RLS : la boutique de la session),
+        // jamais dans le JWT.
+        const { data: boutique } = await supabase
+            .from('shops')
+            .select('est_active, plan_expire_le')
+            .eq('id', user.user_metadata?.shop_id)
+            .maybeSingle()
+        const etat = etatAbonnement(boutique)
+
+        if (etat === 'desactive') {
+            return reponseDeconnexion(request, '/login?suspendu=desactive')
+        }
+        if (etat === 'expire') {
+            // Seul l'administrateur reste connecté, et seulement pour payer.
+            if (!peutEntrerBoutiqueExpiree(user.user_metadata?.role)) {
+                return reponseDeconnexion(request, '/login?suspendu=expire')
+            }
+            if (pathname !== CHEMIN_ABONNEMENT) {
+                return NextResponse.redirect(new URL(CHEMIN_ABONNEMENT, request.url))
+            }
+        }
+
         marquerActivite()
         return response
     }

@@ -1,6 +1,7 @@
 // app/api/v1/pdf/inventaire-rapport/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { refusAbonnementRoute } from '@/lib/abonnement/etat'
 import { reponsePDF, RefusPDF } from '@/lib/pdf/reponse'
 import { RapportInventairePDF } from '@/lib/pdf/inventaire-rapport'
 import { createClient } from '@/lib/supabase/server'
@@ -21,6 +22,8 @@ export async function GET(
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
     }
+    const refusLicence = await refusAbonnementRoute(user)
+    if (refusLicence) return refusLicence
     if (!aPermission(user, PERMISSIONS.STOCK_INVENTAIRE_CREER)) {
         return new NextResponse('Permission insuffisante', { status: 403 })
     }

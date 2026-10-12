@@ -16,7 +16,6 @@ interface Props {
         plan: string
         est_active: boolean
         created_at: string
-        note_activation: string | null
     }
     nbUtilisateurs: number
 }
@@ -62,31 +61,6 @@ export default function CarteInfosBoutique({ boutique, nbUtilisateurs }: Props) 
                     <span>{nbUtilisateurs} utilisateur(s)</span>
                 </div>
             </div>
-
-            {(() => {
-                try {
-                    const creds = boutique.note_activation
-                        ? JSON.parse(boutique.note_activation)
-                        : null
-                    if (!creds?.identifiant) return null
-                    return (
-                        <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-1">
-                            <p className="text-xs font-semibold text-amber-800">
-                                🔑 Credentials premier accès — à communiquer au propriétaire
-                            </p>
-                            <p className="text-xs text-amber-700 font-mono">
-                                ID Boutique : {creds.shop_public_id}
-                            </p>
-                            <p className="text-xs text-amber-700 font-mono">
-                                Identifiant : {creds.identifiant}
-                            </p>
-                            <p className="text-xs text-amber-700 font-mono">
-                                Mot de passe : {creds.mot_de_passe}
-                            </p>
-                        </div>
-                    )
-                } catch { return null }
-            })()}
 
             <div className="pt-3 border-t border-border flex items-center justify-between text-xs text-muted-foreground">
                 <span>Devise : <strong className="text-foreground">{boutique.devise}</strong></span>

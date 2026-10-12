@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
@@ -90,7 +91,7 @@ export default async function PageDashboardAdmin() {
                             <strong>
                                 {new Date(boutique!.plan_expire_le!).toLocaleDateString('fr-FR')}
                             </strong>.
-                            Contactez Bold Redhok Tech pour le renouveler.
+                            Contactez {ENTREPRISE.nom} pour le renouveler.
                         </span>
                     </div>
                 )}

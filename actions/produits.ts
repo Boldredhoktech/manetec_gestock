@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { revalidatePath } from 'next/cache'
@@ -15,6 +16,8 @@ export async function creerEntrepot(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -104,6 +107,8 @@ export async function creerCategorie(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -141,6 +146,8 @@ export async function creerMarque(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -173,6 +180,8 @@ export async function creerProduit(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -317,6 +326,8 @@ export async function modifierPrixProduit(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_PRIX_MODIFIER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -373,6 +384,8 @@ export async function toggleActivationProduit(
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_DESACTIVER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient = createAdminClient()
@@ -394,6 +407,8 @@ export async function creerVarianteProduit(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_MODIFIER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId        = user.user_metadata.shop_id as string
@@ -435,6 +450,8 @@ export async function modifierEntrepot(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const adminClient  = createAdminClient()
@@ -464,6 +481,8 @@ export async function modifierProduit(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.PRODUITS_MODIFIER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string

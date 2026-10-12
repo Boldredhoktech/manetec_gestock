@@ -1,6 +1,7 @@
 // app/api/v1/pdf/devis/[id]/route.ts
 
 import { NextRequest, NextResponse } from 'next/server'
+import { refusAbonnementRoute } from '@/lib/abonnement/etat'
 import { reponsePDF, RefusPDF } from '@/lib/pdf/reponse'
 import { DevisPDF } from '@/lib/pdf/devis-pdf'
 import { createClient } from '@/lib/supabase/server'
@@ -22,6 +23,8 @@ export async function GET(
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
     }
+    const refusLicence = await refusAbonnementRoute(user)
+    if (refusLicence) return refusLicence
     if (!aPermission(user, PERMISSIONS.FACTURES_VOIR)) {
         return new NextResponse('Vous n\'avez pas la permission de consulter ce document.', { status: 403 })
     }

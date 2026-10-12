@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
@@ -29,7 +30,7 @@ export default async function PageCommunications() {
                         <h2 className="text-lg font-semibold text-foreground">Fonctionnalité Enterprise</h2>
                         <p className="text-sm text-muted-foreground">
                             L'envoi d'emails promotionnels à vos clients est réservé au plan Enterprise.
-                            Contactez Bold Redhok Tech pour passer au plan supérieur.
+                            Contactez {ENTREPRISE.nom} pour passer au plan supérieur.
                         </p>
                     </div>
                 </main>

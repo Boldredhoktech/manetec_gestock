@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import Link from 'next/link'
+import { CHEMIN_ABONNEMENT } from '@/lib/abonnement/regle'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LogOut, User } from 'lucide-react'
@@ -39,15 +40,20 @@ const PLAN_COLORS: Record<string, string> = {
 // exception, « /admin/dashboard » resterait allumé sur chaque page admin.
 const RACINES = ['/admin/dashboard', '/compta/dashboard']
 
-interface Props { planReel?: string }
+interface Props {
+    /** Plan lu en base par le wrapper. Plus de repli sur le JWT (ABO-19) :
+     *  figé à la connexion, il ignorerait un plan payé entre-temps. */
+    planReel:  string
+    /** Boutique expirée (D3) : seul le lien Abonnement reste utile. */
+    expiree?:  boolean
+}
 
-export default function SidebarBoutique({ planReel }: Props) {
+export default function SidebarBoutique({ planReel, expiree = false }: Props) {
     const pathname       = usePathname()
     const { session }    = useSessionBoutique()
     const { peutFaire }  = usePermission()
 
-    const plan          = planReel ?? session?.shop_plan ?? 'starter'
-    const limites       = getPlanLimites(plan)
+    const limites       = getPlanLimites(planReel)
     const estSuperAdmin = estAdminComplet(session?.role)
 
     // Tant que la session n'est pas lue, on n'affiche aucun lien plutôt
@@ -58,6 +64,7 @@ export default function SidebarBoutique({ planReel }: Props) {
             .map(groupe => ({
                 ...groupe,
                 items: groupe.items.filter(item =>
+                    (!expiree || item.href === CHEMIN_ABONNEMENT) &&
                     (!item.permission || peutFaire(item.permission)) &&
                     (!item.plan || limites[item.plan])
                 ),
@@ -81,13 +88,13 @@ export default function SidebarBoutique({ planReel }: Props) {
                         {estSuperAdmin ? (
                             <Link href="/admin/abonnement"
                                   className="text-xs mt-0.5 font-semibold capitalize hover:underline transition-opacity hover:opacity-80"
-                                  style={{ color: PLAN_COLORS[plan] ?? 'rgba(255,255,255,0.65)' }}>
-                                Plan {PLAN_LABELS[plan] ?? plan}
+                                  style={{ color: PLAN_COLORS[planReel] ?? 'rgba(255,255,255,0.65)' }}>
+                                Plan {PLAN_LABELS[planReel] ?? planReel}
                             </Link>
                         ) : (
                             <p className="text-xs mt-0.5 font-semibold capitalize"
-                               style={{ color: PLAN_COLORS[plan] ?? 'rgba(255,255,255,0.65)' }}>
-                                Plan {PLAN_LABELS[plan] ?? plan}
+                               style={{ color: PLAN_COLORS[planReel] ?? 'rgba(255,255,255,0.65)' }}>
+                                Plan {PLAN_LABELS[planReel] ?? planReel}
                             </p>
                         )}
                     </div>

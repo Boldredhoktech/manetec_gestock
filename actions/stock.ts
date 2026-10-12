@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
@@ -31,6 +32,8 @@ export async function creerTransfert(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_TRANSFERT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
@@ -71,6 +74,8 @@ export async function creerAjustement(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     if (!motif) return { erreur: 'Le motif est obligatoire.' }
@@ -118,6 +123,8 @@ export async function creerRetourClient(donnees: {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.VENTES_RETOUR)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     if (!donnees.motif?.trim()) return { erreur: 'Le motif du retour est obligatoire.' }
@@ -166,6 +173,8 @@ export async function creerRetourFournisseur(donnees: {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     if (!donnees.motif?.trim()) return { erreur: 'Le motif du retour est obligatoire.' }
@@ -208,6 +217,8 @@ export async function definirEntrepotDefaut(entrepotId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string
@@ -244,6 +255,8 @@ export async function toggleActivationEntrepot(entrepotId: string, estActif: boo
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     const shopId      = user.user_metadata.shop_id as string

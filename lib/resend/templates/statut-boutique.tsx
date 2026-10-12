@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 
 interface Props {
     nomBoutique:     string
@@ -127,7 +128,7 @@ export function EmailStatutBoutique({
 
                                 {!estActive && (
                                     <p style={{ color: '#64748b', fontSize: '13px', marginTop: '16px' }}>
-                                        Pour toute question, contactez Manetec Inter BJ via votre canal habituel
+                                        Pour toute question, contactez {ENTREPRISE.nom} via votre canal habituel
                                         ou par email à <strong>support@manetec.app</strong>.
                                     </p>
                                 )}
@@ -143,7 +144,7 @@ export function EmailStatutBoutique({
                                 textAlign: 'center',
                             }}>
                                 <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
-                                    Manetec Inter BJ · Manetec Gestock
+                                    {ENTREPRISE.nom} · Manetec Gestock
                                 </p>
                             </td>
                         </tr>

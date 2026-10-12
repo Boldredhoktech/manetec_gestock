@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 
 interface Props {
     nomBoutique:    string
@@ -87,7 +88,7 @@ export function EmailAlerteAbonnement({
                                             </p>
                                             <p style={{ color: '#78350f', fontSize: '13px', margin: 0 }}>
                                                 {estExpire
-                                                    ? 'Votre boutique a été suspendue. Contactez Bold Redhok Tech immédiatement pour régulariser votre situation.'
+                                                    ? `Votre boutique a été suspendue. Contactez ${ENTREPRISE.nom} immédiatement pour régulariser votre situation.`
                                                     : 'Renouvelez votre abonnement avant cette date pour éviter toute interruption de service.'
                                                 }
                                             </p>
@@ -138,7 +139,7 @@ export function EmailAlerteAbonnement({
                                                 padding: '13px 32px',
                                                 borderRadius: '8px',
                                             }}>
-                                                Contactez Manetec Inter BJ →
+                                                Contactez {ENTREPRISE.nom} →
                                             </a>
                                         </td>
                                     </tr>
@@ -155,7 +156,7 @@ export function EmailAlerteAbonnement({
                                 textAlign: 'center',
                             }}>
                                 <p style={{ color: '#94a3b8', fontSize: '12px', margin: 0 }}>
-                                    Manetec Inter BJ · Manetec Gestock · Support automatique
+                                    {ENTREPRISE.nom} · Manetec Gestock · Support automatique
                                 </p>
                             </td>
                         </tr>

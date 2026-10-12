@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getPlanBoutique } from '@/lib/supabase/getPlanBoutique'
@@ -45,7 +46,7 @@ export default async function PageRapports() {
                             <h2 className="text-lg font-semibold text-foreground">Fonctionnalité Pro</h2>
                             <p className="text-sm text-muted-foreground">
                                 Les rapports PDF (ventes, stock, clients, etc.) sont réservés aux plans
-                                Pro et Enterprise. Contactez Manetec Inter BJ pour passer au plan supérieur.
+                                Pro et Enterprise. Contactez {ENTREPRISE.nom} pour passer au plan supérieur.
                             </p>
                         </div>
                     </div>

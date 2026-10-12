@@ -1,4 +1,5 @@
 import { Store, Users, CreditCard, Calendar, AlertTriangle } from 'lucide-react'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 import BadgePlan from '@/components/redhok/BadgePlan'
 import { formatDate } from '@/lib/utils'
 
@@ -36,7 +37,7 @@ export default function CartesBienvenue({ boutique, nbUtilisateurs, role }: Prop
                     <span>
                         Votre abonnement expire le{' '}
                         <strong>{formatDate(boutique!.plan_expire_le!)}</strong>.
-                        Contactez Bold Redhok Tech pour le renouveler.
+                        Contactez {ENTREPRISE.nom} pour le renouveler.
                     </span>
                 </div>
             )}

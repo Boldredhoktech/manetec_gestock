@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { estAdminComplet } from '@/lib/constants/permissions'
 import { ENTREPRISE } from '@/lib/config/entreprise'
+import { etatAbonnement } from '@/lib/abonnement/regle'
 import {
     CheckCircle, Clock, AlertTriangle, Crown, Rocket, Star,
     Phone, MessageSquare, Mail, ChevronRight,
@@ -59,7 +60,7 @@ export default async function PageAbonnement() {
     const adminClient = createAdminClient()
     const { data: boutique } = await adminClient
         .from('shops')
-        .select('nom, plan, plan_expire_le, devise, created_at')
+        .select('nom, plan, plan_expire_le, devise, created_at, est_active')
         .eq('id', user.user_metadata.shop_id)
         .single()
 
@@ -70,7 +71,8 @@ export default async function PageAbonnement() {
     const joursRestants = expiration
         ? Math.max(0, Math.ceil((expiration.getTime() - Date.now()) / 86400000))
         : null
-    const estExpire     = joursRestants !== null && joursRestants === 0
+    // Même règle que le middleware et les server actions.
+    const estExpire     = etatAbonnement(boutique) === 'expire'
     const alerteExpiration = joursRestants !== null && joursRestants <= 7
 
     const planSuivant = plan === 'starter' ? 'pro' : plan === 'pro' ? 'enterprise' : null
@@ -116,7 +118,7 @@ export default async function PageAbonnement() {
                             </p>
                             <p className="text-xs mt-1 opacity-80">
                                 {estExpire
-                                    ? 'Votre boutique est suspendue. Contactez Bold Redhok Tech immédiatement pour régulariser.'
+                                    ? `Votre boutique est suspendue : vos équipes ne peuvent plus se connecter et plus aucune opération n'est possible. Seul cet écran reste accessible. Contactez ${ENTREPRISE.nom} pour la renouveler.`
                                     : 'Renouvelez votre abonnement dès maintenant pour éviter toute interruption.'
                                 }
                             </p>
@@ -231,7 +233,7 @@ export default async function PageAbonnement() {
                     </div>
                 )}
 
-                {/* Contact Bold Redhok Tech */}
+                {/* Contact */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                     <h2 className="text-sm font-bold text-gray-900">
                         Contacter {ENTREPRISE.nom}

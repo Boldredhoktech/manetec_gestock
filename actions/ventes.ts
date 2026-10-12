@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
@@ -62,6 +63,8 @@ export async function enregistrerVente(donnees: DonneesVente) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.VENTES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
 
     // Validations règles métier côté serveur
@@ -73,18 +76,13 @@ export async function enregistrerVente(donnees: DonneesVente) {
 
     const adminClient = createAdminClient()
 
-    // Récupérer la remise max + statut licence de la boutique
+    // La licence est contrôlée plus haut par `refusAbonnement`, comme
+    // dans toutes les autres actions : ici, seulement la remise max.
     const { data: boutique } = await adminClient
         .from('shops')
-        .select('remise_max_pct, est_active, plan_expire_le')
+        .select('remise_max_pct')
         .eq('id', shopId)
         .single()
-
-    // Garde licence — bloque la vente si boutique désactivée ou abonnement expiré
-    if (!boutique || !boutique.est_active ||
-        (boutique.plan_expire_le && new Date(boutique.plan_expire_le) < new Date())) {
-        return { erreur: 'Abonnement expiré ou boutique désactivée. Vente impossible — contactez Manetec Inter BJ.' }
-    }
 
     const remiseMax = boutique?.remise_max_pct ?? 15
 
@@ -217,6 +215,7 @@ export async function rechercherProduitsPOS(terme: string, warehouseId: string) 
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return []
+    if (await refusAbonnement(user)) return []
     if (!aPermission(user, PERMISSIONS.PRODUITS_VOIR)) return []
 
     const shopId      = user.user_metadata.shop_id as string
@@ -266,6 +265,7 @@ export async function getDetailVente(saleId: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return null
+    if (await refusAbonnement(user)) return null
     if (!aPermission(user, PERMISSIONS.VENTES_VOIR)) return null
 
     const adminClient = createAdminClient()
@@ -308,6 +308,8 @@ export async function annulerVente(saleId: string, motif: string): Promise<Resul
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     // Annuler une vente rend le stock et reprend les soldes : c'est le
     // geste du retour, pas celui de la vente.
     if (!aPermission(user, PERMISSIONS.VENTES_RETOUR)) {
@@ -345,6 +347,8 @@ export async function reglerRetourVente(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.VENTES_RETOUR)) {
         return { erreur: 'Permission insuffisante pour cette action.' }
     }
@@ -388,6 +392,8 @@ export async function ouvrirSessionCaisse(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!aPermission(user, PERMISSIONS.VENTES_CREER)) {
         return { erreur: 'Permission insuffisante pour ouvrir la caisse.' }
     }
@@ -421,6 +427,8 @@ export async function fermerSessionCaisse(
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     // Compter le tiroir et constater l'ecart releve de la comptabilite,
     // pas de la vente.
     if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) {
@@ -461,6 +469,7 @@ export async function rechercherClientsPOS(terme: string) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return []
+    if (await refusAbonnement(user)) return []
     if (!aPermission(user, PERMISSIONS.CLIENTS_VOIR)) return []
 
     const propre = terme.replace(/[%_,().*:"'\\]/g, '').trim()

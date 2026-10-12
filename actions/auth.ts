@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/server'
 import * as argon2 from 'argon2'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
+import { ouvrirSessionAuth } from '@/lib/auth/session-auth'
+import { etatAbonnement, peutEntrerBoutiqueExpiree, CHEMIN_ABONNEMENT, MESSAGES_ABONNEMENT } from '@/lib/abonnement/etat'
 
 // ── Connexion Platform Admin (Bold Redhok Tech) ────────────────
 export async function connexionPlateforme(formData: FormData) {
@@ -73,33 +75,17 @@ export async function connexionPlateforme(formData: FormData) {
         .update({ tentatives_echecs: 0 })
         .eq('id', admin.id)
 
-    // Créer une session Supabase Auth
-    const supabase = await createClient()
-    const emailVirtuel = `platform_${admin.id}@internal.manetec.app`
-
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: emailVirtuel,
-        password: admin.id, // clé interne non exposée
+    // Ouvrir la session Supabase Auth (voir lib/auth/session-auth.ts :
+    // plus aucun mot de passe Auth dérivé de l'identifiant).
+    const session = await ouvrirSessionAuth(`platform_${admin.id}@internal.manetec.app`, {
+        type_acteur: 'platform',
+        role:        admin.role,
+        admin_id:    admin.id,
+        nom_complet: admin.nom_complet,
     })
 
-    if (signInError) {
-        // Créer le compte auth si première connexion
-        await adminClient.auth.admin.createUser({
-            email: emailVirtuel,
-            password: admin.id,
-            user_metadata: {
-                type_acteur: 'platform',
-                role: admin.role,
-                admin_id: admin.id,
-                nom_complet: admin.nom_complet,
-            },
-            email_confirm: true,
-        })
-
-        await supabase.auth.signInWithPassword({
-            email: emailVirtuel,
-            password: admin.id,
-        })
+    if (session.erreur) {
+        return { erreur: session.erreur }
     }
 
     // Journaliser la connexion
@@ -141,11 +127,6 @@ export async function connexionBoutique(formData: FormData) {
 
     if (!shop.est_active) {
         return { erreur: 'Cette boutique est désactivée.' }
-    }
-
-    // Vérifier l'expiration de l'abonnement / licence
-    if (shop.plan_expire_le && new Date(shop.plan_expire_le) < new Date()) {
-        return { erreur: 'L\'abonnement de cette boutique a expiré. Contactez Manetec Inter BJ pour le renouveler.' }
     }
 
     // Trouver l'utilisateur dans cette boutique
@@ -197,6 +178,18 @@ export async function connexionBoutique(formData: FormData) {
         return { erreur: `Mot de passe incorrect. ${restantes} tentative(s) restante(s).` }
     }
 
+    // Licence (D3). Contrôlée APRÈS le mot de passe : avant, le message
+    // aurait révélé à n'importe qui l'existence d'un identifiant.
+    // Une boutique expirée ne laisse entrer que son administrateur, et
+    // seulement jusqu'à la page Abonnement (le middleware l'y retient).
+    const etat = etatAbonnement(shop)
+    if (etat === 'desactive') {
+        return { erreur: MESSAGES_ABONNEMENT.desactive }
+    }
+    if (etat === 'expire' && !peutEntrerBoutiqueExpiree(utilisateur.role)) {
+        return { erreur: MESSAGES_ABONNEMENT.expire }
+    }
+
     // Réinitialiser les tentatives
     await adminClient
         .from('shop_users')
@@ -214,15 +207,9 @@ export async function connexionBoutique(formData: FormData) {
     // Créer session Supabase Auth
     //
     // Le JWT porte le rôle et les permissions étendues, et c'est lui que
-    // lisent `aPermission` (serveur) et `usePermission` (client). Ces
-    // métadonnées n'étaient écrites qu'à la CRÉATION du compte Auth et
-    // jamais ensuite : accorder ou retirer une permission, promouvoir ou
-    // rétrograder un utilisateur n'avait donc aucun effet, même après
-    // reconnexion. On les réécrit à chaque connexion, avant de signer,
-    // pour que le jeton émis reflète la base.
-    const supabase = await createClient()
-    const emailVirtuel = `shop_${utilisateur.id}@internal.manetec.app`
-
+    // lisent `aPermission` (serveur) et `usePermission` (client). Les
+    // métadonnées sont réécrites à chaque connexion, avant l'émission du
+    // jeton, pour qu'il reflète la base (FIN-25) — voir ouvrirSessionAuth.
     const metadonnees = {
         type_acteur:          'shop',
         role:                 utilisateur.role,
@@ -236,48 +223,9 @@ export async function connexionBoutique(formData: FormData) {
         permissions_etendues: permissionsEtendues,
     }
 
-    const { data: premiereTentative, error: signInError } =
-        await supabase.auth.signInWithPassword({
-            email:    emailVirtuel,
-            password: utilisateur.id,
-        })
-
-    if (signInError) {
-        // Compte Auth inexistant : on le crée déjà à jour.
-        const { error: erreurCreation } = await adminClient.auth.admin.createUser({
-            email:         emailVirtuel,
-            password:      utilisateur.id,
-            user_metadata: metadonnees,
-            email_confirm: true,
-        })
-
-        if (erreurCreation) {
-            return { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
-        }
-
-        const { error: erreurSecondeSignature } = await supabase.auth.signInWithPassword({
-            email:    emailVirtuel,
-            password: utilisateur.id,
-        })
-
-        if (erreurSecondeSignature) {
-            return { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
-        }
-    } else {
-        // Compte existant : on rafraîchit les métadonnées, puis on
-        // resigne — le jeton déjà émis porte encore les anciennes.
-        await adminClient.auth.admin.updateUserById(premiereTentative.user.id, {
-            user_metadata: metadonnees,
-        })
-
-        const { error: erreurResignature } = await supabase.auth.signInWithPassword({
-            email:    emailVirtuel,
-            password: utilisateur.id,
-        })
-
-        if (erreurResignature) {
-            return { erreur: 'Impossible d\'ouvrir la session. Réessayez.' }
-        }
+    const session = await ouvrirSessionAuth(`shop_${utilisateur.id}@internal.manetec.app`, metadonnees)
+    if (session.erreur) {
+        return { erreur: session.erreur }
     }
 
     // Journaliser
@@ -301,6 +249,9 @@ export async function connexionBoutique(formData: FormData) {
         stock_manager: '/stock',
         comptable: '/compta',
     }
+
+    // Boutique expirée : l'administrateur n'a plus que la page de paiement.
+    if (etat === 'expire') redirect(CHEMIN_ABONNEMENT)
 
     redirect(redirections[utilisateur.role] ?? '/admin/dashboard')
 }

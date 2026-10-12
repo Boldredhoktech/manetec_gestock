@@ -1,28 +1,63 @@
 'use client'
 
 import { useActionState } from 'react'
+import Link from 'next/link'
 import { creerBoutique } from '@/actions/shops'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle } from 'lucide-react'
+import { Loader2, AlertCircle, KeyRound } from 'lucide-react'
 
-const etatInitial = { erreur: undefined as string | undefined }
+type Etat = Awaited<ReturnType<typeof creerBoutique>> | Record<string, never>
+const etatInitial: Etat = {}
 
 const DEVISES = ['FCFA', 'EUR', 'USD', 'GHS', 'NGN', 'XOF']
 const PAYS = ['Bénin', 'Togo', 'Côte d\'Ivoire', 'Sénégal', 'Mali', 'Burkina Faso', 'Niger', 'Ghana', 'Nigeria', 'Cameroun', 'France']
 
 export default function FormulaireBoutique() {
     const [etat, action, enAttente] = useActionState(
-        async (_prev: typeof etatInitial, formData: FormData) => {
-            const res = await creerBoutique(formData)
-            return res ?? etatInitial
-        },
+        async (_prev: Etat, formData: FormData): Promise<Etat> => creerBoutique(formData),
         etatInitial
     )
+
+    // ABO-12 : les identifiants initiaux ne sont affichés qu'ICI, une
+    // seule fois. Ils ne sont écrits nulle part en base.
+    if ('acces' in etat && etat.acces) {
+        const a = etat.acces
+        return (
+            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+                <div className="flex items-center gap-2">
+                    <KeyRound className="w-5 h-5 text-amber-600" />
+                    <h2 className="text-sm font-semibold text-foreground">
+                        Boutique « {a.nomBoutique} » créée — accès du propriétaire
+                    </h2>
+                </div>
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-1 font-mono text-xs text-amber-800">
+                    <p>ID Boutique : {a.shopPublicId}</p>
+                    <p>Identifiant : {a.identifiant}</p>
+                    <p>Mot de passe : {a.motDePasse}</p>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                    Notez-les maintenant : ils ne seront plus jamais affichés.
+                    {a.emailEnvoye
+                        ? ' Ils ont aussi été envoyés par e-mail au propriétaire.'
+                        : ' Aucune adresse e-mail : transmettez-les vous-même au propriétaire.'}
+                    {' '}En cas de perte, réinitialisez le mot de passe depuis la fiche de la boutique.
+                </p>
+                <div className="flex gap-2">
+                    <Button asChild>
+                        <Link href={`/redhok/boutiques/${a.boutiqueId}`}>Ouvrir la fiche</Link>
+                    </Button>
+                    <Button asChild variant="outline">
+                        <Link href="/redhok/boutiques">Retour à la liste</Link>
+                    </Button>
+                </div>
+            </div>
+        )
+    }
 
     return (
         <form action={action} className="space-y-6">
 
-            {etat.erreur && (
+            {'erreur' in etat && etat.erreur && (
                 <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-4 py-3 text-sm">
                     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
                     <span>{etat.erreur}</span>

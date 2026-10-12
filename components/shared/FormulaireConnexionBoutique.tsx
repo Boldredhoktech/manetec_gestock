@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
+import { ENTREPRISE } from '@/lib/config/entreprise'
 import { connexionBoutique } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Store, User, Lock, Hash, Loader2, AlertCircle } from 'lucide-react'
@@ -192,7 +193,7 @@ export default function FormulaireConnexionBoutique() {
 
             {/* Pied */}
             <p className="text-center text-xs text-muted-foreground">
-                Manetec Gestock · Propulsé par Manetec Inter BJ
+                Manetec Gestock · Propulsé par {ENTREPRISE.nom}
             </p>
 
         </div>

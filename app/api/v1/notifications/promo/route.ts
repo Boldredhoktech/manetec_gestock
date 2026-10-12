@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { refusAbonnementRoute } from '@/lib/abonnement/etat'
 import { envoyerEmailPromo }         from '@/lib/resend/notifications'
 import { createClient }              from '@/lib/supabase/server'
 import { getPlanBoutique }           from '@/lib/supabase/getPlanBoutique'
@@ -10,6 +11,8 @@ export async function POST(request: NextRequest) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return new NextResponse('Non autorisé', { status: 401 })
     }
+    const refusLicence = await refusAbonnementRoute(user)
+    if (refusLicence) return refusLicence
 
     // Communications promotionnelles : réservé au plan Enterprise (lu en base)
     const { limites } = await getPlanBoutique(user.user_metadata.shop_id)

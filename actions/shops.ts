@@ -1,12 +1,13 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { uploadImageCloudinary } from '@/lib/cloudinary'
-import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import * as argon2 from 'argon2'
 import { estAdminComplet } from '@/lib/constants/permissions'
+import { motDePasseTemporaire } from '@/lib/auth/mot-de-passe-temporaire'
 
 // ── Créer une boutique ─────────────────────────────────────────
 export async function creerBoutique(formData: FormData) {
@@ -81,8 +82,7 @@ export async function creerBoutique(formData: FormData) {
 
     // Générer identifiant et mot de passe temporaire du SuperAdmin boutique
     const identifiantAdmin = `admin.${nom.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '')}`
-    const motDePasseTemp   = Math.random().toString(36).slice(2, 8).toUpperCase() +
-        Math.random().toString(36).slice(2, 5)
+    const motDePasseTemp   = motDePasseTemporaire()
 
     const { data: userPublicId } = await adminClient
         .rpc('generate_public_id', {
@@ -107,15 +107,12 @@ export async function creerBoutique(formData: FormData) {
         est_actif:     true,
     })
 
-    // Stocker les credentials temporaires en clair pour affichage agent
-    // (effacés dès que le SuperAdmin change son mot de passe)
-    await adminClient.from('shops').update({
-        note_activation: JSON.stringify({
-            identifiant:    identifiantAdmin,
-            mot_de_passe:   motDePasseTemp,
-            shop_public_id: shopPublicId,
-        })
-    }).eq('id', boutique.id)
+    // ABO-12 : les identifiants initiaux ne sont plus écrits en base.
+    // Avant, ils restaient EN CLAIR dans `note_activation` (jamais
+    // effacés malgré le commentaire) et s'affichaient sur la fiche ; puis
+    // une note de changement de plan les écrasait. Ils sont désormais
+    // rendus UNE fois à l'agent, à l'écran de création, et envoyés par
+    // e-mail au propriétaire si une adresse est connue.
 
     // Envoyer l'email de bienvenue si email fourni
     if (email) {
@@ -144,7 +141,17 @@ export async function creerBoutique(formData: FormData) {
     })
 
     revalidatePath('/redhok/boutiques')
-    redirect('/redhok/boutiques')
+    return {
+        succes: true as const,
+        acces: {
+            boutiqueId:     boutique.id as string,
+            nomBoutique:    nom,
+            shopPublicId:   shopPublicId as string,
+            identifiant:    identifiantAdmin,
+            motDePasse:     motDePasseTemp,
+            emailEnvoye:    !!email,
+        },
+    }
 }
 
 // ── Changer le plan d'abonnement ───────────────────────────────
@@ -266,6 +273,8 @@ export async function modifierParametresBoutique(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
     if (!estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Réservé aux administrateurs de la boutique.' }
     }
@@ -331,6 +340,8 @@ export async function uploadLogoBoutique(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     const shopId    = user.user_metadata.shop_id as string
     const fichier   = formData.get('logo') as File
@@ -442,8 +453,7 @@ export async function reinitialiserMdpUserBoutique(shopId: string, userId: strin
 
     const adminClient = createAdminClient()
 
-    const motDePasseTemp = Math.random().toString(36).slice(2, 8).toUpperCase() +
-        Math.random().toString(36).slice(2, 5)
+    const motDePasseTemp = motDePasseTemporaire()
 
     const passwordHash = await argon2.hash(motDePasseTemp, {
         type: argon2.argon2id, memoryCost: 65536, timeCost: 3, parallelism: 1,

@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
@@ -24,6 +25,8 @@ export async function creerUtilisateur(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     const roleActeur = user.user_metadata?.role as string
     if (!estAdminComplet(roleActeur)) {
@@ -175,6 +178,8 @@ export async function modifierPermissionsVendeur(formData: FormData) {
     if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     const shopId      = user.user_metadata.shop_id as string
     const userId      = formData.get('userId') as string
@@ -229,6 +234,8 @@ export async function toggleActivationUtilisateur(
     if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     const shopId          = user.user_metadata.shop_id as string
     const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
@@ -270,6 +277,8 @@ export async function debloquerUtilisateur(userId: string) {
     if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     const shopId          = user.user_metadata.shop_id as string
     const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
@@ -322,6 +331,8 @@ export async function mettreAJourPermissions(
     if (!user || !estAdminComplet(user.user_metadata?.role)) {
         return { erreur: 'Réservé aux administrateurs.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     // La cible doit appartenir à la boutique de l'acteur.
     if (shopId !== user.user_metadata.shop_id) {
@@ -376,6 +387,8 @@ export async function changerMotDePasse(formData: FormData) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     const userId            = formData.get('userId') as string
     const motDePasseActuel  = formData.get('motDePasseActuel') as string
@@ -450,6 +463,8 @@ export async function modifierNomComplet(userId: string, nomComplet: string) {
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { erreur: 'Non autorisé.' }
     }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
 
     // Un utilisateur peut modifier son propre nom. Un administrateur peut aussi
     // modifier le nom des comptes standards, mais pas celui d'un autre

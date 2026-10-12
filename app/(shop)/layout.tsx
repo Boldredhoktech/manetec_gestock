@@ -1,8 +1,8 @@
 // app/(shop)/layout.tsx
 
 import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
+import { etatAbonnementBoutique, peutEntrerBoutiqueExpiree } from '@/lib/abonnement/etat'
 
 export default async function LayoutShop({
                                              children,
@@ -16,19 +16,16 @@ export default async function LayoutShop({
         redirect('/login')
     }
 
-    // Application de la licence — statut lu en base (jamais depuis le JWT, qui est périmé)
-    const adminClient = createAdminClient()
-    const { data: shop } = await adminClient
-        .from('shops')
-        .select('est_active, plan_expire_le')
-        .eq('id', user.user_metadata.shop_id)
-        .single()
+    // Filet de sécurité : la licence est appliquée par le middleware à
+    // chaque requête (y compris la redirection de l'administrateur d'une
+    // boutique expirée vers la page Abonnement, D3). Un layout n'étant pas
+    // réexécuté à chaque navigation, il ne peut pas en être le garant.
+    const etat = await etatAbonnementBoutique(user.user_metadata.shop_id)
 
-    if (!shop || !shop.est_active) {
+    if (etat === 'desactive') {
         redirect('/login?suspendu=desactive')
     }
-
-    if (shop.plan_expire_le && new Date(shop.plan_expire_le) < new Date()) {
+    if (etat === 'expire' && !peutEntrerBoutiqueExpiree(user.user_metadata.role)) {
         redirect('/login?suspendu=expire')
     }
 

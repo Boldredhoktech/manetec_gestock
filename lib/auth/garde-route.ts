@@ -15,6 +15,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getPlanBoutique } from '@/lib/supabase/getPlanBoutique'
 import { aPermission } from '@/lib/auth/permissions-serveur'
+import { refusAbonnementRoute } from '@/lib/abonnement/etat'
 
 type Options = {
     /** Toutes ces permissions sont exigées, pas une seule d'entre elles. */
@@ -38,6 +39,10 @@ export async function gardeRouteBoutique(
     if (!user || user.user_metadata?.type_acteur !== 'shop') {
         return { refus: new NextResponse('Non autorisé', { status: 401 }) }
     }
+
+    // Une session ouverte avant l'échéance ne doit plus rien produire.
+    const refusLicence = await refusAbonnementRoute(user)
+    if (refusLicence) return { refus: refusLicence }
 
     for (const permission of options.permissions) {
         if (!aPermission(user, permission)) {
