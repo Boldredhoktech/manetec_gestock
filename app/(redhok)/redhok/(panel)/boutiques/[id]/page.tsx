@@ -10,6 +10,7 @@ import CarteActivationBoutique from '@/components/redhok/CarteActivationBoutique
 import CarteUsageBoutique from '@/components/redhok/CarteUsageBoutique'
 import CarteUtilisateursBoutique from '@/components/redhok/CarteUtilisateursBoutique'
 import CarteAuditBoutique from '@/components/redhok/CarteAuditBoutique'
+import CarteHistoriquePaiements, { type PaiementAbonnementLigne } from '@/components/redhok/CarteHistoriquePaiements'
 
 export const metadata: Metadata = { title: 'Détail boutique' }
 
@@ -44,6 +45,7 @@ export default async function PageDetailBoutique({ params }: Props) {
         { count: nbClients },
         { count: nbVentes },
         { data: logsAudit },
+        { data: paiements },
     ] = await Promise.all([
         adminClient
             .from('shop_users')
@@ -64,6 +66,11 @@ export default async function PageDetailBoutique({ params }: Props) {
             .eq('shop_id', id)
             .order('created_at', { ascending: false })
             .limit(500),
+        adminClient.from('abonnement_paiements')
+            .select('id, public_id, plan, duree, montant, moyen, statut, sandbox, reference_transaction, periode_debut, periode_fin, note, motif_echec, created_at')
+            .eq('shop_id', id)
+            .order('created_at', { ascending: false })
+            .limit(100),
     ])
 
     const nbUtilisateurs = utilisateurs?.length ?? 0
@@ -102,6 +109,7 @@ export default async function PageDetailBoutique({ params }: Props) {
                     nbVentes={nbVentes ?? 0}
                 />
                 <CarteAbonnement boutique={boutique} />
+                <CarteHistoriquePaiements paiements={(paiements ?? []) as PaiementAbonnementLigne[]} />
                 <CarteUtilisateursBoutique
                     shopId={id}
                     utilisateurs={(utilisateurs ?? []) as any[]}

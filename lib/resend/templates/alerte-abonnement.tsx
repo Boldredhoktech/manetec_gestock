@@ -9,12 +9,13 @@ interface Props {
     dateExpiration: string
     joursRestants:  number
     estExpire:      boolean
-    urlContact:     string
+    /** Page Abonnement de la boutique : paiement en ligne (Lot 3). */
+    urlRenouveler:  string
 }
 
 export function EmailAlerteAbonnement({
                                           nomBoutique, nomProprietaire, plan,
-                                          dateExpiration, joursRestants, estExpire, urlContact,
+                                          dateExpiration, joursRestants, estExpire, urlRenouveler,
                                       }: Props) {
     const couleur = estExpire ? '#dc2626' : joursRestants <= 3 ? '#d97706' : '#f59e0b'
     const fond    = estExpire ? '#fef2f2' : '#fefce8'
@@ -85,8 +86,8 @@ export function EmailAlerteAbonnement({
                                             </p>
                                             <p style={{ color: '#78350f', fontSize: '13px', margin: 0 }}>
                                                 {estExpire
-                                                    ? `Votre boutique a été suspendue. Contactez ${ENTREPRISE.nom} immédiatement pour régulariser votre situation.`
-                                                    : 'Renouvelez votre abonnement avant cette date pour éviter toute interruption de service.'
+                                                    ? `Votre boutique est suspendue : vos équipes ne peuvent plus se connecter. L'administrateur peut la rouvrir en quelques minutes en payant en ligne (Mobile Money ou carte), ou contacter ${ENTREPRISE.nom}.`
+                                                    : 'Renouvelez en ligne avant cette date : les jours restants sont conservés et le service ne s\'interrompt pas.'
                                                 }
                                             </p>
                                         </td>
@@ -126,7 +127,7 @@ export function EmailAlerteAbonnement({
                                 <table width="100%" cellPadding={0} cellSpacing={0}>
                                     <tr>
                                         <td align="center">
-                                            <a href={urlContact} style={{
+                                            <a href={urlRenouveler} style={{
                                                 display: 'inline-block',
                                                 backgroundColor: '#15335a',
                                                 color: '#ffffff',
@@ -136,7 +137,7 @@ export function EmailAlerteAbonnement({
                                                 padding: '13px 32px',
                                                 borderRadius: '8px',
                                             }}>
-                                                Contactez {ENTREPRISE.nom} →
+                                                Renouveler en ligne →
                                             </a>
                                         </td>
                                     </tr>

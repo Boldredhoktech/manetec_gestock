@@ -66,7 +66,7 @@ export async function envoyerAlerteAbonnement(params: {
             subject: sujet,
             react:   createElement(EmailAlerteAbonnement, {
                 ...params,
-                urlContact: 'mailto:support@boldredhok.com',
+                urlRenouveler: `${URL_APP}/admin/abonnement`,
             }),
         })
         if (error) return { succes: false, erreur: error.message }

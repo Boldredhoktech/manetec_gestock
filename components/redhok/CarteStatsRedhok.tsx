@@ -1,4 +1,5 @@
-import { Store, CheckCircle, Zap, Star, AlertTriangle } from 'lucide-react'
+import { Store, CheckCircle, Zap, Star, AlertTriangle, Clock, Wallet } from 'lucide-react'
+import { formatMontant } from '@/lib/abonnement/catalogue'
 
 interface Stats {
     totalBoutiques:            number
@@ -6,6 +7,9 @@ interface Stats {
     boutiquesPro:              number
     boutiquesEnterprise:       number
     boutiquesExpirantBientot:  number
+    boutiquesExpirees:         number
+    encaisseMois:              number
+    nbPaiementsMois:           number
 }
 
 interface Props { stats: Stats }
@@ -41,16 +45,30 @@ export default function CarteStatsRedhok({ stats }: Props) {
             fond:    'bg-purple-500/10',
         },
         {
-            label:   'Expirent bientôt',
+            label:   'Expirent sous 7 jours',
             valeur:  stats.boutiquesExpirantBientot,
+            icone:   Clock,
+            couleur: stats.boutiquesExpirantBientot > 0 ? 'text-amber-500' : 'text-muted-foreground',
+            fond:    stats.boutiquesExpirantBientot > 0 ? 'bg-amber-500/10' : 'bg-muted/40',
+        },
+        {
+            label:   'Expirées',
+            valeur:  stats.boutiquesExpirees,
             icone:   AlertTriangle,
-            couleur: stats.boutiquesExpirantBientot > 0 ? 'text-destructive' : 'text-muted-foreground',
-            fond:    stats.boutiquesExpirantBientot > 0 ? 'bg-destructive/10' : 'bg-muted/40',
+            couleur: stats.boutiquesExpirees > 0 ? 'text-destructive' : 'text-muted-foreground',
+            fond:    stats.boutiquesExpirees > 0 ? 'bg-destructive/10' : 'bg-muted/40',
+        },
+        {
+            label:   `Encaissé ce mois (${stats.nbPaiementsMois} paiement${stats.nbPaiementsMois > 1 ? 's' : ''})`,
+            valeur:  formatMontant(stats.encaisseMois),
+            icone:   Wallet,
+            couleur: 'text-emerald-500',
+            fond:    'bg-emerald-500/10',
         },
     ]
 
     return (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {cartes.map(carte => {
                 const Icone = carte.icone
                 return (

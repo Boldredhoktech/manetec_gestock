@@ -76,6 +76,8 @@ export async function preparerPaiementAbonnement(
             nb_mois:              DUREES[duree].nbMois,
             montant,
             moyen:                'kkiapay',
+            // Un paiement de test ne compte dans aucun encaissement (ABO-18).
+            sandbox:              widget.sandbox,
             cree_par_utilisateur: session.userId,
         })
         .select('id, public_id')

@@ -27,12 +27,20 @@ export default async function PageDashboardRedhok() {
 
     if (!admin) redirect('/redhok/login')
 
+    // ABO-14 : « bientôt » excluait mal les dates passées — les boutiques
+    // DÉJÀ expirées étaient annoncées comme « expirant dans moins de 7 jours ».
+    const maintenant  = new Date()
+    const dans7jours  = new Date(maintenant.getTime() + 7 * 86400000)
+    const debutDuMois = new Date(Date.UTC(maintenant.getUTCFullYear(), maintenant.getUTCMonth(), 1))
+
     const [
         { count: totalBoutiques },
         { count: boutiquesActives },
         { count: boutiquesPro },
         { count: boutiquesEnterprise },
         { count: boutiquesExpirantBientot },
+        { count: boutiquesExpirees },
+        { data: encaissements },
         { data: dernieresBoutiques },
     ] = await Promise.all([
         adminClient.from('shops').select('*', { count: 'exact', head: true }),
@@ -41,7 +49,19 @@ export default async function PageDashboardRedhok() {
         adminClient.from('shops').select('*', { count: 'exact', head: true }).eq('plan', 'enterprise'),
         adminClient.from('shops').select('*', { count: 'exact', head: true })
             .eq('est_active', true)
-            .lt('plan_expire_le', new Date(Date.now() + 7 * 86400000).toISOString()),
+            .gte('plan_expire_le', maintenant.toISOString())
+            .lt('plan_expire_le', dans7jours.toISOString()),
+        adminClient.from('shops').select('*', { count: 'exact', head: true })
+            .eq('est_active', true)
+            .lt('plan_expire_le', maintenant.toISOString()),
+        // ABO-18 : l'argent réellement encaissé ce mois — paiements réussis,
+        // hors sandbox KkiaPay et hors activations gratuites.
+        adminClient.from('abonnement_paiements')
+            .select('montant, moyen')
+            .eq('statut', 'reussi')
+            .eq('sandbox', false)
+            .gt('montant', 0)
+            .gte('confirme_le', debutDuMois.toISOString()),
         adminClient.from('shops')
             .select('id, public_id, nom, plan, est_active, plan_expire_le, created_at, ville, pays')
             .order('created_at', { ascending: false })
@@ -62,6 +82,18 @@ export default async function PageDashboardRedhok() {
             <main className="flex-1 p-4 sm:p-6 space-y-6">
 
                 {/* Alerte boutiques expirant */}
+                {(boutiquesExpirees ?? 0) > 0 && (
+                    <div className="bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                        <span>
+                        <strong>{boutiquesExpirees}</strong> boutique(s) expirée(s) : seul leur administrateur
+                        peut se connecter, pour renouveler.{' '}
+                        <a href="/redhok/boutiques" className="underline font-medium">
+                            Voir les boutiques →
+                        </a>
+                        </span>
+                    </div>
+                )}
                 {(boutiquesExpirantBientot ?? 0) > 0 && (
                     <div className="bg-amber-50 border border-amber-200 text-amber-800 rounded-xl px-4 py-3 text-sm flex items-start gap-2">
                         <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -83,6 +115,9 @@ export default async function PageDashboardRedhok() {
                         boutiquesPro:           boutiquesPro ?? 0,
                         boutiquesEnterprise:    boutiquesEnterprise ?? 0,
                         boutiquesExpirantBientot: boutiquesExpirantBientot ?? 0,
+                        boutiquesExpirees:      boutiquesExpirees ?? 0,
+                        encaisseMois:           (encaissements ?? []).reduce((s, p) => s + Number(p.montant), 0),
+                        nbPaiementsMois:        encaissements?.length ?? 0,
                     }}
                 />
 
