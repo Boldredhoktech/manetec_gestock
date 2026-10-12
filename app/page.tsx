@@ -239,8 +239,8 @@ export default function LandingPage() {
                     <div className="landing-plans-grid">
                         {ENTREPRISE.plans.map((plan) => (
                             <div key={plan.id}
-                                 className={`landing-plan-card ${(plan as any).populaire ? 'popular' : ''}`}>
-                                {(plan as any).populaire && (
+                                 className={`landing-plan-card ${plan.populaire ? 'popular' : ''}`}>
+                                {plan.populaire && (
                                     <div className="landing-plan-badge">
                                         <Star size={14} fill="currentColor" style={{ verticalAlign: '-2px' }} /> Plus populaire
                                     </div>
@@ -255,10 +255,7 @@ export default function LandingPage() {
                                             {plan.prix_affiche}
                                         </span>
                                         <span className="landing-plan-prix-duree">
-                                            {(plan as any).prix_mensuel > 0
-                                                ? `${plan.devise_prix} / ${plan.duree}`
-                                                : plan.duree
-                                            }
+                                            {plan.duree}
                                         </span>
                                     </div>
                                 </div>
@@ -280,9 +277,9 @@ export default function LandingPage() {
                                     rel={plan.id !== 'starter' ? 'noopener noreferrer' : undefined}
                                     className="landing-plan-btn"
                                     style={{
-                                        background:  (plan as any).populaire ? plan.couleur : 'transparent',
+                                        background:  plan.populaire ? plan.couleur : 'transparent',
                                         borderColor: plan.couleur,
-                                        color:       (plan as any).populaire ? '#fff' : plan.couleur,
+                                        color:       plan.populaire ? '#fff' : plan.couleur,
                                     }}
                                 >
                                     {plan.cta}

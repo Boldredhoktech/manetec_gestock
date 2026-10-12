@@ -12,6 +12,7 @@ import {
     ShoppingCart, Package, FileText, BarChart3,
     Users, Truck, Wallet, Lock,
 } from 'lucide-react'
+import { PLANS_ORDONNES, fichePlan, fonctionnalitesPlan, formatMontant, JOURS_ESSAI } from '@/lib/abonnement/catalogue'
 
 export const ENTREPRISE = {
 
@@ -62,74 +63,27 @@ export const ENTREPRISE = {
     instagram:  'https://instagram.com/manetec',
 
     // ── Plans tarifaires ─────────────────────────────────────────
-    // Modifiez les prix ici pour qu'ils s'affichent automatiquement
-    // sur la landing page et partout dans l'application.
-    plans: [
-        {
-            id:          'starter',
-            nom:         'Starter',
-            // Prix affiché sur la landing page
-            // Exemples : 'Gratuit', '5 000 FCFA', '€9.99'
-            prix_affiche:   'Gratuit',
-            prix_mensuel:   0,
-            devise_prix:    'FCFA',
-            duree:          '30 jours d\'essai',
-            couleur:        '#64748b',
-            description:    'Pour découvrir la solution',
-            cta:            'Commencer gratuitement',
-            populaire:      false,
-            fonctionnalites: [
-                '50 produits maximum',
-                '2 utilisateurs',
-                '100 clients',
-                'Caisse POS',
-                'Gestion de stock',
-                'Reçus thermiques',
-            ],
-        },
-        {
-            id:           'pro',
-            nom:          'Pro',
-            prix_affiche:  '15 000 FCFA',
-            prix_mensuel:  15000,
-            devise_prix:   'FCFA',
-            duree:         'par mois',
-            couleur:       '#15335a',
-            description:   'Pour les PME en croissance',
-            cta:           'Nous contacter',
-            populaire:     true,
-            fonctionnalites: [
-                '500 produits',
-                '10 utilisateurs',
-                '1 000 clients',
-                'Factures A4 + Proforma',
-                'Multi-entrepôts',
-                'Rapports avancés',
-                'Alertes stock email',
-            ],
-        },
-        {
-            id:           'enterprise',
-            nom:          'Enterprise',
-            prix_affiche:  'Sur devis',
-            prix_mensuel:  null,
-            devise_prix:   'FCFA',
-            duree:         'par mois',
-            couleur:       '#059669',
-            description:   'Pour les grandes structures',
-            cta:           'Nous contacter',
-            populaire:     false,
-            fonctionnalites: [
-                'Produits illimités',
-                'Utilisateurs illimités',
-                'Clients illimités',
-                'Tout du plan Pro',
-                'Emails promotionnels',
-                'Support prioritaire',
-                'Formation incluse',
-            ],
-        },
-    ],
+    // Les prix, durées et fonctionnalités vivent dans
+    // lib/abonnement/catalogue.ts (source unique, ABO-08) : ne rien
+    // recopier ici, ce tableau n'en est que la présentation.
+    plans: PLANS_ORDONNES.map(id => {
+        const f = fichePlan(id)
+        return {
+            id,
+            nom:             f.label,
+            description:     f.description,
+            prix_affiche:    f.prixMensuel === null ? 'Sur devis' : formatMontant(f.prixMensuel),
+            prix_mensuel:    f.prixMensuel,
+            // D2 : le Starter n'est pas gratuit, il commence par un essai.
+            duree:           f.prixMensuel === null ? '' : id === 'starter'
+                ? `par mois, après ${JOURS_ESSAI} jours d'essai gratuit`
+                : 'par mois',
+            couleur:         f.couleur,
+            cta:             id === 'starter' ? `Essayer ${JOURS_ESSAI} jours gratuitement` : 'Nous contacter',
+            populaire:       f.populaire,
+            fonctionnalites: fonctionnalitesPlan(id),
+        }
+    }),
 
     // ── Fonctionnalités clés (section landing page) ───────────────
     fonctionnalites_cles: [

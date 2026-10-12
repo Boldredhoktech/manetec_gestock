@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { fichePlan, labelPlan } from '@/lib/abonnement/catalogue'
 
 export default async function SidebarPlanBadge() {
     const supabase = await createClient()
@@ -15,21 +16,9 @@ export default async function SidebarPlanBadge() {
 
     const plan = boutique?.plan ?? 'starter'
 
-    const PLAN_LABELS: Record<string, string> = {
-        starter:    'Starter',
-        pro:        'Pro',
-        enterprise: 'Enterprise',
-    }
-
-    const PLAN_COLORS: Record<string, string> = {
-        starter:    'rgba(255,255,255,0.65)',
-        pro:        '#f59e0b',
-        enterprise: '#10b981',
-    }
-
     return (
-        <span style={{ color: PLAN_COLORS[plan] ?? 'rgba(255,255,255,0.65)' }}>
-      Plan {PLAN_LABELS[plan] ?? plan}
+        <span style={{ color: fichePlan(plan).couleurSurFonce }}>
+      Plan {labelPlan(plan)}
     </span>
     )
 }

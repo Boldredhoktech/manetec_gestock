@@ -1,11 +1,16 @@
 'use client'
 
-import { useActionState } from 'react'
-import { changerPlanAbonnement } from '@/actions/shops'
+import { useActionState, useState } from 'react'
+import { enregistrerPaiementManuel } from '@/actions/shops'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 import BadgePlan from '@/components/redhok/BadgePlan'
 import { Loader2, AlertCircle, CheckCircle, CreditCard } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import {
+    PLANS_ORDONNES, DUREES, labelPlan, prixPeriode, formatMontant,
+    type Duree, type PlanId,
+} from '@/lib/abonnement/catalogue'
 
 interface Props {
     boutique: {
@@ -17,26 +22,37 @@ interface Props {
     }
 }
 
-interface EtatAction {
-    erreur?: string
-    succes?: boolean
-}
+type EtatAction = { erreur?: string; succes?: boolean; expiration?: string; publicId?: string }
 
 const etatInitial: EtatAction = {}
 
+const CHAMP = 'w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50'
+
+// Activation manuelle (D7) : la plateforme enregistre un paiement reçu
+// hors ligne (agence, virement, Enterprise sur devis). La prolongation
+// suit les mêmes règles que le paiement en ligne : même plan → à la
+// suite de l'échéance ; autre plan → nouvelle période dès aujourd'hui.
 export default function CarteAbonnement({ boutique }: Props) {
+    const [plan,    setPlan]    = useState<PlanId>((PLANS_ORDONNES as string[]).includes(boutique.plan) ? boutique.plan as PlanId : 'starter')
+    const [duree,   setDuree]   = useState<Duree>('mensuel')
+    const tarif                 = prixPeriode(plan, duree)
+    const [montant, setMontant] = useState<number>(tarif ?? 0)
+
     const [etat, action, enAttente] = useActionState(
-        async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => {
-            const res = await changerPlanAbonnement(formData)
-            if (res?.erreur) return { erreur: res.erreur }
-            return { succes: true }
-        },
+        async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => enregistrerPaiementManuel(formData),
         etatInitial
     )
+
+    const choisir = (p: PlanId, d: Duree) => {
+        setPlan(p); setDuree(d)
+        setMontant(prixPeriode(p, d) ?? 0)
+    }
 
     const expireOuBientot = boutique.plan_expire_le
         ? new Date(boutique.plan_expire_le) < new Date(Date.now() + 7 * 86400000)
         : false
+    const memePlanEnCours = plan === boutique.plan && !!boutique.plan_expire_le
+        && new Date(boutique.plan_expire_le) > new Date()
 
     return (
         <div className="bg-card border border-border rounded-xl p-5 space-y-4">
@@ -54,23 +70,18 @@ export default function CarteAbonnement({ boutique }: Props) {
                 <div className="text-right space-y-1">
                     <p className="text-xs text-muted-foreground">Expiration</p>
                     <p className={`text-sm font-medium ${expireOuBientot ? 'text-destructive' : 'text-foreground'}`}>
-                        {boutique.plan_expire_le
-                            ? formatDate(boutique.plan_expire_le)
-                            : 'Illimité'}
+                        {boutique.plan_expire_le ? formatDate(boutique.plan_expire_le) : 'Illimité'}
                     </p>
                 </div>
             </div>
 
-            {boutique.activation_manuelle && (
+            {boutique.activation_manuelle && boutique.note_activation && (
                 <div className="flex items-start gap-2 text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                     <CheckCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
-                    <span>
-            Activation manuelle — {boutique.note_activation ?? 'Aucune note'}
-          </span>
+                    <span>Activation manuelle — {boutique.note_activation}</span>
                 </div>
             )}
 
-            {/* Messages retour */}
             {etat.erreur && (
                 <div className="flex items-start gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-3 py-2 text-xs">
                     <AlertCircle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
@@ -80,90 +91,59 @@ export default function CarteAbonnement({ boutique }: Props) {
             {etat.succes && (
                 <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
                     <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                    Plan mis à jour avec succès.
+                    Paiement {etat.publicId} enregistré. Boutique active jusqu&apos;au {etat.expiration ? formatDate(etat.expiration) : '—'}.
                 </div>
             )}
 
-            {/* Formulaire changement plan */}
             <form action={action} className="space-y-3">
                 <input type="hidden" name="shopId" value={boutique.id} />
+                <p className="text-xs font-semibold text-foreground">Enregistrer un paiement reçu hors ligne</p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-foreground">
-                            Nouveau plan
-                        </label>
-                        <select
-                            name="plan"
-                            defaultValue={boutique.plan}
-                            disabled={enAttente}
-                            className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                        >
-                            <option value="starter">Starter</option>
-                            <option value="pro">Pro</option>
-                            <option value="enterprise">Enterprise</option>
+                        <label className="text-xs font-medium text-foreground">Plan</label>
+                        <select name="plan" value={plan} disabled={enAttente} className={CHAMP}
+                                onChange={e => choisir(e.target.value as PlanId, duree)}>
+                            {PLANS_ORDONNES.map(p => <option key={p} value={p}>{labelPlan(p)}</option>)}
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-foreground">
-                            Durée (jours)
-                        </label>
-                        <input
-                            name="joursExpiration"
-                            type="number"
-                            defaultValue={30}
-                            min={1}
-                            max={365}
-                            disabled={enAttente}
-                            className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                        />
+                        <label className="text-xs font-medium text-foreground">Durée</label>
+                        <select name="duree" value={duree} disabled={enAttente} className={CHAMP}
+                                onChange={e => choisir(plan, e.target.value as Duree)}>
+                            {(Object.keys(DUREES) as Duree[]).map(d => <option key={d} value={d}>{DUREES[d].label}</option>)}
+                        </select>
                     </div>
                 </div>
 
                 <div className="space-y-1.5">
                     <label className="text-xs font-medium text-foreground">
-                        Note d'activation (optionnelle)
+                        Montant reçu (FCFA){tarif !== null && <span className="text-muted-foreground font-normal"> — tarif public : {formatMontant(tarif)}</span>}
                     </label>
-                    <input
-                        name="noteActivation"
-                        type="text"
-                        placeholder="Ex: Paiement reçu en agence le..."
-                        disabled={enAttente}
-                        className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                    />
+                    <ChampNombre name="montant" value={montant} onChange={setMontant} entier disabled={enAttente} className={CHAMP} />
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <input
-                        type="checkbox"
-                        id="activationManuelle"
-                        name="activationManuelle"
-                        value="true"
-                        className="rounded"
-                    />
-                    <label
-                        htmlFor="activationManuelle"
-                        className="text-xs text-muted-foreground cursor-pointer"
-                    >
-                        Marquer comme activation manuelle (paiement en agence)
-                    </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-foreground">Référence (reçu, virement…)</label>
+                        <input name="reference" type="text" disabled={enAttente} className={CHAMP} />
+                    </div>
+                    <div className="space-y-1.5">
+                        <label className="text-xs font-medium text-foreground">
+                            Note {tarif !== null && montant !== tarif ? '(obligatoire : montant hors tarif)' : '(optionnelle)'}
+                        </label>
+                        <input name="note" type="text" placeholder="Ex : payé en agence le…" disabled={enAttente} className={CHAMP} />
+                    </div>
                 </div>
 
-                <Button
-                    type="submit"
-                    variant="outline"
-                    size="sm"
-                    disabled={enAttente}
-                    className="w-full"
-                >
-                    {enAttente ? (
-                        <>
-                            <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                            Mise à jour...
-                        </>
-                    ) : (
-                        'Mettre à jour le plan'
-                    )}
+                <p className="text-xs text-muted-foreground">
+                    {memePlanEnCours
+                        ? `Même plan : ${DUREES[duree].label} s'ajoutent à l'échéance actuelle.`
+                        : `Nouveau plan ou boutique expirée : ${DUREES[duree].label} à partir d'aujourd'hui, sans report des jours restants.`}
+                </p>
+
+                <Button type="submit" variant="outline" size="sm" disabled={enAttente} className="w-full">
+                    {enAttente ? (<><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Enregistrement…</>) : 'Enregistrer le paiement'}
                 </Button>
             </form>
         </div>

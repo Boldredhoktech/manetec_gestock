@@ -16,6 +16,7 @@
 
 import Link from 'next/link'
 import { CHEMIN_ABONNEMENT } from '@/lib/abonnement/regle'
+import { fichePlan, labelPlan } from '@/lib/abonnement/catalogue'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { LogOut, User } from 'lucide-react'
@@ -27,14 +28,6 @@ import SidebarDrawer from '@/components/shared/SidebarDrawer'
 import { getPlanLimites } from '@/lib/constants/plans'
 import { estAdminComplet } from '@/lib/constants/permissions'
 import { NAVIGATION_BOUTIQUE } from '@/lib/constants/navigation'
-
-const PLAN_LABELS: Record<string, string> = {
-    starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise',
-}
-
-const PLAN_COLORS: Record<string, string> = {
-    starter: 'rgba(255,255,255,0.65)', pro: '#f59e0b', enterprise: '#10b981',
-}
 
 // Les tableaux de bord sont préfixes de tout leur univers : sans cette
 // exception, « /admin/dashboard » resterait allumé sur chaque page admin.
@@ -88,13 +81,13 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
                         {estSuperAdmin ? (
                             <Link href="/admin/abonnement"
                                   className="text-xs mt-0.5 font-semibold capitalize hover:underline transition-opacity hover:opacity-80"
-                                  style={{ color: PLAN_COLORS[planReel] ?? 'rgba(255,255,255,0.65)' }}>
-                                Plan {PLAN_LABELS[planReel] ?? planReel}
+                                  style={{ color: fichePlan(planReel).couleurSurFonce }}>
+                                Plan {labelPlan(planReel)}
                             </Link>
                         ) : (
                             <p className="text-xs mt-0.5 font-semibold capitalize"
-                               style={{ color: PLAN_COLORS[planReel] ?? 'rgba(255,255,255,0.65)' }}>
-                                Plan {PLAN_LABELS[planReel] ?? planReel}
+                               style={{ color: fichePlan(planReel).couleurSurFonce }}>
+                                Plan {labelPlan(planReel)}
                             </p>
                         )}
                     </div>

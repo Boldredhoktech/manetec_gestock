@@ -1,5 +1,6 @@
 import * as React from 'react'
 import { ENTREPRISE } from '@/lib/config/entreprise'
+import { labelPlan } from '@/lib/abonnement/catalogue'
 
 interface Props {
     nomBoutique:    string
@@ -9,10 +10,6 @@ interface Props {
     joursRestants:  number
     estExpire:      boolean
     urlContact:     string
-}
-
-const PLAN_LABELS: Record<string, string> = {
-    starter: 'Starter', pro: 'Pro', enterprise: 'Enterprise',
 }
 
 export function EmailAlerteAbonnement({
@@ -82,8 +79,8 @@ export function EmailAlerteAbonnement({
                                         }}>
                                             <p style={{ color: couleur, fontSize: '14px', margin: '0 0 12px', fontWeight: 700 }}>
                                                 {estExpire
-                                                    ? `L'abonnement Plan ${PLAN_LABELS[plan] ?? plan} de votre boutique "${nomBoutique}" a expiré le ${dateExpiration}.`
-                                                    : `L'abonnement Plan ${PLAN_LABELS[plan] ?? plan} de votre boutique "${nomBoutique}" expire le ${dateExpiration}.`
+                                                    ? `L'abonnement Plan ${labelPlan(plan)} de votre boutique "${nomBoutique}" a expiré le ${dateExpiration}.`
+                                                    : `L'abonnement Plan ${labelPlan(plan)} de votre boutique "${nomBoutique}" expire le ${dateExpiration}.`
                                                 }
                                             </p>
                                             <p style={{ color: '#78350f', fontSize: '13px', margin: 0 }}>
@@ -106,7 +103,7 @@ export function EmailAlerteAbonnement({
                                         <td style={{ padding: '16px 20px' }}>
                                             {[
                                                 { label: 'Boutique',    val: nomBoutique },
-                                                { label: 'Plan actuel', val: PLAN_LABELS[plan] ?? plan },
+                                                { label: 'Plan actuel', val: labelPlan(plan) },
                                                 { label: 'Expiration',  val: dateExpiration },
                                             ].map(item => (
                                                 <table key={item.label} width="100%" cellPadding={0} cellSpacing={0}

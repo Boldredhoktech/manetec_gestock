@@ -13,41 +13,21 @@ import {
     type LucideIcon,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
+import { fichePlan, fonctionnalitesPlan } from '@/lib/abonnement/catalogue'
 
 export const metadata: Metadata = { title: 'Mon abonnement' }
 
-const PLAN_CONFIG: Record<string, {
-    label:        string
-    couleur:      string
-    bg:           string
-    bgHeader:     string
-    icone:        LucideIcon
-    fonctionnalites: string[]
-}> = {
-    starter: {
-        label:    'Starter',
-        couleur:  'text-gray-700',
-        bg:       'bg-gray-100',
-        bgHeader: 'from-gray-600 to-gray-700',
-        icone:    Rocket,
-        fonctionnalites: ['50 produits', '2 utilisateurs', '100 clients', 'Caisse POS', 'Stock de base', 'Reçus thermiques'],
-    },
-    pro: {
-        label:    'Pro',
-        couleur:  'text-blue-700',
-        bg:       'bg-blue-100',
-        bgHeader: 'from-[#15335a] to-[#0f2742]',
-        icone:    Star,
-        fonctionnalites: ['500 produits', '10 utilisateurs', '1 000 clients', 'Factures A4 + Proforma', 'Multi-entrepôts', 'Rapports avancés', 'Alertes email'],
-    },
-    enterprise: {
-        label:    'Enterprise',
-        couleur:  'text-green-700',
-        bg:       'bg-green-100',
-        bgHeader: 'from-emerald-600 to-emerald-700',
-        icone:    Crown,
-        fonctionnalites: ['Produits illimités', 'Utilisateurs illimités', 'Clients illimités', 'Tout du plan Pro', 'Emails promotionnels', 'Support prioritaire', 'Formation incluse'],
-    },
+// Présentation seulement : libellés, prix et fonctionnalités viennent
+// du catalogue (lib/abonnement/catalogue.ts, ABO-08).
+const STYLE_PLAN: Record<string, { bgHeader: string; icone: LucideIcon }> = {
+    starter:    { bgHeader: 'from-gray-600 to-gray-700',        icone: Rocket },
+    pro:        { bgHeader: 'from-[#15335a] to-[#0f2742]',      icone: Star   },
+    enterprise: { bgHeader: 'from-emerald-600 to-emerald-700',  icone: Crown  },
+}
+
+function configPlan(plan: string) {
+    const f = fichePlan(plan)
+    return { label: f.label, fonctionnalites: fonctionnalitesPlan(f.id), ...(STYLE_PLAN[f.id] ?? STYLE_PLAN.starter) }
 }
 
 export default async function PageAbonnement() {
@@ -65,7 +45,7 @@ export default async function PageAbonnement() {
         .single()
 
     const plan          = boutique?.plan ?? 'starter'
-    const planConfig    = PLAN_CONFIG[plan] ?? PLAN_CONFIG.starter
+    const planConfig    = configPlan(plan)
     const PlanIcone     = planConfig.icone
     const expiration    = boutique?.plan_expire_le ? new Date(boutique.plan_expire_le) : null
     const joursRestants = expiration
@@ -213,7 +193,7 @@ export default async function PageAbonnement() {
                         <div className="flex items-center gap-2">
                             <Crown className="w-5 h-5 text-[#f59e0b]" />
                             <h2 className="text-sm font-bold text-gray-900">
-                                Passez au plan {PLAN_CONFIG[planSuivant].label}
+                                Passez au plan {configPlan(planSuivant).label}
                             </h2>
                         </div>
                         <p className="text-sm text-gray-600">
@@ -223,7 +203,7 @@ export default async function PageAbonnement() {
                             }
                         </p>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {PLAN_CONFIG[planSuivant].fonctionnalites.map((f, i) => (
+                            {configPlan(planSuivant).fonctionnalites.map((f, i) => (
                                 <div key={i} className="flex items-center gap-2">
                                     <ChevronRight className="w-3.5 h-3.5 text-[#15335a] shrink-0" />
                                     <span className="text-xs text-gray-600">{f}</span>

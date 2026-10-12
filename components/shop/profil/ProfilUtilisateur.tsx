@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { fichePlan } from '@/lib/abonnement/catalogue'
 import { changerMotDePasse, modifierNomComplet } from '@/actions/users'
 import {
     User, Lock, CheckCircle, AlertCircle,
@@ -27,12 +28,6 @@ interface Props {
     }
 }
 
-const PLAN_CONFIG: Record<string, { label: string; couleur: string; bg: string }> = {
-    starter:    { label: 'Starter',    couleur: 'text-gray-600',  bg: 'bg-gray-100'  },
-    pro:        { label: 'Pro',        couleur: 'text-blue-700',  bg: 'bg-blue-100'  },
-    enterprise: { label: 'Enterprise', couleur: 'text-green-700', bg: 'bg-green-100' },
-}
-
 interface EtatMsg { type: 'succes' | 'erreur'; texte: string }
 
 export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
@@ -51,7 +46,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
     const [voirNouveau,  setVoirNouveau]  = useState(false)
     const [voirConfirm,  setVoirConfirm]  = useState(false)
 
-    const planConfig    = PLAN_CONFIG[boutique.plan] ?? PLAN_CONFIG.starter
+    const planConfig    = fichePlan(boutique.plan)
     const joursRestants = boutique.plan_expire_le
         ? Math.max(0, Math.ceil((new Date(boutique.plan_expire_le).getTime() - Date.now()) / 86400000))
         : null
@@ -126,7 +121,8 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                     </div>
                     <div className="p-3 bg-gray-50 rounded-xl">
                         <p className="text-xs text-gray-400 mb-1">Plan actuel</p>
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-xs font-bold ${planConfig.bg} ${planConfig.couleur}`}>
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold"
+                              style={{ color: planConfig.couleur, background: `${planConfig.couleur}1a` }}>
                             {planConfig.label}
                         </span>
                     </div>

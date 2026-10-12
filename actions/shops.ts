@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache'
 import * as argon2 from 'argon2'
 import { estAdminComplet } from '@/lib/constants/permissions'
 import { motDePasseTemporaire } from '@/lib/auth/mot-de-passe-temporaire'
+import { estPlan, estDuree, prixPeriode, formatMontant, JOURS_ESSAI } from '@/lib/abonnement/catalogue'
+import { refusChangementPlan } from '@/lib/abonnement/quotas'
 
 // ── Créer une boutique ─────────────────────────────────────────
 export async function creerBoutique(formData: FormData) {
@@ -26,12 +28,17 @@ export async function creerBoutique(formData: FormData) {
     const telephone1      = (formData.get('telephone1') as string)?.trim()
     const email           = (formData.get('email') as string)?.trim()
     const devise          = (formData.get('devise') as string)?.trim() || 'FCFA'
-    const plan            = (formData.get('plan') as string) || 'starter'
-    const joursExpiration = parseInt(formData.get('joursExpiration') as string) || 30
+    const plan            = formData.get('plan') || 'starter'
+    const joursExpiration = Number(formData.get('joursExpiration') || JOURS_ESSAI)
     const nomProprietaire = (formData.get('nomProprietaire') as string)?.trim()
 
     if (!nom || !telephone1 || !nomProprietaire) {
         return { erreur: 'Le nom, le téléphone et le nom du propriétaire sont obligatoires.' }
+    }
+    // ABO-15 : avant, seule la contrainte CHECK de la base attrapait un plan inconnu.
+    if (!estPlan(plan)) return { erreur: 'Plan inconnu.' }
+    if (!Number.isInteger(joursExpiration) || joursExpiration < 1 || joursExpiration > 366) {
+        return { erreur: 'Durée initiale invalide : de 1 à 366 jours.' }
     }
 
     // Générer public_id boutique
@@ -154,8 +161,15 @@ export async function creerBoutique(formData: FormData) {
     }
 }
 
-// ── Changer le plan d'abonnement ───────────────────────────────
-export async function changerPlanAbonnement(formData: FormData) {
+// ── Enregistrer un paiement d'abonnement (activation manuelle) ──
+// Avant (`changerPlanAbonnement`) : la date repartait d'aujourd'hui
+// (les jours restants étaient perdus, ABO-04), rien n'était validé côté
+// serveur (ABO-15), aucun montant n'était gardé (ABO-03) et la note
+// écrasait les identifiants stockés au même endroit (ABO-12).
+// Désormais : un paiement « manuel » est enregistré puis confirmé par
+// `enregistrer_paiement_manuel()`, le même chemin SQL que le paiement en
+// ligne (D4, D7, D8).
+export async function enregistrerPaiementManuel(formData: FormData) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -163,53 +177,52 @@ export async function changerPlanAbonnement(formData: FormData) {
         return { erreur: 'Non autorisé.' }
     }
 
+    const shopId    = (formData.get('shopId') as string | null)?.trim() ?? ''
+    const plan      = formData.get('plan')
+    const duree     = formData.get('duree')
+    const montant   = Number(formData.get('montant'))
+    const reference = (formData.get('reference') as string | null)?.trim() || null
+    const note      = (formData.get('note') as string | null)?.trim() || null
+
+    if (!estPlan(plan))   return { erreur: 'Plan inconnu.' }
+    if (!estDuree(duree)) return { erreur: 'Durée inconnue : mensuel ou annuel.' }
+    if (!Number.isFinite(montant) || montant < 0 || !Number.isInteger(montant)) {
+        return { erreur: 'Montant invalide : un nombre entier de FCFA, 0 ou plus.' }
+    }
+
     const adminClient = createAdminClient()
+    const { data: boutique } = await adminClient
+        .from('shops').select('id, plan').eq('id', shopId).maybeSingle()
+    if (!boutique) return { erreur: 'Boutique introuvable.' }
 
-    const shopId             = formData.get('shopId') as string
-    const nouveauPlan        = formData.get('plan') as string
-    const joursExpiration    = parseInt(formData.get('joursExpiration') as string) || 30
-    const noteActivation     = (formData.get('noteActivation') as string)?.trim()
-    const activationManuelle = formData.get('activationManuelle') === 'true'
+    // D8 : une descente est refusée si la boutique dépasse les quotas visés.
+    const refusQuotas = await refusChangementPlan(boutique.id, plan)
+    if (refusQuotas) return { erreur: refusQuotas }
 
-    if (!shopId || !nouveauPlan) {
-        return { erreur: 'Données manquantes.' }
+    // Un montant différent du tarif public (remise commerciale, Enterprise
+    // sur devis) est permis mais doit être expliqué.
+    const tarif = prixPeriode(plan, duree)
+    if (tarif !== null && montant !== tarif && !note) {
+        return { erreur: `Le tarif public est ${formatMontant(tarif)}. Pour un autre montant, expliquez-le dans la note.` }
     }
 
-    const expiration = new Date()
-    expiration.setDate(expiration.getDate() + joursExpiration)
-
-    const { error } = await adminClient
-        .from('shops')
-        .update({
-            plan:                nouveauPlan,
-            plan_expire_le:      expiration.toISOString(),
-            activation_manuelle: activationManuelle,
-            note_activation:     noteActivation || null,
-            active_par:          user.user_metadata.admin_id,
-        })
-        .eq('id', shopId)
-
-    if (error) {
-        return { erreur: 'Erreur lors de la mise à jour du plan.' }
-    }
-
-    await adminClient.from('audit_logs').insert({
-        shop_id:        shopId,
-        user_id:        user.user_metadata.admin_id,
-        user_nom:       user.user_metadata.nom_complet ?? 'Admin Plateforme',
-        type_acteur:    'platform',
-        event_type:     'SHOP_PLAN_CHANGED',
-        reference_type: 'shop',
-        details_json:   {
-            nouveau_plan: nouveauPlan,
-            expiration:   expiration.toISOString(),
-            manuel:       activationManuelle,
-            note:         noteActivation,
-        },
+    const { data: paiement, error } = await adminClient.rpc('enregistrer_paiement_manuel', {
+        p_shop_id:   boutique.id,
+        p_plan:      plan,
+        p_duree:     duree,
+        p_montant:   montant,
+        p_admin_id:  user.user_metadata.admin_id,
+        p_note:      note,
+        p_reference: reference,
     })
 
+    if (error || !paiement) {
+        return { erreur: 'Le paiement n\'a pas pu être enregistré.' }
+    }
+
     revalidatePath('/redhok/boutiques')
-    return { succes: true }
+    revalidatePath(`/redhok/boutiques/${boutique.id}`)
+    return { succes: true as const, expiration: paiement.periode_fin as string, publicId: paiement.public_id as string }
 }
 
 // ── Activer / Désactiver une boutique ──────────────────────────
