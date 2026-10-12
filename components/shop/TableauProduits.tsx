@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { toggleActivationProduit } from '@/actions/produits'
 import { formatMontant } from '@/lib/utils'
-import { Search, AlertTriangle, Package } from 'lucide-react'
+import { Search, AlertTriangle, Package, FileSpreadsheet } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { filtrerProduits, TYPES_PRODUIT } from '@/lib/produits/filtre-liste'
 
 interface Produit {
     id: string
@@ -25,23 +26,13 @@ interface Produit {
 
 interface Props { produits: Produit[] }
 
-const TYPE_LABELS: Record<string, string> = {
-    simple:   'Simple',
-    ponderal: 'Pondéral',
-    kit:      'Kit',
-}
-
 export default function TableauProduits({ produits }: Props) {
     const [recherche, setRecherche] = useState('')
     const [filtreType, setFiltreType] = useState('tous')
 
-    const filtres = produits.filter(p => {
-        const matchR = p.nom.toLowerCase().includes(recherche.toLowerCase()) ||
-            (p.sku ?? '').toLowerCase().includes(recherche.toLowerCase()) ||
-            p.public_id.toLowerCase().includes(recherche.toLowerCase())
-        const matchT = filtreType === 'tous' || p.type_produit === filtreType
-        return matchR && matchT
-    })
+    // Même filtre que l'export Excel : le fichier contient ce qui est affiché.
+    const filtres = filtrerProduits(produits, { recherche, type: filtreType })
+    const lienExcel = `/api/v1/xlsx/produits?${new URLSearchParams({ q: recherche, type: filtreType })}`
 
     const stockTotal = (p: Produit) =>
         p.stock_levels.reduce((acc, s) => acc + s.quantite, 0)
@@ -74,6 +65,14 @@ export default function TableauProduits({ produits }: Props) {
                     <option value="ponderal">Pondéral</option>
                     <option value="kit">Kit</option>
                 </select>
+                {/* Un lien ne se désactive pas avec `disabled` : sans produit, il est neutralisé. */}
+                <Button asChild variant="outline"
+                        className={filtres.length === 0 ? 'pointer-events-none opacity-50' : undefined}>
+                    <a href={lienExcel} download aria-disabled={filtres.length === 0}>
+                        <FileSpreadsheet className="w-4 h-4 mr-2 text-green-700" />
+                        Exporter Excel
+                    </a>
+                </Button>
             </div>
 
             {filtres.length === 0 ? (
@@ -119,7 +118,7 @@ export default function TableauProduits({ produits }: Props) {
                                             </Link>
                                         </td>
                                         <td className="px-4 py-3 text-xs text-muted-foreground">
-                                            {TYPE_LABELS[p.type_produit]}
+                                            {TYPES_PRODUIT[p.type_produit]}
                                         </td>
                                         <td className="px-4 py-3 text-xs text-muted-foreground">
                                             {p.categories?.nom ?? '—'}
