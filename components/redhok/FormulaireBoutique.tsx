@@ -177,6 +177,7 @@ export default function FormulaireBoutique() {
                             disabled={enAttente}
                             className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                         >
+                            <option value="essai">Essai (gratuit)</option>
                             <option value="starter">Starter</option>
                             <option value="pro">Pro</option>
                             <option value="enterprise">Enterprise</option>

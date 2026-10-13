@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import * as argon2 from 'argon2'
 import { motDePasseTemporaire } from '@/lib/auth/mot-de-passe-temporaire'
+import { JOURS_ESSAI } from '@/lib/abonnement/catalogue'
 
 // ABO-16 : cette action est appelée par un visiteur ANONYME. Avant, elle
 // lui renvoyait le message, le code et les détails bruts de PostgreSQL,
@@ -53,7 +54,7 @@ export async function creerBoutiquePublic(formData: FormData) {
 
     // ── Création boutique ──────────────────────────────────────
     const expiration = new Date()
-    expiration.setDate(expiration.getDate() + 30)
+    expiration.setDate(expiration.getDate() + JOURS_ESSAI)
 
     const { data: boutique, error: erreurBoutique } = await adminClient
         .from('shops')
@@ -65,7 +66,7 @@ export async function creerBoutiquePublic(formData: FormData) {
             telephone_1:    telephone,
             email,
             devise,
-            plan:           'starter',
+            plan:           'essai',
             plan_expire_le: expiration.toISOString(),
             est_active:     true,
         })

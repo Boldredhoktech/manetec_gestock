@@ -146,7 +146,12 @@ export default function PaiementAbonnement({
                 })}
             </div>
 
-            {offre && offre.id !== planActuel && (
+            {offre && planActuel === 'essai' && (
+                <p className="text-xs text-gray-500">
+                    La période payée commence à la fin de votre essai (ou aujourd&apos;hui s&apos;il est terminé) : aucun jour gratuit n&apos;est perdu.
+                </p>
+            )}
+            {offre && planActuel !== 'essai' && offre.id !== planActuel && (
                 <p className="text-xs text-gray-500">
                     Changer de plan ouvre une nouvelle période qui commence aujourd&apos;hui ; les jours restants du plan actuel ne sont pas reportés.
                 </p>

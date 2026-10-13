@@ -28,7 +28,7 @@ export async function creerBoutique(formData: FormData) {
     const telephone1      = (formData.get('telephone1') as string)?.trim()
     const email           = (formData.get('email') as string)?.trim()
     const devise          = (formData.get('devise') as string)?.trim() || 'FCFA'
-    const plan            = formData.get('plan') || 'starter'
+    const plan            = formData.get('plan') || 'essai'
     const joursExpiration = Number(formData.get('joursExpiration') || JOURS_ESSAI)
     const nomProprietaire = (formData.get('nomProprietaire') as string)?.trim()
 

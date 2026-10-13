@@ -79,9 +79,13 @@ export function EmailAlerteAbonnement({
                                             padding: '20px 24px',
                                         }}>
                                             <p style={{ color: couleur, fontSize: '14px', margin: '0 0 12px', fontWeight: 700 }}>
-                                                {estExpire
-                                                    ? `L'abonnement Plan ${labelPlan(plan)} de votre boutique "${nomBoutique}" a expiré le ${dateExpiration}.`
-                                                    : `L'abonnement Plan ${labelPlan(plan)} de votre boutique "${nomBoutique}" expire le ${dateExpiration}.`
+                                                {plan === 'essai'
+                                                    ? (estExpire
+                                                        ? `La période d'essai de votre boutique "${nomBoutique}" s'est terminée le ${dateExpiration}.`
+                                                        : `La période d'essai de votre boutique "${nomBoutique}" se termine le ${dateExpiration}. Choisissez le plan Starter ou Pro pour continuer.`)
+                                                    : estExpire
+                                                        ? `L'abonnement Plan ${labelPlan(plan)} de votre boutique "${nomBoutique}" a expiré le ${dateExpiration}.`
+                                                        : `L'abonnement Plan ${labelPlan(plan)} de votre boutique "${nomBoutique}" expire le ${dateExpiration}.`
                                                 }
                                             </p>
                                             <p style={{ color: '#78350f', fontSize: '13px', margin: 0 }}>

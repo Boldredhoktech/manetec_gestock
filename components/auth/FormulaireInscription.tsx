@@ -308,11 +308,12 @@ export default function FormulaireInscription() {
 
                     <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
                         <p className="text-xs text-amber-700 font-bold flex items-center gap-1.5">
-                            <PartyPopper className="w-3.5 h-3.5" /> Plan Starter — 30 jours gratuits
+                            <PartyPopper className="w-3.5 h-3.5" /> Essai gratuit de 30 jours
                         </p>
                         <p className="text-xs text-amber-600">
-                            Votre boutique démarrera sur le plan Starter. Après 30 jours,
-                            contactez-nous pour continuer avec le plan adapté à votre activité.
+                            Votre boutique démarre avec les fonctionnalités du plan Pro (factures,
+                            rapports, plusieurs entrepôts). À la fin de l'essai, choisissez Starter
+                            ou Pro et payez en ligne depuis la page Abonnement.
                         </p>
                     </div>
 

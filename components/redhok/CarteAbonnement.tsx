@@ -31,7 +31,8 @@ const CHAMP = 'w-full px-3 py-2 bg-background border border-input rounded-lg tex
 // Activation manuelle (D7) : la plateforme enregistre un paiement reçu
 // hors ligne (agence, virement, Enterprise sur devis). La prolongation
 // suit les mêmes règles que le paiement en ligne : même plan → à la
-// suite de l'échéance ; autre plan → nouvelle période dès aujourd'hui.
+// suite de l'échéance ; essai en cours → à la suite de l'essai ; autre
+// plan → nouvelle période dès aujourd'hui.
 export default function CarteAbonnement({ boutique }: Props) {
     const [plan,    setPlan]    = useState<PlanVendu>(estPlanVendu(boutique.plan) ? boutique.plan : 'starter')
     const [duree,   setDuree]   = useState<Duree>('mensuel')
@@ -51,7 +52,7 @@ export default function CarteAbonnement({ boutique }: Props) {
     const expireOuBientot = boutique.plan_expire_le
         ? new Date(boutique.plan_expire_le) < new Date(Date.now() + 7 * 86400000)
         : false
-    const memePlanEnCours = plan === boutique.plan && !!boutique.plan_expire_le
+    const memePlanEnCours = (plan === boutique.plan || boutique.plan === 'essai') && !!boutique.plan_expire_le
         && new Date(boutique.plan_expire_le) > new Date()
 
     return (
@@ -138,7 +139,7 @@ export default function CarteAbonnement({ boutique }: Props) {
 
                 <p className="text-xs text-muted-foreground">
                     {memePlanEnCours
-                        ? `Même plan : ${DUREES[duree].label} s'ajoutent à l'échéance actuelle.`
+                        ? `${boutique.plan === 'essai' ? 'Essai en cours' : 'Même plan'} : ${DUREES[duree].label} s'ajoutent à l'échéance actuelle.`
                         : `Nouveau plan ou boutique expirée : ${DUREES[duree].label} à partir d'aujourd'hui, sans report des jours restants.`}
                 </p>
 
