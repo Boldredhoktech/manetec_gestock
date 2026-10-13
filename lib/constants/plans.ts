@@ -1,4 +1,4 @@
-export type PlanId = 'starter' | 'pro' | 'enterprise'
+export type PlanId = 'essai' | 'starter' | 'pro' | 'enterprise'
 export type Plan = PlanId
 
 export interface PlanLimites {
@@ -13,18 +13,31 @@ export interface PlanLimites {
     label:            string
 }
 
+const STARTER: PlanLimites = {
+    max_produits:     300,
+    max_utilisateurs: 2,
+    max_clients:      500,
+    factures_a4:      false,
+    devis:            false,
+    rapports:         false,
+    communications:   false,
+    multi_entrepots:  false,
+    label:            'Starter',
+}
+
 const PLANS: Record<PlanId, PlanLimites> = {
-    starter: {
-        max_produits:     50,
-        max_utilisateurs: 2,
-        max_clients:      100,
-        factures_a4:      false,
-        devis:            false,
-        rapports:         false,
-        communications:   false,
-        multi_entrepots:  false,
-        label:            'Starter',
+    // D2 révisé : l'essai fait goûter aux fonctionnalités du Pro sans
+    // relever les quotas du Starter. Une boutique qui choisit Starter à
+    // la fin de l'essai tient donc toujours dans ses quotas.
+    essai: {
+        ...STARTER,
+        factures_a4:      true,
+        devis:            true,
+        rapports:         true,
+        multi_entrepots:  true,
+        label:            'Essai',
     },
+    starter: STARTER,
     pro: {
         max_produits:     500,
         max_utilisateurs: 10,

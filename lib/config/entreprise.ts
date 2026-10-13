@@ -74,12 +74,12 @@ export const ENTREPRISE = {
             description:     f.description,
             prix_affiche:    f.prixMensuel === null ? 'Sur devis' : formatMontant(f.prixMensuel),
             prix_mensuel:    f.prixMensuel,
-            // D2 : le Starter n'est pas gratuit, il commence par un essai.
-            duree:           f.prixMensuel === null ? '' : id === 'starter'
-                ? `par mois, après ${JOURS_ESSAI} jours d'essai gratuit`
-                : 'par mois',
+            duree:           f.prixMensuel === null ? '' : 'par mois',
             couleur:         f.couleur,
-            cta:             id === 'starter' ? `Essayer ${JOURS_ESSAI} jours gratuitement` : 'Nous contacter',
+            // D2 révisé : toute boutique commence par l'essai gratuit, puis
+            // choisit Starter ou Pro. Enterprise reste sur devis (D7).
+            inscription:     f.payableEnLigne,
+            cta:             f.payableEnLigne ? `Essayer ${JOURS_ESSAI} jours gratuitement` : 'Nous contacter',
             populaire:       f.populaire,
             fonctionnalites: fonctionnalitesPlan(id),
         }

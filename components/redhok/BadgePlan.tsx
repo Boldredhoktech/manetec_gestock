@@ -1,4 +1,5 @@
 import { cn } from '@/lib/utils'
+import { labelPlan } from '@/lib/abonnement/catalogue'
 
 interface Props {
     plan: string
@@ -6,15 +7,10 @@ interface Props {
 }
 
 const STYLES: Record<string, string> = {
+    essai:      'bg-orange-50 text-orange-700 border-orange-200',
     starter:    'bg-slate-100 text-slate-700 border-slate-200',
     pro:        'bg-amber-100 text-amber-700 border-amber-200',
     enterprise: 'bg-purple-100 text-purple-700 border-purple-200',
-}
-
-const LABELS: Record<string, string> = {
-    starter:    'Starter',
-    pro:        'Pro',
-    enterprise: 'Enterprise',
 }
 
 export default function BadgePlan({ plan, className }: Props) {
@@ -26,7 +22,7 @@ export default function BadgePlan({ plan, className }: Props) {
                 className
             )}
         >
-      {LABELS[plan] ?? plan}
+      {labelPlan(plan)}
     </span>
     )
 }

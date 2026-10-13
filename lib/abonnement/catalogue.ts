@@ -25,7 +25,7 @@ export const DUREES: Record<Duree, { label: string; nbMois: number }> = {
 /** D6 : l'annuel coûte 12 mois moins 20 %. */
 export const REMISE_ANNUELLE_PCT = 20
 
-/** D2 : un Starter neuf démarre par 30 jours d'essai. */
+/** D2 révisé : une boutique neuve démarre par 30 jours sur le plan Essai. */
 export const JOURS_ESSAI = 30
 
 export const DEVISE_ABONNEMENT = 'FCFA'
@@ -48,6 +48,18 @@ type FichePlan = {
 }
 
 const FICHES: Record<PlanId, FichePlan> = {
+    // Ni vendu ni proposé à l'achat : la boutique y entre à sa création
+    // et en sort en payant Starter ou Pro.
+    essai: {
+        id: 'essai', label: 'Essai',
+        description:    `${JOURS_ESSAI} jours gratuits avec les fonctionnalités du Pro`,
+        prixMensuel:    null,
+        payableEnLigne: false,
+        couleur:        '#d97706',
+        couleurSurFonce: '#fbbf24',
+        populaire:      false,
+        extras:         ['Caisse POS', 'Gestion de stock', 'Reçus thermiques'],
+    },
     starter: {
         id: 'starter', label: 'Starter',
         description:    'Pour démarrer',
@@ -61,7 +73,7 @@ const FICHES: Record<PlanId, FichePlan> = {
     pro: {
         id: 'pro', label: 'Pro',
         description:    'Pour les PME en croissance',
-        prixMensuel:    15000,
+        prixMensuel:    8000,
         payableEnLigne: true,
         couleur:        '#15335a',
         couleurSurFonce: '#f59e0b',
@@ -80,10 +92,17 @@ const FICHES: Record<PlanId, FichePlan> = {
     },
 }
 
-export const PLANS_ORDONNES: PlanId[] = ['starter', 'pro', 'enterprise']
+/** Les plans qui se paient (l'Essai n'en fait pas partie). */
+export type PlanVendu = Exclude<PlanId, 'essai'>
+export const PLANS_ORDONNES: PlanVendu[] = ['starter', 'pro', 'enterprise']
 
 export function estPlan(valeur: unknown): valeur is PlanId {
     return typeof valeur === 'string' && valeur in FICHES
+}
+
+/** Plan qu'un paiement peut acheter : jamais l'Essai. */
+export function estPlanVendu(valeur: unknown): valeur is PlanVendu {
+    return (PLANS_ORDONNES as unknown[]).includes(valeur)
 }
 
 export function estDuree(valeur: unknown): valeur is Duree {

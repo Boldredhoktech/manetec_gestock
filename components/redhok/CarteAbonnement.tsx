@@ -8,8 +8,8 @@ import BadgePlan from '@/components/redhok/BadgePlan'
 import { Loader2, AlertCircle, CheckCircle, CreditCard } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 import {
-    PLANS_ORDONNES, DUREES, labelPlan, prixPeriode, formatMontant,
-    type Duree, type PlanId,
+    PLANS_ORDONNES, DUREES, labelPlan, prixPeriode, formatMontant, estPlanVendu,
+    type Duree, type PlanVendu,
 } from '@/lib/abonnement/catalogue'
 
 interface Props {
@@ -33,7 +33,7 @@ const CHAMP = 'w-full px-3 py-2 bg-background border border-input rounded-lg tex
 // suit les mêmes règles que le paiement en ligne : même plan → à la
 // suite de l'échéance ; autre plan → nouvelle période dès aujourd'hui.
 export default function CarteAbonnement({ boutique }: Props) {
-    const [plan,    setPlan]    = useState<PlanId>((PLANS_ORDONNES as string[]).includes(boutique.plan) ? boutique.plan as PlanId : 'starter')
+    const [plan,    setPlan]    = useState<PlanVendu>(estPlanVendu(boutique.plan) ? boutique.plan : 'starter')
     const [duree,   setDuree]   = useState<Duree>('mensuel')
     const tarif                 = prixPeriode(plan, duree)
     const [montant, setMontant] = useState<number>(tarif ?? 0)
@@ -43,7 +43,7 @@ export default function CarteAbonnement({ boutique }: Props) {
         etatInitial
     )
 
-    const choisir = (p: PlanId, d: Duree) => {
+    const choisir = (p: PlanVendu, d: Duree) => {
         setPlan(p); setDuree(d)
         setMontant(prixPeriode(p, d) ?? 0)
     }
@@ -103,7 +103,7 @@ export default function CarteAbonnement({ boutique }: Props) {
                     <div className="space-y-1.5">
                         <label className="text-xs font-medium text-foreground">Plan</label>
                         <select name="plan" value={plan} disabled={enAttente} className={CHAMP}
-                                onChange={e => choisir(e.target.value as PlanId, duree)}>
+                                onChange={e => choisir(e.target.value as PlanVendu, duree)}>
                             {PLANS_ORDONNES.map(p => <option key={p} value={p}>{labelPlan(p)}</option>)}
                         </select>
                     </div>

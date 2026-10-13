@@ -233,7 +233,7 @@ export default function LandingPage() {
                             Commencez gratuitement, évoluez quand vous voulez
                         </h2>
                         <p className="landing-section-desc light">
-                            30 jours d'essai gratuit sur le plan Starter. Passez au plan Pro ou Enterprise quand votre activité grandit.
+                            30 jours d'essai gratuit avec les fonctionnalités du plan Pro, sans carte bancaire. Choisissez ensuite le plan Starter ou Pro, et passez à Enterprise quand votre activité grandit.
                         </p>
                     </div>
                     <div className="landing-plans-grid">
@@ -272,9 +272,9 @@ export default function LandingPage() {
                                     ))}
                                 </ul>
                                 <Link
-                                    href={plan.id === 'starter' ? '/inscription' : `https://wa.me/${ENTREPRISE.whatsapp.replace(/\s/g,'')}`}
-                                    target={plan.id !== 'starter' ? '_blank' : undefined}
-                                    rel={plan.id !== 'starter' ? 'noopener noreferrer' : undefined}
+                                    href={plan.inscription ? '/inscription' : `https://wa.me/${ENTREPRISE.whatsapp.replace(/\s/g,'')}`}
+                                    target={plan.inscription ? undefined : '_blank'}
+                                    rel={plan.inscription ? undefined : 'noopener noreferrer'}
                                     className="landing-plan-btn"
                                     style={{
                                         background:  plan.populaire ? plan.couleur : 'transparent',

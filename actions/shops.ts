@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache'
 import * as argon2 from 'argon2'
 import { estAdminComplet } from '@/lib/constants/permissions'
 import { motDePasseTemporaire } from '@/lib/auth/mot-de-passe-temporaire'
-import { estPlan, estDuree, prixPeriode, formatMontant, JOURS_ESSAI } from '@/lib/abonnement/catalogue'
+import { estPlan, estPlanVendu, estDuree, prixPeriode, formatMontant, JOURS_ESSAI } from '@/lib/abonnement/catalogue'
 import { refusChangementPlan } from '@/lib/abonnement/quotas'
 
 // ── Créer une boutique ─────────────────────────────────────────
@@ -184,7 +184,7 @@ export async function enregistrerPaiementManuel(formData: FormData) {
     const reference = (formData.get('reference') as string | null)?.trim() || null
     const note      = (formData.get('note') as string | null)?.trim() || null
 
-    if (!estPlan(plan))   return { erreur: 'Plan inconnu.' }
+    if (!estPlanVendu(plan)) return { erreur: 'Plan inconnu ou non vendu.' }
     if (!estDuree(duree)) return { erreur: 'Durée inconnue : mensuel ou annuel.' }
     if (!Number.isFinite(montant) || montant < 0 || !Number.isInteger(montant)) {
         return { erreur: 'Montant invalide : un nombre entier de FCFA, 0 ou plus.' }

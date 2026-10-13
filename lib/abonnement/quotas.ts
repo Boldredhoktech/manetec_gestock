@@ -2,7 +2,7 @@
 // ═══════════════════════════════════════════════════════════════
 // D8 / ABO-13 : passer à un plan inférieur est refusé tant que la
 // boutique dépasse ses quotas. Avant, rien ne le vérifiait : une
-// boutique Pro à 300 produits devenait Starter (50) sans le savoir.
+// boutique Pro à 300 produits devenait Starter (alors 50) sans le savoir.
 // Les décomptes sont ceux des actions de création (mêmes filtres).
 // ═══════════════════════════════════════════════════════════════
 

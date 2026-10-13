@@ -13,7 +13,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { estAdminComplet } from '@/lib/constants/permissions'
-import { estPlan, estDuree, fichePlan, prixPeriode, DUREES } from '@/lib/abonnement/catalogue'
+import { estPlanVendu, estDuree, fichePlan, prixPeriode, DUREES } from '@/lib/abonnement/catalogue'
 import { refusChangementPlan } from '@/lib/abonnement/quotas'
 import { configWidgetKkiapay } from '@/lib/abonnement/kkiapay'
 import { confirmerPaiementEnLigne, type IssueConfirmation } from '@/lib/abonnement/confirmation'
@@ -47,7 +47,7 @@ export async function preparerPaiementAbonnement(
     const session = await sessionAdministrateur()
     if (!session) return { erreur: 'Seul l\'administrateur de la boutique peut payer l\'abonnement.' }
 
-    if (!estPlan(plan) || !estDuree(duree)) return { erreur: 'Plan ou durée inconnus.' }
+    if (!estPlanVendu(plan) || !estDuree(duree)) return { erreur: 'Plan ou durée inconnus.' }
 
     const fiche = fichePlan(plan)
     const montant = prixPeriode(plan, duree)

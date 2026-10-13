@@ -65,6 +65,7 @@ export default function TableauBoutiques({ boutiques }: Props) {
                     className="px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 >
                     <option value="tous">Tous les plans</option>
+                    <option value="essai">Essai</option>
                     <option value="starter">Starter</option>
                     <option value="pro">Pro</option>
                     <option value="enterprise">Enterprise</option>

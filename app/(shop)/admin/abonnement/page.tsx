@@ -13,7 +13,7 @@ import { estAdminComplet } from '@/lib/constants/permissions'
 import { ENTREPRISE } from '@/lib/config/entreprise'
 import {
     CheckCircle, AlertTriangle, Crown, Rocket, Star, Clock, FileText,
-    Phone, MessageSquare, Mail, ChevronRight,
+    Phone, MessageSquare, Mail, ChevronRight, Gift,
     type LucideIcon,
 } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
@@ -30,6 +30,7 @@ export const metadata: Metadata = { title: 'Mon abonnement' }
 // Présentation seulement : libellés, prix et fonctionnalités viennent
 // du catalogue (lib/abonnement/catalogue.ts, ABO-08).
 const STYLE_PLAN: Record<string, { bgHeader: string; icone: LucideIcon }> = {
+    essai:      { bgHeader: 'from-amber-600 to-orange-600',     icone: Gift   },
     starter:    { bgHeader: 'from-gray-600 to-gray-700',       icone: Rocket },
     pro:        { bgHeader: 'from-[#15335a] to-[#0f2742]',     icone: Star   },
     enterprise: { bgHeader: 'from-emerald-600 to-emerald-700', icone: Crown  },
@@ -74,7 +75,7 @@ export default async function PageAbonnement() {
         : null
     const bientot       = joursRestants !== null && joursRestants <= 7
     const historique    = (paiements ?? []).filter(p => p.statut !== 'en_attente' || Date.now() - new Date(p.created_at).getTime() > 3600_000)
-    const enEssai       = plan === 'starter' && !(paiements ?? []).some(p => p.statut === 'reussi')
+    const enEssai       = plan === 'essai'
 
     const widget = configWidgetKkiapay()
     const offres: OffrePlan[] = PLANS_ORDONNES
@@ -111,12 +112,16 @@ export default async function PageAbonnement() {
                         <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
                         <div>
                             <p className="font-bold text-sm">
-                                {estExpire ? 'Votre abonnement a expiré' : `Votre abonnement expire dans ${joursRestants} jour(s)`}
+                                {enEssai
+                                    ? (estExpire ? 'Votre période d\'essai est terminée' : `Votre période d'essai se termine dans ${joursRestants} jour(s)`)
+                                    : (estExpire ? 'Votre abonnement a expiré' : `Votre abonnement expire dans ${joursRestants} jour(s)`)}
                             </p>
                             <p className="text-xs mt-1 opacity-80">
                                 {estExpire
-                                    ? 'Vos équipes ne peuvent plus se connecter et plus aucune opération n\'est possible. Renouvelez ci-dessous : l\'accès est rétabli dès la confirmation du paiement.'
-                                    : 'Renouvelez dès maintenant : les jours restants sont conservés.'}
+                                    ? `Vos équipes ne peuvent plus se connecter et plus aucune opération n'est possible. ${enEssai ? 'Choisissez Starter ou Pro' : 'Renouvelez'} ci-dessous : l'accès est rétabli dès la confirmation du paiement.`
+                                    : enEssai
+                                        ? 'Choisissez dès maintenant Starter ou Pro : vos jours d\'essai restants sont conservés.'
+                                        : 'Renouvelez dès maintenant : les jours restants sont conservés.'}
                             </p>
                         </div>
                     </div>
