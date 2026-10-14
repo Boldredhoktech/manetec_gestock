@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { modifierProduit } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Produit {
     id:              string
@@ -208,47 +209,35 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                         <label className="text-sm font-medium text-gray-700">
                             Prix d'achat <span className="text-red-500">*</span>
                         </label>
-                        <input type="number" min="0" step="0.01" value={prixAchat}
-                               onChange={e => setPrixAchat(parseFloat(e.target.value) || 0)}
-                               className={inputClass} />
+                        <ChampNombre value={prixAchat} onChange={v => setPrixAchat(v)} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">
                             Prix de vente <span className="text-red-500">*</span>
                         </label>
-                        <input type="number" min="0" step="0.01" value={prixVente}
-                               onChange={e => setPrixVente(parseFloat(e.target.value) || 0)}
-                               className={inputClass} />
+                        <ChampNombre value={prixVente} onChange={v => setPrixVente(v)} className={inputClass} />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Prix de gros</label>
-                        <input type="number" min="0" step="0.01" value={prixGros}
-                               onChange={e => setPrixGros(parseFloat(e.target.value) || 0)}
-                               className={inputClass} />
+                        <ChampNombre value={prixGros} onChange={v => setPrixGros(v)} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Prix minimum</label>
-                        <input type="number" min="0" step="0.01" value={prixMinimum}
-                               onChange={e => setPrixMinimum(parseFloat(e.target.value) || 0)}
-                               className={inputClass} />
+                        <ChampNombre value={prixMinimum} onChange={v => setPrixMinimum(v)} className={inputClass} />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">TVA (%)</label>
-                        <input type="number" min="0" max="100" step="0.5" value={tvaPct}
-                               onChange={e => setTvaPct(parseFloat(e.target.value) || 0)}
-                               className={inputClass} />
+                        <ChampNombre value={tvaPct} onChange={v => setTvaPct(v)} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Seuil d'alerte stock</label>
-                        <input type="number" min="0" step="1" value={seuilAlerte}
-                               onChange={e => setSeuilAlerte(parseInt(e.target.value) || 0)}
-                               className={inputClass} />
+                        <ChampNombre value={seuilAlerte} onChange={v => setSeuilAlerte(v)} entier className={inputClass} />
                     </div>
                 </div>
 
@@ -306,10 +295,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                     <div className="p-3 bg-green-50 border-2 border-green-200 rounded-xl">
                         <p className="text-xs font-bold text-green-700 mb-1.5">Garantie (mois)</p>
-                        <input type="number" min="0" value={garantieMois}
-                               onChange={e => setGarantieMois(parseInt(e.target.value) || 0)}
-                               placeholder="0 = aucune"
-                               className="w-full px-2 py-1.5 bg-white border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                        <ChampNombre value={garantieMois} onChange={v => setGarantieMois(v)} entier className="w-full px-2 py-1.5 bg-white border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="0 = aucune" />
                     </div>
                 </div>
             </div>

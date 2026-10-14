@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, CheckCircle, Plus, Trash2 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Produit { id: string; nom: string; unite: string; prix_achat: number }
 interface Entrepot { id: string; nom: string; est_defaut: boolean }
@@ -181,15 +182,11 @@ export default function FormulaireReception({ fournisseurId, produits, entrepots
                             </div>
                             <div>
                                 <label className="text-xs text-muted-foreground">Quantité</label>
-                                <input type="number" min="1" step="1" value={ligne.quantite}
-                                       onChange={e => modifierLigne(i, 'quantite', parseFloat(e.target.value) || 1)}
-                                       className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
+                                <ChampNombre value={ligne.quantite} onChange={v => modifierLigne(i, 'quantite', v)} entier videVaut={1} className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
                             </div>
                             <div>
                                 <label className="text-xs text-muted-foreground">Prix unitaire</label>
-                                <input type="number" min="0" step="0.01" value={ligne.prix_unitaire}
-                                       onChange={e => modifierLigne(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                       className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
+                                <ChampNombre value={ligne.prix_unitaire} onChange={v => modifierLigne(i, 'prix_unitaire', v)} className="w-full px-2 py-1.5 bg-background border border-input rounded text-xs mt-0.5" />
                             </div>
                         </div>
                         <div className="text-right text-xs font-medium text-foreground">

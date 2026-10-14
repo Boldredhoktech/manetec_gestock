@@ -165,12 +165,7 @@ export default function PanierPOS({
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">
                                                     Qté (max {ligne.stock_disponible})
                                                 </label>
-                                                <input type="number" min="1" step="1"
-                                                       max={ligne.stock_disponible}
-                                                       value={ligne.quantite}
-                                                       onChange={e => onModifierLigne(ligne.product_id, 'quantite', parseInt(e.target.value) || 1)}
-                                                       className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                                />
+                                                <ChampNombre value={ligne.quantite} onChange={v => onModifierLigne(ligne.product_id, 'quantite', v)} entier videVaut={1} className="w-full px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                                             </div>
                                             <div>
                                                 <label className="text-[10px] font-bold text-gray-400 uppercase">

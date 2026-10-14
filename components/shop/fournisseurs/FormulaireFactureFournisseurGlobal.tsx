@@ -6,6 +6,7 @@ import { creerFactureFournisseur } from '@/actions/fournisseurs'
 import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
 import { LIENS } from '@/lib/constants/liens'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Produit {
     id: string; nom: string; prix_achat: number; unite: string
@@ -265,39 +266,17 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                                             </span>
                                         </label>
                                         {/* ✅ Entier uniquement — step="1" */}
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            step="1"
-                                            value={l.quantite}
-                                            onChange={e => mettreAJour(i, 'quantite', Math.max(1, parseInt(e.target.value) || 1))}
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                        />
+                                        <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', Math.max(1, v))} entier videVaut={1} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                                     </div>
                                     <div className="space-y-1.5 col-span-2">
                                         <label className="text-xs font-semibold text-gray-600">
                                             Prix unitaire HT (FCFA)
                                         </label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            step="1"
-                                            value={l.prix_unitaire}
-                                            onChange={e => mettreAJour(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                        />
+                                        <ChampNombre value={l.prix_unitaire} onChange={v => mettreAJour(i, 'prix_unitaire', v)} entier className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                                     </div>
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-semibold text-gray-600">TVA %</label>
-                                        <input
-                                            type="number"
-                                            min="0"
-                                            max="100"
-                                            step="1"
-                                            value={l.tva_pct}
-                                            onChange={e => mettreAJour(i, 'tva_pct', parseFloat(e.target.value) || 0)}
-                                            className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                        />
+                                        <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} entier className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                                     </div>
                                 </div>
                             )}

@@ -198,7 +198,9 @@ export async function creerProduit(formData: FormData) {
     const prixVente     = parseFloat(formData.get('prixVente') as string) || 0
     const prixGros      = parseFloat(formData.get('prixGros') as string) || null
     const prixMinimum   = parseFloat(formData.get('prixMinimum') as string) || null
-    const seuilAlerte   = parseInt(formData.get('seuilAlerte') as string) || 5
+    // 0 est un seuil valable (pas d'alerte) : `|| 5` le remplaçait par 5.
+    const seuilSaisi    = parseInt(formData.get('seuilAlerte') as string)
+    const seuilAlerte   = Number.isNaN(seuilSaisi) ? 5 : Math.max(0, seuilSaisi)
     const description   = (formData.get('description') as string)?.trim() || null
     const necessiteImei   = formData.get('necessite_imei') === 'true'
     const necessiteSerie  = formData.get('necessite_serie') === 'true'

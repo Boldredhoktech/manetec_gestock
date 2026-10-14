@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { creerBonCommande } from '@/actions/fournisseurs'
 import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Produit {
     id: string; nom: string; public_id: string
@@ -224,27 +225,13 @@ export default function FormulaireBonCommande({
                             {/* Quantité */}
                             <div className="col-span-2">
                                 <label className="text-xs text-gray-400 mb-1 block">Quantité *</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    step="1"
-                                    value={ligne.quantite}
-                                    onChange={e => mettreAJourLigne(i, 'quantite', parseFloat(e.target.value) || 0)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                />
+                                <ChampNombre value={ligne.quantite} onChange={v => mettreAJourLigne(i, 'quantite', v)} entier className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                             </div>
 
                             {/* Prix unitaire */}
                             <div className="col-span-2">
                                 <label className="text-xs text-gray-400 mb-1 block">Prix unitaire</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={ligne.prix_unitaire}
-                                    onChange={e => mettreAJourLigne(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                />
+                                <ChampNombre value={ligne.prix_unitaire} onChange={v => mettreAJourLigne(i, 'prix_unitaire', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                             </div>
 
                             {/* Supprimer */}

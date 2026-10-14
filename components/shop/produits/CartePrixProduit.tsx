@@ -5,6 +5,7 @@ import { modifierPrixProduit } from '@/actions/produits'
 import { formatMontant } from '@/lib/utils'
 import { TrendingUp, Edit2, Check, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Props { produit: any; shopId: string; peutVoirCout?: boolean }
 
@@ -88,10 +89,7 @@ export default function CartePrixProduit({ produit, peutVoirCout = false }: Prop
                     <div key={item.label} className="p-3 bg-gray-50 rounded-xl">
                         <p className="text-xs text-gray-400 mb-1">{item.label}</p>
                         {editable ? (
-                            <input type="number" min="0" step="0.01"
-                                   value={item.val}
-                                   onChange={e => item.set(parseFloat(e.target.value) || 0)}
-                                   className="w-full text-sm font-bold text-gray-800 bg-white border border-[#15335a]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                            <ChampNombre value={item.val} onChange={v => item.set(v)} className="w-full text-sm font-bold text-gray-800 bg-white border border-[#15335a]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
                         ) : (
                             <p className="text-sm font-bold text-gray-800">
                                 {item.val ? formatMontant(Number(item.val)) : '—'}

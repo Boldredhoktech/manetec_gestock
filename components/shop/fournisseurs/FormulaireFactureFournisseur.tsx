@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
 import { LIENS } from '@/lib/constants/liens'
+import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Props {
     supplierId: string
@@ -183,21 +184,15 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                         </div>
                         <div className="col-span-1">
                             <label className="text-xs text-gray-400 mb-1 block">Qté</label>
-                            <input type="number" min="1" step="1" value={l.quantite}
-                                   onChange={e => mettreAJour(i, 'quantite', parseFloat(e.target.value) || 0)}
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                            <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', v)} entier className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-2">
                             <label className="text-xs text-gray-400 mb-1 block">Prix HT</label>
-                            <input type="number" min="0" step="0.01" value={l.prix_unitaire}
-                                   onChange={e => mettreAJour(i, 'prix_unitaire', parseFloat(e.target.value) || 0)}
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                            <ChampNombre value={l.prix_unitaire} onChange={v => mettreAJour(i, 'prix_unitaire', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-1">
                             <label className="text-xs text-gray-400 mb-1 block">TVA%</label>
-                            <input type="number" min="0" max="100" step="0.5" value={l.tva_pct}
-                                   onChange={e => mettreAJour(i, 'tva_pct', parseFloat(e.target.value) || 0)}
-                                   className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                            <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-1 pt-5 flex justify-center">
                             <button type="button" onClick={() => supprimerLigne(i)} disabled={lignes.length === 1}

@@ -123,7 +123,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Prix d'achat</label>
                         <input name="prixAchat" type="number" min="0" step="0.01"
-                               defaultValue="0" disabled={enAttente}
+                               placeholder="0" disabled={enAttente}
                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
                     <div className="space-y-1.5">
@@ -131,7 +131,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                             Prix de vente <span className="text-destructive">*</span>
                         </label>
                         <input name="prixVente" type="number" min="0.01" step="0.01"
-                               required defaultValue="0" disabled={enAttente}
+                               required placeholder="0" disabled={enAttente}
                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
                     <div className="space-y-1.5">
@@ -169,7 +169,7 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Quantité initiale</label>
                         <input name="stockInitial" type="number" min="0" step="1"
-                               defaultValue="0" disabled={enAttente}
+                               placeholder="0" disabled={enAttente}
                                className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
                 </div>
