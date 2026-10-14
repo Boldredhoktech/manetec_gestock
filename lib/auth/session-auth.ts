@@ -45,11 +45,15 @@ function echec(etape: string, erreur?: { message?: string; code?: string; status
  * Ici : les anciens cookies de session sont effacés (y compris les
  * morceaux « .0 », « .1 » qu'une session plus courte ne réécrirait pas),
  * et le client ne lit aucun cookie entrant.
+ * L'horodatage d'activité est effacé lui aussi (constaté le 2026-10-14) :
+ * celui d'une session vieille de plus de 10 h survivait à la déconnexion,
+ * et le middleware éjectait pour « inactivité » la session à peine ouverte.
  */
 async function clientSessionNeuve() {
     const magasin = await cookies()
     for (const c of magasin.getAll()) {
         if (c.name.startsWith('sb-') && c.name.includes('-auth-token')) magasin.delete(c.name)
+        if (c.name === 'manetec_activite') magasin.delete(c.name)
     }
 
     return createServerClient(
