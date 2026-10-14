@@ -3,23 +3,20 @@
 import { useState } from 'react'
 import {
     Trash2, ShoppingCart, AlertCircle,
-    ChevronDown, ChevronUp, Users, Tag,
+    ChevronDown, ChevronUp, Tag,
     FileText, CheckCircle,
 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 import ChampNombre from '@/components/ui/ChampNombre'
 import type { LigneVente } from '@/actions/ventes'
+import ChoixClientPOS, { type ClientPOS } from '@/components/shop/pos/ChoixClientPOS'
 
-interface Client {
-    id: string; public_id: string; nom: string; telephone: string | null
-    credit_balance: number; advance_balance: number; change_balance: number
-}
 
 interface Props {
     panier:              LigneVente[]
-    clients:             Client[]
-    clientSelectionne:   Client | null
-    onClientChange:      (c: Client | null) => void
+    clientSelectionne:   ClientPOS | null
+    onClientChange:      (c: ClientPOS | null) => void
+    peutCreerClient:     boolean
     remiseGlobalePct:    number
     onRemiseChange:      (v: number) => void
     remiseMax:           number
@@ -37,7 +34,7 @@ interface Props {
 }
 
 export default function PanierPOS({
-                                      panier, clients, clientSelectionne, onClientChange,
+                                      panier, clientSelectionne, onClientChange, peutCreerClient,
                                       remiseGlobalePct, onRemiseChange, remiseMax,
                                       noteVente, onNoteChange,
                                       montantBrut, montantNet, montantTVA, montantTotal,
@@ -73,44 +70,12 @@ export default function PanierPOS({
             </div>
 
             {/* ── SÉLECTION CLIENT ──────────────────────────── */}
-            <div className="px-3 py-2.5 bg-[#f0f4ff] border-b border-gray-200 shrink-0">
-                <div className="flex items-center gap-1.5 mb-1.5">
-                    <Users className="w-3.5 h-3.5 text-[#15335a]" />
-                    <span className="text-xs font-bold text-[#15335a]">Client</span>
-                </div>
-                <select
-                    value={clientSelectionne?.id ?? ''}
-                    onChange={e => {
-                        const c = clients.find(c => c.id === e.target.value)
-                        onClientChange(c ?? null)
-                    }}
-                    className="w-full px-2.5 py-2 bg-white border border-[#15335a]/20 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 text-gray-700"
-                >
-                    <option value="">Client anonyme</option>
-                    {clients.map(c => (
-                        <option key={c.id} value={c.id}>
-                            {c.nom}{c.telephone ? ` — ${c.telephone}` : ''}
-                        </option>
-                    ))}
-                </select>
-
-                {clientSelectionne && (
-                    clientSelectionne.advance_balance > 0 || clientSelectionne.change_balance > 0
-                ) && (
-                    <div className="flex gap-2 mt-1.5">
-                        {clientSelectionne.advance_balance > 0 && (
-                            <span className="text-[10px] font-bold text-green-600 bg-green-50 border border-green-200 px-2 py-0.5 rounded-full">
-                Avance : {formatMontant(clientSelectionne.advance_balance, devise)}
-              </span>
-                        )}
-                        {clientSelectionne.change_balance > 0 && (
-                            <span className="text-[10px] font-bold text-blue-600 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full">
-                Monnaie : {formatMontant(clientSelectionne.change_balance, devise)}
-              </span>
-                        )}
-                    </div>
-                )}
-            </div>
+            <ChoixClientPOS
+                clientSelectionne={clientSelectionne}
+                onClientChange={onClientChange}
+                peutCreerClient={peutCreerClient}
+                devise={devise}
+            />
 
             {/* ── LIGNES DU PANIER ──────────────────────────── */}
             <div className="flex-1 overflow-y-auto">

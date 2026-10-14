@@ -15,12 +15,10 @@ import {
 import { formatMontant } from '@/lib/utils'
 import { useEtatPersistant, usePaniersEnAttente } from '@/hooks/usePanierPersistant'
 import PaniersEnAttente from '@/components/shop/pos/PaniersEnAttente'
+import type { ClientPOS } from '@/components/shop/pos/ChoixClientPOS'
+import { lireClientPOS } from '@/actions/clients'
 
-interface Client {
-    id: string; public_id: string; nom: string
-    telephone: string | null
-    credit_balance: number; advance_balance: number; change_balance: number
-}
+type Client = ClientPOS
 
 interface Props {
     shopId:           string
@@ -29,14 +27,14 @@ interface Props {
     boutique:         { nom: string; devise: string; remise_max_pct: number; plan: string }
     entrepots:        { id: string; nom: string; est_defaut: boolean }[]
     entrepotDefautId: string
-    clients:          Client[]
+    peutCreerClient:  boolean
 }
 
 export type EtapePOS = 'caisse' | 'paiement' | 'recu'
 
 export default function InterfacePOS({
                                          shopId, vendeurId, vendeurNom,
-                                         boutique, entrepots, entrepotDefautId, clients,
+                                         boutique, entrepots, entrepotDefautId, peutCreerClient,
                                      }: Props) {
     const [etape,             setEtape]             = useState<EtapePOS>('caisse')
     const [warehouseId,       setWarehouseId]        = useState(entrepotDefautId)
@@ -207,18 +205,16 @@ export default function InterfacePOS({
         setErreur(undefined)
     }
 
-    function reprendrePanier(id: string) {
+    async function reprendrePanier(id: string) {
         const repris = enAttenteStore.reprendre(id)
         if (!repris) return
         setPanier(repris.lignes)
         setRemiseGlobalePct(repris.remisePct)
         setNoteVente(repris.note)
-        setClientSelectionne(
-            repris.clientId
-                ? clients.find(c => c.id === repris.clientId) ?? null
-                : null
-        )
+        setClientSelectionne(null)
         setEtape('caisse')
+        // Les soldes ont pu changer pendant que le panier attendait.
+        if (repris.clientId) setClientSelectionne(await lireClientPOS(repris.clientId))
     }
 
     // ── Nouvelle vente ─────────────────────────────────────────
@@ -343,7 +339,7 @@ export default function InterfacePOS({
                     <div className="w-full lg:w-96 flex flex-col bg-white shadow-xl overflow-hidden border-t lg:border-t-0 lg:border-l border-gray-200">
                         <PanierPOS
                             panier={panier}
-                            clients={clients}
+                            peutCreerClient={peutCreerClient}
                             clientSelectionne={clientSelectionne}
                             onClientChange={setClientSelectionne}
                             remiseGlobalePct={remiseGlobalePct}

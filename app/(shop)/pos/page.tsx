@@ -24,7 +24,6 @@ export default async function PagePOS() {
     const [
         { data: entrepots },
         { data: boutique },
-        { data: clients },
     ] = await Promise.all([
         adminClient.from('warehouses')
             .select('id, nom, est_defaut')
@@ -35,13 +34,6 @@ export default async function PagePOS() {
             .select('nom, devise, remise_max_pct, plan')
             .eq('id', shopId)
             .single(),
-        adminClient.from('clients')
-            .select('id, public_id, nom, telephone, credit_balance, advance_balance, change_balance')
-            .eq('shop_id', shopId)
-            .eq('est_actif', true)
-            .eq('est_anonyme', false)
-            .order('nom')
-            .limit(200),
     ])
 
     if (!entrepots || entrepots.length === 0) {
@@ -65,7 +57,7 @@ export default async function PagePOS() {
             boutique={boutique!}
             entrepots={entrepots}
             entrepotDefautId={entrepotDefaut.id}
-            clients={clients ?? []}
+            peutCreerClient={aPermission(user, PERMISSIONS.CLIENTS_CREER)}
         />
     )
 }
