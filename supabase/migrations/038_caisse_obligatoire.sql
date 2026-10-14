@@ -20,6 +20,7 @@
 --   4. especes_attendues_session compte les ventes de la journée, et
 --      non plus celles postérieures à l'ouverture.
 --   5. fermer_session_caisse ajoute sa note au lieu d'écraser la trace.
+--   6. Régularisation tracée des reçus VENTE-00001 et 00002 de FAVEUR.
 -- ═══════════════════════════════════════════════════════════════
 
 -- Les sessions existantes ne doivent pas déjà violer la règle 2.
@@ -240,3 +241,43 @@ BEGIN
     );
 END;
 $function$;
+
+-- 6. Régularisation tracée de FAVEUR INFORMATIQUE (SHOP-00013).
+--    VENTE-00001 et VENTE-00002 portent un crédit (500 000 et 200 000 F)
+--    alors que la ligne Espèces était restée au total : le reçu annonce
+--    « reçu 1 300 000, rendu 500 000 / 200 000 » pour une monnaie jamais
+--    rendue. L'argent enregistré (sale_payments : 800 000 et 1 100 000 F)
+--    est juste et n'est pas touché ; seuls « reçu » et « rendu » sont
+--    ramenés à ce qui s'est passé. Ne s'applique que si les valeurs
+--    fautives sont toujours là.
+WITH corrigees AS (
+    UPDATE sales v SET
+        montant_recu  = p.encaisse,
+        montant_rendu = 0,
+        updated_at    = now()
+      FROM (SELECT sale_id, SUM(montant) AS encaisse FROM sale_payments GROUP BY sale_id) p,
+           shops b
+     WHERE p.sale_id = v.id
+       AND b.id = v.shop_id AND b.public_id = 'SHOP-00013'
+       AND v.public_id IN ('VENTE-00001', 'VENTE-00002')
+       AND v.montant_rendu > 0
+       AND v.montant_rendu = v.credit_accorde
+       AND v.montant_recu  = v.montant_total
+    RETURNING v.id, v.shop_id, v.public_id, v.montant_total, v.montant_recu, v.credit_accorde
+)
+INSERT INTO audit_logs (
+    shop_id, user_nom, type_acteur, event_type,
+    reference_type, reference_id, reference_public_id, details_json
+)
+SELECT shop_id, 'Régularisation Manetec (migration 038)', 'platform', 'SALE_RECEIPT_CORRECTED',
+       'sale', id, public_id,
+       jsonb_build_object(
+           'motif', 'Crédit saisi sans réduire la ligne Espèces : le reçu annonçait une monnaie à rendre égale au crédit, jamais rendue.',
+           'modifications', jsonb_build_array(
+               jsonb_build_object('champ', 'montant_recu',  'libelle', 'Montant reçu',
+                                  'avant', montant_total, 'apres', montant_recu),
+               jsonb_build_object('champ', 'montant_rendu', 'libelle', 'Monnaie rendue',
+                                  'avant', credit_accorde, 'apres', 0)
+           )
+       )
+  FROM corrigees;
