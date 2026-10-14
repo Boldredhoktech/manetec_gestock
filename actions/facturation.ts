@@ -1,5 +1,6 @@
 'use server'
 
+import { calculerFactureClient } from '@/lib/facturation/calcul'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
@@ -196,20 +197,11 @@ export async function creerFactureDirecte(
 
     if (lignes.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
 
-    let montantHT = 0, montantTVA = 0
-
-    const lignesCalc = lignes.map((l, i) => {
-        const remiseVal = l.prix_unitaire * l.quantite * l.remise_pct / 100
-        const ht        = l.prix_unitaire * l.quantite - remiseVal
-        const tva       = ht * l.tva_pct / 100
-        montantHT  += ht
-        montantTVA += tva
-        return { ...l, remise_val: remiseVal, montant_ht: ht, montant_tva: tva, montant_ttc: ht + tva, ordre: i }
-    })
-
-    const remiseGlobaleVal = montantHT * remisePct / 100
-    const montantHTFinal   = montantHT - remiseGlobaleVal
-    const montantTTC       = montantHTFinal + montantTVA
+    const { lignes: lignesCalc, totaux } = calculerFactureClient(lignes, remisePct)
+    const remiseGlobaleVal = totaux.remise_val
+    const montantHTFinal   = totaux.montant_ht
+    const montantTVA       = totaux.montant_tva
+    const montantTTC       = totaux.montant_ttc
 
     const { data: publicId } = await adminClient
         .rpc('generate_public_id', { p_shop_id: shopId, p_prefix: 'FACT' })
@@ -259,6 +251,64 @@ export async function creerFactureDirecte(
 
     revalidatePath('/admin/factures')
     return { succes: true, facture_id: facture.id, public_id: facture.public_id }
+}
+
+// ── Modifier une facture ───────────────────────────────────────
+// Tant qu'aucun règlement ni avoir n'existe, la facture se corrige en
+// gardant son numéro (décision du 2026-10-14). La base refuse au-delà
+// (modifier_facture + règle F1) et trace chaque modification.
+export async function modifierFacture(
+    factureId: string,
+    clientId: string | null,
+    objet: string,
+    dateEcheance: string | null,
+    remisePct: number,
+    noteClient: string,
+    lignes: LigneFacture[],
+): Promise<ResultatFacture> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
+    if (!aPermission(user, PERMISSIONS.FACTURES_CREER)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    // Comme à la création : les factures A4 relèvent du plan.
+    const { data: boutique } = await createAdminClient()
+        .from('shops').select('plan').eq('id', user.user_metadata.shop_id).single()
+    if (!getPlanLimites(boutique?.plan ?? 'starter').factures_a4) {
+        return { erreur: 'La modification de factures A4 nécessite le plan Pro ou Enterprise.' }
+    }
+
+    const lignesValides = lignes.filter(l => l.designation?.trim() && l.quantite > 0)
+    if (lignesValides.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
+
+    const { lignes: lignesCalc, totaux } = calculerFactureClient(lignesValides, remisePct)
+
+    const { data: result, error } = await createAdminClient().rpc('modifier_facture', {
+        p_shop_id:    user.user_metadata.shop_id,
+        p_facture_id: factureId,
+        p_entete: {
+            client_id:     clientId ?? '',
+            objet:         objet ?? '',
+            date_echeance: dateEcheance ?? '',
+            note_client:   noteClient ?? '',
+            ...totaux,
+        },
+        p_lignes:   lignesCalc.map(l => ({ ...l, product_id: l.product_id ?? '' })),
+        p_user_id:  user.user_metadata.user_id,
+        p_user_nom: user.user_metadata.nom_complet ?? null,
+    })
+
+    if (error) {
+        console.error('ERREUR MODIFICATION FACTURE:', error)
+        return { erreur: 'Erreur lors de la modification de la facture.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Modification impossible.' }
+
+    revalidatePath('/admin/factures')
+    revalidatePath(`/admin/factures/${factureId}`)
+    return { succes: true }
 }
 
 // ── Payer une facture ──────────────────────────────────────────

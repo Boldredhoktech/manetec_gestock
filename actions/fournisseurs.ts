@@ -1,5 +1,6 @@
 'use server'
 
+import { calculerFactureFournisseur } from '@/lib/facturation/calcul'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
@@ -411,21 +412,10 @@ export async function creerFactureFournisseur(
     }
 
     // Calcul des totaux
-    let montantHT = 0, montantTVA = 0
-    const lignesCalc = lignes.map((l, i) => {
-        const ht  = l.quantite * l.prix_unitaire
-        const tva = ht * l.tva_pct / 100
-        montantHT  += ht
-        montantTVA += tva
-        return {
-            ...l,
-            montant_ht:  ht,
-            montant_tva: tva,
-            montant_ttc: ht + tva,
-            ordre:       i,
-        }
-    })
-    const montantTTC = montantHT + montantTVA
+    const { lignes: lignesCalc, totaux } = calculerFactureFournisseur(lignes)
+    const montantHT  = totaux.montant_ht
+    const montantTVA = totaux.montant_tva
+    const montantTTC = totaux.montant_ttc
 
     // Générer public_id
     const { data: publicId, error: erreurPid } = await adminClient
@@ -587,6 +577,56 @@ export async function creerFactureFournisseur(
         public_id:  facture.public_id,
         reception:  receptionPublicId,
     }
+}
+
+// ── Modifier une facture fournisseur ───────────────────────────
+// Tant qu'aucun paiement n'existe (décision du 2026-10-14). C'est aussi
+// ainsi qu'une facture « à compléter », née d'une réception sans
+// facture, reçoit enfin ses prix. Si la marchandise est déjà entrée,
+// les quantités par produit restent celles réceptionnées : la base le
+// vérifie (modifier_facture_fournisseur) et ajuste la dette.
+export async function modifierFactureFournisseur(
+    factureId:      string,
+    referenceFourn: string,
+    dateEcheance:   string | null,
+    notes:          string,
+    lignes:         LigneFactureFourn[],
+): Promise<{ succes?: boolean; erreur?: string }> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
+    if (!aPermission(user, PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR)) return { erreur: 'Permission insuffisante pour cette action.' }
+
+    const lignesValides = lignes.filter(l => l.designation?.trim() && l.quantite > 0)
+    if (lignesValides.length === 0) return { erreur: 'Ajoutez au moins une ligne.' }
+
+    const { lignes: lignesCalc, totaux } = calculerFactureFournisseur(lignesValides)
+
+    const { data: result, error } = await createAdminClient().rpc('modifier_facture_fournisseur', {
+        p_shop_id:    user.user_metadata.shop_id,
+        p_facture_id: factureId,
+        p_entete: {
+            reference_fourn: referenceFourn ?? '',
+            date_echeance:   dateEcheance ?? '',
+            notes:           notes ?? '',
+            ...totaux,
+        },
+        p_lignes:   lignesCalc.map(l => ({ ...l, product_id: l.product_id ?? '' })),
+        p_user_id:  user.user_metadata.user_id,
+        p_user_nom: user.user_metadata.nom_complet ?? null,
+    })
+
+    if (error) {
+        console.error('ERREUR MODIFICATION FACTURE FOURNISSEUR:', error)
+        return { erreur: 'Erreur lors de la modification de la facture.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Modification impossible.' }
+
+    revalidatePath('/stock/factures-fournisseurs')
+    revalidatePath(`/stock/factures-fournisseurs/${factureId}`)
+    return { succes: true }
 }
 
 // ── Payer une facture fournisseur ──────────────────────────────

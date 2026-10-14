@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, AlertCircle, CheckCircle, Clock } from 'lucide-react'
+import { ArrowLeft, AlertCircle, CheckCircle, Clock, Pencil } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
 import CarteDetailFactureFournisseur from '@/components/shop/fournisseurs/CarteDetailFactureFournisseur'
 import { aPermission } from '@/lib/auth/permissions-serveur'
@@ -56,6 +56,13 @@ export default async function PageDetailFactureFournisseur({ params }: Props) {
 
     const statutConfig = STATUT_LABELS[facture.statut] ?? STATUT_LABELS.non_payee
 
+    // Corrigeable tant qu'aucun paiement n'existe (décision du
+    // 2026-10-14) ; c'est aussi ainsi qu'une facture « à compléter »
+    // reçoit ses prix.
+    const modifiable = facture.statut !== 'annulee'
+        && ((facture.supplier_payments as unknown[]) ?? []).length === 0
+        && aPermission(user, PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR)
+
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
@@ -74,7 +81,14 @@ export default async function PageDetailFactureFournisseur({ params }: Props) {
                             {(facture.suppliers as any)?.nom ?? '—'} · {formatDate(facture.date_facture)}
                         </p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-2">
+                        {modifiable && (
+                            <Link href={`/stock/factures-fournisseurs/${facture.id}/modifier`}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-bold text-white transition-colors">
+                                <Pencil className="w-3.5 h-3.5" />
+                                {facture.a_completer ? 'Compléter' : 'Modifier'}
+                            </Link>
+                        )}
                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold border border-white/20 ${statutConfig.bg} ${statutConfig.couleur}`}>
                             {statutConfig.label}
                         </span>

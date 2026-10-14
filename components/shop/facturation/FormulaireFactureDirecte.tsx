@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { creerFactureDirecte } from '@/actions/facturation'
+import { creerFactureDirecte, modifierFacture } from '@/actions/facturation'
 import { Button } from '@/components/ui/button'
 import ChampNombre from '@/components/ui/ChampNombre'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
@@ -10,28 +10,42 @@ import type { LigneFacture } from '@/actions/facturation'
 import { useRouter } from 'next/navigation'
 import ChoixClient, { type ClientChoisi } from '@/components/shop/ChoixClient'
 
+// Une facture sans règlement ni avoir se corrige en gardant son numéro :
+// le même formulaire sert à la créer et à la modifier.
+export interface FactureExistante {
+    id:            string
+    public_id:     string
+    objet:         string | null
+    date_echeance: string | null
+    remise_pct:    number
+    note_client:   string | null
+    lignes:        LigneFacture[]
+}
+
 interface Props {
+    factureExistante?: FactureExistante
     clientInitial:   ClientChoisi | null
     peutCreerClient: boolean
     produits:        { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
 }
 
-export default function FormulaireFactureDirecte({ clientInitial, peutCreerClient, produits }: Props) {
+export default function FormulaireFactureDirecte({ factureExistante, clientInitial, peutCreerClient, produits }: Props) {
     const router = useRouter()
-    const [lignes, setLignes]             = useState<LigneFacture[]>([])
+    const [lignes, setLignes]             = useState<LigneFacture[]>(factureExistante?.lignes ?? [])
     const [client, setClient]             = useState(clientInitial)
-    const [objet, setObjet]               = useState('')
+    const [objet, setObjet]               = useState(factureExistante?.objet ?? '')
     // Le champ partait vide et la facture s'enregistrait sans echeance,
     // ou avec celle du jour : deux factures en production sont en retard
     // a la seconde ou elles ont ete creees. Trente jours, comme la
     // conversion d'un devis.
     const [dateEcheance, setDateEcheance] = useState(() => {
+        if (factureExistante) return factureExistante.date_echeance ?? ''
         const d = new Date()
         d.setDate(d.getDate() + 30)
         return d.toISOString().split('T')[0]
     })
-    const [remisePct, setRemisePct]       = useState(0)
-    const [noteClient, setNoteClient]     = useState('')
+    const [remisePct, setRemisePct]       = useState(factureExistante?.remise_pct ?? 0)
+    const [noteClient, setNoteClient]     = useState(factureExistante?.note_client ?? '')
     const [enAttente, setEnAttente]       = useState(false)
     const [erreur, setErreur]             = useState<string>()
     const [succes, setSucces]             = useState<string>()
@@ -39,6 +53,18 @@ export default function FormulaireFactureDirecte({ clientInitial, peutCreerClien
     async function handleSoumettre() {
         setEnAttente(true)
         setErreur(undefined)
+        if (factureExistante) {
+            const res = await modifierFacture(
+                factureExistante.id, client?.id ?? null, objet, dateEcheance || null,
+                remisePct, noteClient, lignes,
+            )
+            setEnAttente(false)
+            if (res?.erreur) { setErreur(res.erreur); return }
+            setSucces(factureExistante.public_id)
+            setTimeout(() => router.push(`/admin/factures/${factureExistante.id}`), 1200)
+            return
+        }
+
         const res = await creerFactureDirecte(
             client?.id ?? null, objet, dateEcheance || null,
             remisePct, noteClient, lignes
@@ -61,7 +87,7 @@ export default function FormulaireFactureDirecte({ clientInitial, peutCreerClien
             {succes && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-lg px-4 py-3 text-sm">
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    Facture {succes} créée avec succès. Redirection...
+                    Facture {succes} {factureExistante ? 'modifiée' : 'créée'}. Redirection...
                 </div>
             )}
 
@@ -137,7 +163,7 @@ export default function FormulaireFactureDirecte({ clientInitial, peutCreerClien
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer la facture'
+                    : (factureExistante ? 'Enregistrer les modifications' : 'Créer la facture')
                 }
             </Button>
         </div>

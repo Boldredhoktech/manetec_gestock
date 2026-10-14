@@ -7,7 +7,7 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Pencil } from 'lucide-react'
 import CarteDetailFacture from '@/components/shop/facturation/CarteDetailFacture'
 import CartePaiementFacture from '@/components/shop/facturation/CartePaiementFacture'
 import CarteAvoir from '@/components/shop/facturation/CarteAvoir'
@@ -54,6 +54,13 @@ export default async function PageDetailFacture({ params }: Props) {
         .eq('id', shopId)
         .single()
 
+    // Corrigeable tant que rien n'est réglé ni déduit (décision du
+    // 2026-10-14) ; la base refait le contrôle (modifier_facture).
+    const modifiable = facture.statut !== 'annulee'
+        && aPermission(user, PERMISSIONS.FACTURES_CREER)
+        && !((facture.facture_payments as any[]) ?? []).some(p => !p.est_annule)
+        && ((facture.avoirs as any[]) ?? []).length === 0
+
     return (
         <div className="flex flex-col min-h-screen bg-[#f8fafc]">
 
@@ -72,7 +79,14 @@ export default async function PageDetailFacture({ params }: Props) {
                             {(facture.clients as any)?.nom ?? 'Client non spécifié'}
                         </p>
                     </div>
-                    <div className="ml-auto">
+                    <div className="ml-auto flex items-center gap-2">
+                        {modifiable && (
+                            <Link href={`/admin/factures/${facture.id}/modifier`}
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-bold text-white transition-colors">
+                                <Pencil className="w-3.5 h-3.5" />
+                                Modifier
+                            </Link>
+                        )}
                         <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${CLASSES_TON_SOMBRE[etat.ton]}`}>
                             {etat.libelle}
                         </span>

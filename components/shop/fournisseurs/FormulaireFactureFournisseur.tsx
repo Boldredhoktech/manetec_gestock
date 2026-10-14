@@ -2,28 +2,47 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { creerFactureFournisseur } from '@/actions/fournisseurs'
+import { creerFactureFournisseur, modifierFactureFournisseur } from '@/actions/fournisseurs'
 import Link from 'next/link'
-import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info } from 'lucide-react'
+import { Plus, Trash2, Loader2, AlertCircle, CheckCircle, Info, Lock } from 'lucide-react'
 import type { LigneFactureFourn } from '@/actions/fournisseurs'
 import { LIENS } from '@/lib/constants/liens'
 import ChampNombre from '@/components/ui/ChampNombre'
 
+// Une facture sans paiement se corrige ; une facture « à compléter »
+// reçoit ainsi ses prix. Si la marchandise est déjà entrée en stock,
+// produit et quantité des lignes reçues sont figés (la base le vérifie).
+export interface FactureFournExistante {
+    id:              string
+    public_id:       string
+    reference_fourn: string | null
+    date_echeance:   string | null
+    notes:           string | null
+    /** Les lignes reçues en stock viennent en tête : leur nombre. */
+    lignes:          LigneFactureFourn[]
+    nbLignesFigees:  number
+}
+
 interface Props {
+    factureExistante?: FactureFournExistante
     supplierId: string
     produits:   { id: string; nom: string; prix_achat: number; unite: string }[]
     entrepots:  { id: string; nom: string }[]
 }
 
-export default function FormulaireFactureFournisseur({ supplierId, produits, entrepots }: Props) {
+export default function FormulaireFactureFournisseur({ factureExistante, supplierId, produits, entrepots }: Props) {
+    const fe = factureExistante
+    // Lignes reçues en stock : leur produit et leur quantité ne bougent pas.
+    const nbFigees = fe?.nbLignesFigees ?? 0
+    const estFigee = (i: number) => i < nbFigees
     const router = useRouter()
 
     const [warehouseId,    setWarehouseId]    = useState(entrepots[0]?.id ?? '')
     const [genererReception, setGenererReception] = useState(false)
-    const [referenceFourn, setReferenceFourn] = useState('')
-    const [dateEcheance,   setDateEcheance]   = useState('')
-    const [notes,          setNotes]          = useState('')
-    const [lignes, setLignes] = useState<LigneFactureFourn[]>([
+    const [referenceFourn, setReferenceFourn] = useState(fe?.reference_fourn ?? '')
+    const [dateEcheance,   setDateEcheance]   = useState(fe?.date_echeance ?? '')
+    const [notes,          setNotes]          = useState(fe?.notes ?? '')
+    const [lignes, setLignes] = useState<LigneFactureFourn[]>(fe?.lignes.length ? fe.lignes : [
         { product_id: null, designation: '', quantite: 1, prix_unitaire: 0, tva_pct: 0 },
     ])
     const [enAttente, setEnAttente] = useState(false)
@@ -62,6 +81,17 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
 
         setEnAttente(true); setErreur(undefined)
 
+        if (fe) {
+            const res = await modifierFactureFournisseur(
+                fe.id, referenceFourn, dateEcheance || null, notes, lignesValides,
+            )
+            setEnAttente(false)
+            if (res?.erreur) { setErreur(res.erreur); return }
+            setSucces(true)
+            setTimeout(() => router.push(LIENS.factureFournisseur(fe.id)), 1000)
+            return
+        }
+
         const res = await creerFactureFournisseur(
             supplierId, warehouseId || null, referenceFourn,
             dateEcheance || null, notes, lignesValides,
@@ -88,13 +118,27 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
             )}
             {succes && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
-                    <CheckCircle className="w-4 h-4 shrink-0" />Facture créée. Redirection...
+                    <CheckCircle className="w-4 h-4 shrink-0" />Facture {fe ? 'modifiée' : 'créée'}. Redirection...
                 </div>
             )}
 
             {/* La facture porte le prix et la dette ; la marchandise
                 entre par une réception, seule voie qui laisse une trace
                 dans le journal des mouvements. */}
+            {fe ? (
+            <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
+                <Info className="w-4 h-4 mt-0.5 shrink-0" />
+                <span>
+                    La facture garde son numéro ; la dette du fournisseur et les prix d&apos;achat suivent les
+                    nouveaux montants. La modification est tracée.
+                    {nbFigees > 0 && (
+                        <> La marchandise est <strong>déjà entrée en stock</strong> : produits et quantités reçus
+                        sont figés <Lock className="inline w-3 h-3" />. Un écart de quantité se corrige par un
+                        retour fournisseur ou un ajustement de stock.</>
+                    )}
+                </span>
+            </div>
+            ) : (
             <div className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-800">
                 <Info className="w-4 h-4 mt-0.5 shrink-0" />
                 <span>
@@ -106,18 +150,19 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                     </Link>.
                 </span>
             </div>
+            )}
 
             {/* Infos générales */}
             <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
                 <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="space-y-1.5">
+                    {!fe && <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Entrepôt destinataire</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
                             <option value="">— Non précisé —</option>
                             {entrepots.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
                         </select>
-                    </div>
+                    </div>}
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-gray-700">Réf. facture fournisseur</label>
                         <input type="text" value={referenceFourn} onChange={e => setReferenceFourn(e.target.value)}
@@ -134,7 +179,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                     </div>
                 </div>
 
-                    <label className="flex items-start gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                    {!fe && <label className="flex items-start gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
                         <input
                             type="checkbox"
                             checked={genererReception}
@@ -152,7 +197,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                                     : "Choisissez un entrepôt destinataire pour activer cette option."}
                             </span>
                         </span>
-                    </label>
+                    </label>}
             </div>
 
             {/* Lignes */}
@@ -172,7 +217,9 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                         <div className="col-span-3">
                             <label className="text-xs text-gray-400 mb-1 block">Produit (optionnel)</label>
                             <select value={l.product_id ?? ''} onChange={e => mettreAJour(i, 'product_id', e.target.value || null)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none">
+                                    disabled={estFigee(i) || (nbFigees > 0 && !l.product_id)}
+                                    title={estFigee(i) ? 'Reçu en stock : le produit ne change pas' : undefined}
+                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none disabled:bg-gray-100 disabled:text-gray-500">
                                 <option value="">— Libre —</option>
                                 {produits.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
                             </select>
@@ -184,7 +231,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                         </div>
                         <div className="col-span-1">
                             <label className="text-xs text-gray-400 mb-1 block">Qté</label>
-                            <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', v)} entier className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                            <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', v)} entier disabled={estFigee(i)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none disabled:bg-gray-100 disabled:text-gray-500" />
                         </div>
                         <div className="col-span-2">
                             <label className="text-xs text-gray-400 mb-1 block">Prix HT</label>
@@ -195,7 +242,7 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                             <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-1 pt-5 flex justify-center">
-                            <button type="button" onClick={() => supprimerLigne(i)} disabled={lignes.length === 1}
+                            <button type="button" onClick={() => supprimerLigne(i)} disabled={lignes.length === 1 || estFigee(i)}
                                     className="p-1.5 text-red-400 hover:text-red-600 disabled:opacity-30">
                                 <Trash2 className="w-4 h-4" />
                             </button>
@@ -221,8 +268,8 @@ export default function FormulaireFactureFournisseur({ supplierId, produits, ent
                     className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl disabled:opacity-50"
                     style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}>
                 {enAttente
-                    ? <><Loader2 className="w-4 h-4 animate-spin" />Création...</>
-                    : 'Enregistrer la facture fournisseur'
+                    ? <><Loader2 className="w-4 h-4 animate-spin" />Enregistrement...</>
+                    : (fe ? 'Enregistrer les modifications' : 'Enregistrer la facture fournisseur')
                 }
             </button>
         </div>
