@@ -8,6 +8,7 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 import { revalidatePath } from 'next/cache'
 import { jourBoutique } from '@/lib/dates/periode'
+import { controleIdentifiants } from '@/lib/ventes/identifiants'
 
 export interface LigneVente {
     product_id:     string
@@ -100,7 +101,7 @@ export async function enregistrerVente(donnees: DonneesVente) {
     // navigateur a envoyé.
     const { data: produits } = await adminClient
         .from('products')
-        .select('id, nom, prix_minimum, remise_max_pct')
+        .select('id, nom, prix_minimum, remise_max_pct, necessite_imei, necessite_serie')
         .eq('shop_id', shopId)
         .in('id', donnees.items.map(i => i.product_id))
 
@@ -151,6 +152,14 @@ export async function enregistrerVente(donnees: DonneesVente) {
                 erreur: `Prix de "${produit.nom}" (${item.prix_unitaire}) inférieur au prix minimum (${produit.prix_minimum}).`,
             }
         }
+        // IMEI / numéro de série : exigés d'après la fiche produit lue en
+        // base, un par appareil. Le navigateur seul ne les contrôlait pas
+        // tous (le numéro de série ne l'était nulle part).
+        const refusIdentifiant = controleIdentifiants(
+            { nom: produit.nom, quantite: item.quantite, imei: item.imei },
+            { necessite_imei: !!produit.necessite_imei, necessite_serie: !!produit.necessite_serie },
+        )
+        if (refusIdentifiant) return { erreur: refusIdentifiant }
         const plafondLigne = produit.remise_max_pct
         if (plafondLigne !== null && item.remise_pct > plafondLigne) {
             return {
@@ -286,7 +295,7 @@ export async function getDetailVente(saleId: string) {
       sale_items(
         id, quantite, prix_unitaire, remise_pct,
         montant_ligne, imei, note,
-        products(nom, unite, public_id)
+        products(nom, unite, public_id, necessite_imei, necessite_serie)
       ),
       sale_payments(moyen_paiement, montant, reference)
     `)

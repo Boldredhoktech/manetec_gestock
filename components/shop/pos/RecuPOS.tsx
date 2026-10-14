@@ -1,5 +1,6 @@
 'use client'
 
+import { libelleIdentifiant } from '@/lib/ventes/identifiants'
 import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { formatMontant, formatDateHeure } from '@/lib/utils'
@@ -129,7 +130,12 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
                 </span>
                             </div>
                             {item.imei && (
-                                <p className="text-muted-foreground text-xs">IMEI : {item.imei}</p>
+                                <p className="text-muted-foreground text-xs">
+                                    {item.products ? libelleIdentifiant({
+                                        necessite_imei:  !!item.products.necessite_imei,
+                                        necessite_serie: !!item.products.necessite_serie,
+                                    }) : 'IMEI'} : {item.imei}
+                                </p>
                             )}
                         </div>
                     ))}

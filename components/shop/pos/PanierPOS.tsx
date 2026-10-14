@@ -10,6 +10,9 @@ import { formatMontant } from '@/lib/utils'
 import ChampNombre from '@/components/ui/ChampNombre'
 import type { LigneVente } from '@/actions/ventes'
 import ChoixClient, { type ClientChoisi } from '@/components/shop/ChoixClient'
+import {
+    exigeIdentifiant, libelleIdentifiant, identifiantsSaisis,
+} from '@/lib/ventes/identifiants'
 
 
 interface Props {
@@ -101,18 +104,6 @@ export default function PanierPOS({
                                         <p className="text-xs text-gray-400 mt-0.5">
                                             {formatMontant(ligne.prix_unitaire, devise)} × {ligne.quantite} {ligne.unite}
                                         </p>
-                                        {ligne.necessite_imei && !ligne.imei && (
-                                            <p className="text-[10px] text-orange-500 font-bold mt-0.5 flex items-center gap-1">
-                                                <AlertCircle className="w-3 h-3" />
-                                                IMEI requis
-                                            </p>
-                                        )}
-                                        {ligne.necessite_imei && ligne.imei && (
-                                            <p className="text-[10px] text-green-500 font-bold mt-0.5 flex items-center gap-1">
-                                                <CheckCircle className="w-3 h-3" />
-                                                IMEI : {ligne.imei}
-                                            </p>
-                                        )}
                                     </div>
 
                                     <div className="flex items-center gap-1 shrink-0">
@@ -140,6 +131,31 @@ export default function PanierPOS({
                                         </button>
                                     </div>
                                 </div>
+
+                                {/* IMEI / numéro de série : toujours visible, jamais
+                                    caché dans le détail — un par appareil vendu. */}
+                                {exigeIdentifiant(ligne) && (() => {
+                                    const libelle = libelleIdentifiant(ligne)
+                                    const saisis  = identifiantsSaisis(ligne.imei).length
+                                    const attendus = Math.ceil(ligne.quantite)
+                                    const complet = saisis === attendus
+                                    return (
+                                        <div className="mt-1.5">
+                                            <label className={`text-[10px] font-bold uppercase flex items-center gap-1 ${complet ? 'text-green-600' : 'text-orange-600'}`}>
+                                                {complet ? <CheckCircle className="w-3 h-3" /> : <AlertCircle className="w-3 h-3" />}
+                                                {libelle} * · {saisis}/{attendus} saisi(s)
+                                            </label>
+                                            <input type="text"
+                                                   placeholder={attendus > 1
+                                                       ? `${attendus} numéros, séparés par une virgule`
+                                                       : `Saisir le ${libelle}`}
+                                                   value={ligne.imei}
+                                                   onChange={e => onModifierLigne(ligne.product_id, 'imei', e.target.value)}
+                                                   className={`w-full px-2 py-1.5 border-2 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 font-mono ${complet ? 'bg-green-50 border-green-200 focus:ring-green-400' : 'bg-orange-50 border-orange-200 focus:ring-orange-400'}`}
+                                            />
+                                        </div>
+                                    )
+                                })()}
 
                                 {/* Détails expandables */}
                                 {ligneOuverte === ligne.product_id && (
@@ -170,34 +186,6 @@ export default function PanierPOS({
                                             </div>
                                         </div>
 
-                                        {ligne.necessite_imei && (
-                                            <div>
-                                                <label className="text-[10px] font-bold text-blue-600 uppercase flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    IMEI *
-                                                </label>
-                                                <input type="text"
-                                                       placeholder="Saisir l'IMEI (15 chiffres)"
-                                                       value={ligne.imei}
-                                                       onChange={e => onModifierLigne(ligne.product_id, 'imei', e.target.value)}
-                                                       className="w-full px-2 py-1.5 bg-blue-50 border-2 border-blue-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-blue-400 font-mono"
-                                                />
-                                            </div>
-                                        )}
-
-                                        {ligne.necessite_serie && (
-                                            <div>
-                                                <label className="text-[10px] font-bold text-purple-600 uppercase">
-                                                    N° de série *
-                                                </label>
-                                                <input type="text"
-                                                       placeholder="Numéro de série"
-                                                       value={ligne.imei}
-                                                       onChange={e => onModifierLigne(ligne.product_id, 'imei', e.target.value)}
-                                                       className="w-full px-2 py-1.5 bg-purple-50 border-2 border-purple-200 rounded-lg text-xs font-bold mt-0.5 focus:outline-none focus:ring-2 focus:ring-purple-400 font-mono"
-                                                />
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>

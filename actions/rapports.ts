@@ -13,6 +13,7 @@
 // TOUJOURS de la session, jamais du client.
 // ═══════════════════════════════════════════════════════════════
 
+import { libelleIdentifiant } from '@/lib/ventes/identifiants'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
     bornesDuMois, bornesInstant, horodatageBoutique, instantBoutique,
@@ -250,7 +251,7 @@ export async function getDonneesRecu(saleId: string, shopId: string) {
       shop_users!sales_vendeur_id_fkey(nom_complet),
       sale_items(
         quantite, prix_unitaire, remise_pct, montant_ligne, imei, tva_pct,
-        products(nom, unite)
+        products(nom, unite, necessite_imei, necessite_serie)
       ),
       sale_payments(moyen_paiement, montant, reference)
     `).eq('id', saleId).eq('shop_id', shopId).single(),
@@ -298,6 +299,10 @@ export async function getDonneesRecu(saleId: string, shopId: string) {
             remise_pct:    item.remise_pct,
             montant_ligne: item.montant_ligne,
             imei:          item.imei ?? '',
+            libelle_identifiant: libelleIdentifiant({
+                necessite_imei:  !!item.products?.necessite_imei,
+                necessite_serie: !!item.products?.necessite_serie,
+            }),
         })),
         paiements: ((vente.sale_payments as any[]) ?? []).map((p: any) => ({
             moyen_paiement: p.moyen_paiement,

@@ -16,6 +16,7 @@ import { formatMontant } from '@/lib/utils'
 import { useEtatPersistant, usePaniersEnAttente } from '@/hooks/usePanierPersistant'
 import PaniersEnAttente from '@/components/shop/pos/PaniersEnAttente'
 import { lireClient } from '@/actions/clients'
+import { controleIdentifiants } from '@/lib/ventes/identifiants'
 import OuvertureCaissePOS, { etatCaisse, type SessionCaissePOS } from '@/components/shop/pos/OuvertureCaissePOS'
 import type { ClientChoisi } from '@/lib/clients/client-choisi'
 
@@ -148,12 +149,8 @@ export default function InterfacePOS({
         montantRecu:     number,
         montantRendu:    number,
     ) {
-        // Validation IMEI
-        const imeiManquant = panier.find(l => l.necessite_imei && !l.imei?.trim())
-        if (imeiManquant) {
-            setErreur(`IMEI manquant pour "${imeiManquant.nom}". Saisissez l'IMEI avant de valider.`)
-            return
-        }
+        const refusIdentifiant = verifierIdentifiants()
+        if (refusIdentifiant) { setErreur(refusIdentifiant); setEtape('caisse'); return }
 
         setEnAttente(true)
         setErreur(undefined)
@@ -188,6 +185,23 @@ export default function InterfacePOS({
         setAvertissements(res.avertissements ?? [])
         setVenteResultat({ sale_id: res.sale_id!, public_id: res.public_id! })
         setEtape('recu')
+    }
+
+    // IMEI / numéros de série : un par appareil, contrôlé AVANT le
+    // paiement (le serveur le refait sur la fiche produit).
+    function verifierIdentifiants(): string | null {
+        for (const l of panier) {
+            const refus = controleIdentifiants(l, l)
+            if (refus) return refus
+        }
+        return null
+    }
+
+    function allerAuPaiement() {
+        const refus = verifierIdentifiants()
+        if (refus) { setErreur(refus); return }
+        setErreur(undefined)
+        setEtape('paiement')
     }
 
     // ── Mettre de côté / reprendre ─────────────────────────────
@@ -371,7 +385,7 @@ export default function InterfacePOS({
                             erreur={erreur}
                             onModifierLigne={modifierLigne}
                             onRetirerLigne={retirerDuPanier}
-                            onValider={() => setEtape('paiement')}
+                            onValider={allerAuPaiement}
                         />
                     </div>
                 </div>

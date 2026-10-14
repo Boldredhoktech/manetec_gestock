@@ -69,6 +69,7 @@ interface ArticleRecu {
     remise_pct:     number
     montant_ligne:  number
     imei?:          string
+    libelle_identifiant?: string
 }
 
 interface PaiementRecu {
@@ -204,7 +205,7 @@ export function RecuThermiquePDF({ donnees }: { donnees: DonneesRecu }) {
                             </Text>
                         </View>
                         {art.imei && (
-                            <Text style={{ fontSize: 6, color: '#888' }}>IMEI : {art.imei}</Text>
+                            <Text style={{ fontSize: 6, color: '#888' }}>{art.libelle_identifiant ?? 'IMEI'} : {art.imei}</Text>
                         )}
                     </View>
                 ))}
