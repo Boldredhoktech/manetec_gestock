@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
     ArrowLeft, Plus, Trash2, Loader2,
     AlertCircle, CreditCard, Banknote,
@@ -60,6 +60,19 @@ export default function PaiementPOS({
     const resteAPayer  = aEncaisser - totalPaiements
     const montantRendu = Math.max(0, totalPaiements - aEncaisser)
 
+    // La ligne pré-remplie suit ce qu'il reste à encaisser tant que le
+    // caissier n'a pas saisi lui-même un montant. Elle restait au total :
+    // saisir 500 000 F de crédit sur 1 300 000 F laissait 1 300 000 F en
+    // espèces, et le POS annonçait 500 000 F de monnaie à rendre
+    // (FAVEUR INFORMATIQUE, VENTE-00001).
+    const [montantSaisi, setMontantSaisi] = useState(false)
+    useEffect(() => {
+        if (montantSaisi) return
+        setPaiements(prev => prev.length === 1 && prev[0].montant !== aEncaisser
+            ? [{ ...prev[0], montant: aEncaisser }]
+            : prev)
+    }, [aEncaisser, montantSaisi])
+
     // Le crédit accordé ne peut pas dépasser ce qui reste à payer :
     // rien n'empêchait d'en saisir un sur une vente déjà réglée, et la
     // base comptait alors comme encaissé de l'argent jamais reçu.
@@ -76,10 +89,12 @@ export default function PaiementPOS({
     const peutValider   = resteAPayer <= 0.001 && !referenceManquante && !creditDepasse
 
     function ajouterPaiement() {
+        setMontantSaisi(true)
         setPaiements(prev => [...prev, { moyen_paiement: 'cash', montant: 0, reference: '' }])
     }
 
     function modifierPaiement(i: number, champ: keyof PaiementVente, val: string | number) {
+        if (champ === 'montant') setMontantSaisi(true)
         setPaiements(prev => prev.map((p, idx) => idx === i ? { ...p, [champ]: val } : p))
     }
 

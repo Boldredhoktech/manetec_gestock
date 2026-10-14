@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { redirect } from 'next/navigation'
 import InterfacePOS from '@/components/shop/pos/InterfacePOS'
 import { AlertTriangle } from 'lucide-react'
+import { jourBoutique } from '@/lib/dates/periode'
 
 export const metadata: Metadata = { title: 'Caisse — POS' }
 
@@ -24,6 +25,7 @@ export default async function PagePOS() {
     const [
         { data: entrepots },
         { data: boutique },
+        { data: sessions },
     ] = await Promise.all([
         adminClient.from('warehouses')
             .select('id, nom, est_defaut')
@@ -34,6 +36,12 @@ export default async function PagePOS() {
             .select('nom, devise, remise_max_pct, plan')
             .eq('id', shopId)
             .single(),
+        // La caisse ouverte de chaque entrepôt, et celle d'aujourd'hui
+        // même fermée (pour proposer de la rouvrir).
+        adminClient.from('cash_sessions')
+            .select('id, warehouse_id, jour, statut, fermee_le')
+            .eq('shop_id', shopId)
+            .or(`statut.eq.ouverte,jour.eq.${jourBoutique()}`),
     ])
 
     if (!entrepots || entrepots.length === 0) {
@@ -58,6 +66,9 @@ export default async function PagePOS() {
             entrepots={entrepots}
             entrepotDefautId={entrepotDefaut.id}
             peutCreerClient={aPermission(user, PERMISSIONS.CLIENTS_CREER)}
+            sessionsCaisse={sessions ?? []}
+            jourCaisse={jourBoutique()}
+            peutFermerCaisse={aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)}
         />
     )
 }

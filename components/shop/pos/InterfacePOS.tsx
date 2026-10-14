@@ -16,6 +16,7 @@ import { formatMontant } from '@/lib/utils'
 import { useEtatPersistant, usePaniersEnAttente } from '@/hooks/usePanierPersistant'
 import PaniersEnAttente from '@/components/shop/pos/PaniersEnAttente'
 import { lireClient } from '@/actions/clients'
+import OuvertureCaissePOS, { etatCaisse, type SessionCaissePOS } from '@/components/shop/pos/OuvertureCaissePOS'
 import type { ClientChoisi } from '@/lib/clients/client-choisi'
 
 type Client = ClientChoisi
@@ -28,6 +29,9 @@ interface Props {
     entrepots:        { id: string; nom: string; est_defaut: boolean }[]
     entrepotDefautId: string
     peutCreerClient:  boolean
+    sessionsCaisse:   SessionCaissePOS[]
+    jourCaisse:       string
+    peutFermerCaisse: boolean
 }
 
 export type EtapePOS = 'caisse' | 'paiement' | 'recu'
@@ -35,6 +39,7 @@ export type EtapePOS = 'caisse' | 'paiement' | 'recu'
 export default function InterfacePOS({
                                          shopId, vendeurId, vendeurNom,
                                          boutique, entrepots, entrepotDefautId, peutCreerClient,
+                                         sessionsCaisse, jourCaisse, peutFermerCaisse,
                                      }: Props) {
     const [etape,             setEtape]             = useState<EtapePOS>('caisse')
     const [warehouseId,       setWarehouseId]        = useState(entrepotDefautId)
@@ -230,6 +235,7 @@ export default function InterfacePOS({
     }
 
     const entrepotActuel = entrepots.find(e => e.id === warehouseId)
+    const caisse = etatCaisse(sessionsCaisse, warehouseId, jourCaisse)
 
     return (
         <div className="min-h-screen flex flex-col" style={{ background: '#f0f4ff' }}>
@@ -314,7 +320,17 @@ export default function InterfacePOS({
             </header>
 
             {/* ── CONTENU SELON ÉTAPE ──────────────────────────── */}
-            {etape === 'caisse' && (
+            {etape === 'caisse' && caisse.etat !== 'ouverte' && (
+                <OuvertureCaissePOS
+                    etat={caisse}
+                    warehouseId={warehouseId}
+                    entrepotNom={entrepotActuel?.nom ?? ''}
+                    devise={boutique.devise}
+                    peutFermerCaisse={peutFermerCaisse}
+                />
+            )}
+
+            {etape === 'caisse' && caisse.etat === 'ouverte' && (
                 <div className="flex-1 flex flex-col lg:flex-row overflow-y-auto lg:overflow-hidden">
 
                     {/* GAUCHE — Recherche produits */}

@@ -7,6 +7,7 @@ import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 import { revalidatePath } from 'next/cache'
+import { jourBoutique } from '@/lib/dates/periode'
 
 export interface LigneVente {
     product_id:     string
@@ -75,6 +76,12 @@ export async function enregistrerVente(donnees: DonneesVente) {
     }
 
     const adminClient = createAdminClient()
+
+    // Pas de vente sans la caisse du jour ouverte : le rapport de caisse
+    // se construit sur les sessions, et une boutique qui vendait sans en
+    // ouvrir avait un rapport vide (FAVEUR INFORMATIQUE, 14/10).
+    const refusCaisse = await refusCaisseFermee(adminClient, shopId, donnees.warehouse_id)
+    if (refusCaisse) return { erreur: refusCaisse }
 
     // La licence est contrôlée plus haut par `refusAbonnement`, comme
     // dans toutes les autres actions : ici, seulement la remise max.
@@ -384,6 +391,30 @@ export async function reglerRetourVente(
 // a un tiroir, pas un caissier attitre.
 // ══════════════════════════════════════════════════════════════
 
+// La caisse de l'entrepôt doit être ouverte, et pour aujourd'hui : une
+// session oubliée la veille rangerait les ventes du jour sous une date
+// que le rapport ne relie pas à elles.
+async function refusCaisseFermee(
+    adminClient: ReturnType<typeof createAdminClient>,
+    shopId: string,
+    warehouseId: string,
+): Promise<string | null> {
+    const { data: ouverte } = await adminClient
+        .from('cash_sessions')
+        .select('jour')
+        .eq('shop_id', shopId)
+        .eq('warehouse_id', warehouseId)
+        .eq('statut', 'ouverte')
+        .maybeSingle()
+
+    if (!ouverte) return "La caisse n'est pas ouverte pour cet entrepôt. Ouvrez-la avant d'encaisser."
+    if (ouverte.jour !== jourBoutique()) {
+        const [a, m, j] = String(ouverte.jour).split('-')
+        return `La caisse du ${j}/${m}/${a} n'a pas été fermée. Faites-la compter et fermer (Compta → Caisse), puis ouvrez celle d'aujourd'hui.`
+    }
+    return null
+}
+
 export async function ouvrirSessionCaisse(
     warehouseId: string,
     fond: number,
@@ -417,6 +448,36 @@ export async function ouvrirSessionCaisse(
     revalidatePath('/pos')
     revalidatePath('/compta/caisse')
     return { succes: true, sessionId: result.session_id }
+}
+
+// Une vente après le comptage du soir : la caisse du jour se rouvre
+// (jamais une seconde caisse pour le même jour). Le comptage annulé
+// reste écrit dans la note de fermeture ; il faudra recompter.
+export async function rouvrirSessionCaisse(sessionId: string): Promise<ResultatVente> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const refusLicence = await refusAbonnement(user)
+    if (refusLicence) return { erreur: refusLicence }
+    if (!aPermission(user, PERMISSIONS.VENTES_CREER)) {
+        return { erreur: 'Permission insuffisante pour rouvrir la caisse.' }
+    }
+
+    const { data: result, error } = await createAdminClient().rpc('rouvrir_session_caisse', {
+        p_shop_id:    user.user_metadata.shop_id,
+        p_session_id: sessionId,
+        p_user_id:    user.user_metadata.user_id,
+    })
+
+    if (error) {
+        console.error('ERREUR REOUVERTURE CAISSE:', error)
+        return { erreur: 'Erreur lors de la réouverture de la caisse.' }
+    }
+    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la réouverture.' }
+
+    revalidatePath('/pos')
+    revalidatePath('/compta/caisse')
+    return { succes: true }
 }
 
 export async function fermerSessionCaisse(
