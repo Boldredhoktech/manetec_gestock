@@ -8,17 +8,18 @@ import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import EditeurLignes from '@/components/shop/facturation/EditeurLignes'
 import type { LigneFacture } from '@/actions/facturation'
 import { useRouter } from 'next/navigation'
+import ChoixClient, { type ClientChoisi } from '@/components/shop/ChoixClient'
 
 interface Props {
-    clients:                 { id: string; nom: string }[]
-    produits:                { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
-    clientIdPreselectionne?: string
+    clientInitial:   ClientChoisi | null
+    peutCreerClient: boolean
+    produits:        { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
 }
 
-export default function FormulaireFactureDirecte({ clients, produits, clientIdPreselectionne }: Props) {
+export default function FormulaireFactureDirecte({ clientInitial, peutCreerClient, produits }: Props) {
     const router = useRouter()
     const [lignes, setLignes]             = useState<LigneFacture[]>([])
-    const [clientId, setClientId]         = useState(clientIdPreselectionne ?? '')
+    const [client, setClient]             = useState(clientInitial)
     const [objet, setObjet]               = useState('')
     // Le champ partait vide et la facture s'enregistrait sans echeance,
     // ou avec celle du jour : deux factures en production sont en retard
@@ -39,7 +40,7 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
         setEnAttente(true)
         setErreur(undefined)
         const res = await creerFactureDirecte(
-            clientId || null, objet, dateEcheance || null,
+            client?.id ?? null, objet, dateEcheance || null,
             remisePct, noteClient, lignes
         )
         setEnAttente(false)
@@ -71,16 +72,13 @@ export default function FormulaireFactureDirecte({ clients, produits, clientIdPr
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Client</label>
-                        <select
-                            value={clientId}
-                            onChange={e => setClientId(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        >
-                            <option value="">— Aucun (facture sans client) —</option>
-                            {clients.map(c => (
-                                <option key={c.id} value={c.id}>{c.nom}</option>
-                            ))}
-                        </select>
+                        <ChoixClient
+                            variante="formulaire"
+                            indication="Sans client — chercher…"
+                            clientSelectionne={client}
+                            onClientChange={setClient}
+                            peutCreerClient={peutCreerClient}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Date d'échéance</label>

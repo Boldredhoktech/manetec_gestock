@@ -8,6 +8,7 @@ import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import EditeurLignes from '@/components/shop/facturation/EditeurLignes'
 import type { LigneFacture } from '@/actions/facturation'
 import { useRouter } from 'next/navigation'
+import ChoixClient, { type ClientChoisi } from '@/components/shop/ChoixClient'
 
 // Un devis existant peut être repris : c'est une proposition, pas une
 // pièce. Le même formulaire sert à créer et à modifier.
@@ -23,18 +24,18 @@ export interface DevisExistant {
 }
 
 interface Props {
-    clients:                 { id: string; nom: string }[]
-    produits:                { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
-    clientIdPreselectionne?: string
-    devisExistant?:          DevisExistant
+    clientInitial:   ClientChoisi | null
+    peutCreerClient: boolean
+    produits:        { id: string; nom: string; prix_vente: number; tva_pct: number; unite: string }[]
+    devisExistant?:  DevisExistant
 }
 
 export default function FormulaireDevis({
-    clients, produits, clientIdPreselectionne, devisExistant,
+    clientInitial, peutCreerClient, produits, devisExistant,
 }: Props) {
     const router = useRouter()
     const [lignes, setLignes]               = useState<LigneFacture[]>(devisExistant?.lignes ?? [])
-    const [clientId, setClientId]           = useState(devisExistant?.client_id ?? clientIdPreselectionne ?? '')
+    const [client, setClient]               = useState(clientInitial)
     const [objet, setObjet]                 = useState(devisExistant?.objet ?? '')
     const [dateValidite, setDateValidite]   = useState(devisExistant?.date_validite ?? '')
     const [remisePct, setRemisePct]         = useState(devisExistant?.remise_pct ?? 0)
@@ -50,10 +51,10 @@ export default function FormulaireDevis({
 
         const res = devisExistant
             ? await modifierDevis(
-                devisExistant.id, clientId || null, objet, dateValidite || null,
+                devisExistant.id, client?.id ?? null, objet, dateValidite || null,
                 remisePct, noteClient, noteInterne, lignes)
             : await creerDevis(
-                clientId || null, objet, dateValidite || null,
+                client?.id ?? null, objet, dateValidite || null,
                 remisePct, noteClient, noteInterne, lignes)
 
         setEnAttente(false)
@@ -92,16 +93,13 @@ export default function FormulaireDevis({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Client</label>
-                        <select
-                            value={clientId}
-                            onChange={e => setClientId(e.target.value)}
-                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                        >
-                            <option value="">— Aucun —</option>
-                            {clients.map(c => (
-                                <option key={c.id} value={c.id}>{c.nom}</option>
-                            ))}
-                        </select>
+                        <ChoixClient
+                            variante="formulaire"
+                            indication="Sans client — chercher…"
+                            clientSelectionne={client}
+                            onClientChange={setClient}
+                            peutCreerClient={peutCreerClient}
+                        />
                     </div>
                     <div className="space-y-1.5">
                         <label className="text-sm font-medium text-foreground">Date de validité</label>

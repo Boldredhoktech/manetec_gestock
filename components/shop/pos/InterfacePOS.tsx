@@ -15,10 +15,10 @@ import {
 import { formatMontant } from '@/lib/utils'
 import { useEtatPersistant, usePaniersEnAttente } from '@/hooks/usePanierPersistant'
 import PaniersEnAttente from '@/components/shop/pos/PaniersEnAttente'
-import type { ClientPOS } from '@/components/shop/pos/ChoixClientPOS'
-import { lireClientPOS } from '@/actions/clients'
+import { lireClient } from '@/actions/clients'
+import type { ClientChoisi } from '@/lib/clients/client-choisi'
 
-type Client = ClientPOS
+type Client = ClientChoisi
 
 interface Props {
     shopId:           string
@@ -214,7 +214,7 @@ export default function InterfacePOS({
         setClientSelectionne(null)
         setEtape('caisse')
         // Les soldes ont pu changer pendant que le panier attendait.
-        if (repris.clientId) setClientSelectionne(await lireClientPOS(repris.clientId))
+        if (repris.clientId) setClientSelectionne(await lireClient(repris.clientId))
     }
 
     // ── Nouvelle vente ─────────────────────────────────────────

@@ -9,13 +9,13 @@ import {
 import { formatMontant } from '@/lib/utils'
 import ChampNombre from '@/components/ui/ChampNombre'
 import type { LigneVente } from '@/actions/ventes'
-import ChoixClientPOS, { type ClientPOS } from '@/components/shop/pos/ChoixClientPOS'
+import ChoixClient, { type ClientChoisi } from '@/components/shop/ChoixClient'
 
 
 interface Props {
     panier:              LigneVente[]
-    clientSelectionne:   ClientPOS | null
-    onClientChange:      (c: ClientPOS | null) => void
+    clientSelectionne:   ClientChoisi | null
+    onClientChange:      (c: ClientChoisi | null) => void
     peutCreerClient:     boolean
     remiseGlobalePct:    number
     onRemiseChange:      (v: number) => void
@@ -70,7 +70,9 @@ export default function PanierPOS({
             </div>
 
             {/* ── SÉLECTION CLIENT ──────────────────────────── */}
-            <ChoixClientPOS
+            <ChoixClient
+                variante="caisse"
+                indication="Client anonyme — chercher nom ou téléphone"
                 clientSelectionne={clientSelectionne}
                 onClientChange={onClientChange}
                 peutCreerClient={peutCreerClient}

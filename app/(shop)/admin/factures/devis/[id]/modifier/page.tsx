@@ -5,6 +5,7 @@ import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { chargerClientChoisi } from '@/lib/clients/client-choisi'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
@@ -43,13 +44,8 @@ export default async function PageModifierDevis({
         redirect(`/admin/factures/devis/${id}`)
     }
 
-    const [{ data: clients }, { data: produits }] = await Promise.all([
-        adminClient.from('clients')
-            .select('id, nom, telephone')
-            .eq('shop_id', shopId)
-            .eq('est_actif', true)
-            .eq('est_anonyme', false)
-            .order('nom'),
+    const [clientInitial, { data: produits }] = await Promise.all([
+        chargerClientChoisi(adminClient, shopId, devis.client_id),
         adminClient.from('products')
             .select('id, nom, prix_vente, tva_pct, unite')
             .eq('shop_id', shopId)
@@ -86,10 +82,8 @@ export default async function PageModifierDevis({
             </header>
             <main className="flex-1 p-4 sm:p-6 max-w-3xl">
                 <FormulaireDevis
-                    clients={(clients ?? []).map(c => ({
-                        id:  c.id,
-                        nom: `${c.nom}${c.telephone ? ` (${c.telephone})` : ''}`,
-                    }))}
+                    clientInitial={clientInitial}
+                    peutCreerClient={aPermission(user, PERMISSIONS.CLIENTS_CREER)}
                     produits={produits ?? []}
                     devisExistant={{
                         id:            devis.id,

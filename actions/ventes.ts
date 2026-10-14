@@ -460,32 +460,3 @@ export async function fermerSessionCaisse(
         ecart:   Number(result.ecart),
     }
 }
-
-// ── Rechercher un client au comptoir ───────────────────────────
-// La liste etait chargee d'un bloc au demarrage, plafonnee a 200, puis
-// cherchee en memoire : au-dela, le client existait mais restait
-// introuvable au comptoir.
-export async function rechercherClientsPOS(terme: string) {
-    const supabase = await createClient()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user || user.user_metadata?.type_acteur !== 'shop') return []
-    if (await refusAbonnement(user)) return []
-    if (!aPermission(user, PERMISSIONS.CLIENTS_VOIR)) return []
-
-    const propre = terme.replace(/[%_,().*:"'\\]/g, '').trim()
-    if (propre.length < 2) return []
-
-    const adminClient = createAdminClient()
-
-    const { data } = await adminClient
-        .from('clients')
-        .select('id, public_id, nom, telephone, credit_balance, advance_balance, change_balance, plafond_credit')
-        .eq('shop_id', user.user_metadata.shop_id)
-        .eq('est_actif', true)
-        .eq('est_anonyme', false)
-        .or(`nom.ilike.%${propre}%,telephone.ilike.%${propre}%,public_id.ilike.%${propre}%`)
-        .order('nom')
-        .limit(15)
-
-    return data ?? []
-}

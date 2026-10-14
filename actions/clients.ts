@@ -7,6 +7,7 @@ import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { COLONNES_CLIENT_CHOISI, type ClientChoisi } from '@/lib/clients/client-choisi'
 
 // ── Contrôles communs à toute création de client ──────────────
 // Session, licence, permission et quota du plan : la fiche complète
@@ -99,15 +100,41 @@ export async function creerClient(formData: FormData) {
     redirect('/admin/clients')
 }
 
-// ── Créer un client depuis la caisse ──────────────────────────
-// Le client absent de la recherche du comptoir est créé sans quitter
-// la vente : nom et téléphone suffisent, le reste se complète ensuite
-// dans Clients. Le téléphone est exigé ici : c'est lui qui retrouve le
-// client à son prochain passage et qui empêche les fiches en double.
-const COLONNES_CLIENT_POS =
-    'id, public_id, nom, telephone, credit_balance, advance_balance, change_balance, plafond_credit'
+// ── Choisir un client dans un écran de vente ──────────────────
+// Caisse, facture et proforma cherchent le client en base et, s'il
+// est absent, le créent sans quitter l'écran (composant ChoixClient).
+// La liste était chargée d'un bloc (plafonnée à 200 au comptoir) puis
+// cherchée en mémoire : au-delà, le client existait mais restait
+// introuvable.
+export async function rechercherClients(terme: string): Promise<ClientChoisi[]> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return []
+    if (await refusAbonnement(user)) return []
+    if (!aPermission(user, PERMISSIONS.CLIENTS_VOIR)) return []
 
-export async function creerClientPOS(saisie: { nom: string; telephone: string }) {
+    const propre = terme.replace(/[%_,().*:"'\\]/g, '').trim()
+    if (propre.length < 2) return []
+
+    const { data } = await createAdminClient()
+        .from('clients')
+        .select(COLONNES_CLIENT_CHOISI)
+        .eq('shop_id', user.user_metadata.shop_id)
+        .eq('est_actif', true)
+        .eq('est_anonyme', false)
+        .or(`nom.ilike.%${propre}%,telephone.ilike.%${propre}%,public_id.ilike.%${propre}%`)
+        .order('nom')
+        .limit(15)
+
+    return data ?? []
+}
+
+// Création express : nom et téléphone suffisent, le reste se complète
+// ensuite dans Clients. Le téléphone est exigé : c'est lui qui retrouve
+// le client à son prochain passage et qui empêche les fiches en double.
+export async function creerClientRapide(saisie: { nom: string; telephone: string }): Promise<{
+    client?: ClientChoisi; erreur?: string; existant?: ClientChoisi
+}> {
     const controle = await controlerCreationClient()
     if ('erreur' in controle) return { erreur: controle.erreur }
     const { user, shopId, adminClient } = controle
@@ -132,7 +159,7 @@ export async function creerClientPOS(saisie: { nom: string; telephone: string })
         est_anonyme:    false,
         est_actif:      true,
         created_by:     user.user_metadata.user_id,
-    }).select(COLONNES_CLIENT_POS).single()
+    }).select(COLONNES_CLIENT_CHOISI).single()
 
     if (error) {
         // Le numéro appartient déjà à une fiche : on la propose plutôt
@@ -140,7 +167,7 @@ export async function creerClientPOS(saisie: { nom: string; telephone: string })
         if (error.code === '23505') {
             const { data: existant } = await adminClient
                 .from('clients')
-                .select(`${COLONNES_CLIENT_POS}, est_actif`)
+                .select(`${COLONNES_CLIENT_CHOISI}, est_actif`)
                 .eq('shop_id', shopId)
                 .eq('telephone', telephone)
                 .maybeSingle()
@@ -151,7 +178,7 @@ export async function creerClientPOS(saisie: { nom: string; telephone: string })
                 existant: existant?.est_actif ? existant : undefined,
             }
         }
-        console.error('ERREUR CREATION CLIENT POS:', error)
+        console.error('ERREUR CREATION CLIENT RAPIDE:', error)
         return { erreur: 'Erreur lors de la création du client.' }
     }
 
@@ -159,10 +186,9 @@ export async function creerClientPOS(saisie: { nom: string; telephone: string })
     return { client }
 }
 
-// ── Relire un client au comptoir ──────────────────────────────
-// Un panier mis de côté ne garde que l'identifiant du client : ses
-// soldes sont relus au moment de la reprise, ils ont pu changer.
-export async function lireClientPOS(clientId: string) {
+// Relit un client par son identifiant : un panier mis de côté ne garde
+// que lui, et les soldes ont pu changer pendant l'attente.
+export async function lireClient(clientId: string): Promise<ClientChoisi | null> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return null
@@ -171,7 +197,7 @@ export async function lireClientPOS(clientId: string) {
 
     const { data } = await createAdminClient()
         .from('clients')
-        .select(COLONNES_CLIENT_POS)
+        .select(COLONNES_CLIENT_CHOISI)
         .eq('id', clientId)
         .eq('shop_id', user.user_metadata.shop_id)
         .eq('est_actif', true)
