@@ -1,48 +1,15 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { Text, View } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { formatMontantPDF } from '@/lib/pdf/utils-pdf'
-import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import { type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
+import {
+    DocumentRapport, TableauRapport, CartesStats, SectionTitre,
+    type Colonne,
+} from '@/lib/pdf/template'
 
 // Le relevé qu'on envoie au fournisseur en cas de désaccord : chaque
 // pièce dans l'ordre, avec le solde qui court après chacune.
-const styles = StyleSheet.create({
-    page: {
-        fontFamily: 'Helvetica', fontSize: 9,
-        color: couleurs.texte, padding: 30, backgroundColor: '#fff',
-    },
-    bandeau: {
-        backgroundColor: couleurs.fondClair, padding: 12, borderRadius: 6,
-        marginBottom: 14, borderLeftWidth: 3, borderLeftColor: couleurs.primaire,
-    },
-    nomFourn: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
-    infoFourn: { fontSize: 8, color: couleurs.texteFaible, marginTop: 2 },
-    resume: { display: 'flex', flexDirection: 'row', gap: 8, marginBottom: 14 },
-    carte: { flex: 1, padding: 8, borderRadius: 4, borderWidth: 1, borderColor: couleurs.bordure },
-    carteLabel: { fontSize: 7, color: couleurs.texteFaible },
-    carteVal: { fontSize: 11, fontFamily: 'Helvetica-Bold', marginTop: 2 },
-    tableauEntete: {
-        display: 'flex', flexDirection: 'row',
-        backgroundColor: couleurs.primaire, padding: 6, borderRadius: 4,
-    },
-    cellEnt: { fontFamily: 'Helvetica-Bold', fontSize: 8, color: '#fff' },
-    ligne: {
-        display: 'flex', flexDirection: 'row',
-        padding: 5, borderBottomWidth: 1, borderBottomColor: couleurs.bordure,
-    },
-    ligneImp: { backgroundColor: couleurs.fondClair },
-    cell: { fontSize: 8, color: couleurs.texte },
-    totaux: {
-        display: 'flex', flexDirection: 'row', padding: 7,
-        backgroundColor: couleurs.primaire, borderRadius: 4, marginTop: 10,
-    },
-    cellTot: { fontSize: 9, fontFamily: 'Helvetica-Bold', color: '#fff' },
-    pied: {
-        position: 'absolute', bottom: 20, left: 30, right: 30,
-        textAlign: 'center', fontSize: 7, color: couleurs.texteFaible,
-        borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 6,
-    },
-})
 
 interface LigneReleve {
     date_fr: string; type: 'facture' | 'paiement'
@@ -66,107 +33,59 @@ interface DonneesReleve {
     lignes:          LigneReleve[]
 }
 
-const L = { date: '12%', piece: '15%', libelle: '35%', debit: '12%', credit: '12%', solde: '14%' }
-
 export function ReleveFournisseurPDF({ donnees }: { donnees: DonneesReleve }) {
-    const d = donnees.boutique.devise
-    const fmt = (n: number) => formatMontantPDF(n, d)
+    const fmt = (n: number) => formatMontantPDF(n, donnees.boutique.devise)
     const f = donnees.fournisseur
 
+    const colonnes: Colonne<LigneReleve>[] = [
+        { entete: 'Date',      largeur: '12%', rendu: l => l.date_fr },
+        { entete: 'Pièce',     largeur: '15%', rendu: l => l.piece },
+        { entete: 'Libellé',   largeur: '35%', rendu: l => l.libelle },
+        { entete: 'Achat',     largeur: '12%', align: 'right', rendu: l => (l.debit > 0 ? fmt(l.debit) : '') },
+        { entete: 'Règlement', largeur: '12%', align: 'right', couleur: () => couleurs.vert,
+          rendu: l => (l.credit > 0 ? fmt(l.credit) : '') },
+        { entete: 'Solde',     largeur: '14%', align: 'right', gras: true, rendu: l => fmt(l.solde) },
+    ]
+
     return (
-        <Document>
-            <Page size="A4" style={styles.page}>
-
-                <EnteteRapportPDF
-                    boutique={donnees.boutique}
-                    titre="RELEVÉ DE COMPTE FOURNISSEUR"
-                    sousTitre={donnees.periode}
-                    genereLe={donnees.genere_le}
-                />
-
-                <View style={styles.bandeau}>
-                    <Text style={styles.nomFourn}>{f.nom}</Text>
-                    <Text style={styles.infoFourn}>
-                        {f.public_id}
-                        {f.telephone ? ` · ${f.telephone}` : ''}
-                        {f.email ? ` · ${f.email}` : ''}
-                    </Text>
-                    {(f.adresse || f.ville) && (
-                        <Text style={styles.infoFourn}>
-                            {[f.adresse, f.ville].filter(Boolean).join(', ')}
-                        </Text>
-                    )}
-                </View>
-
-                <View style={styles.resume}>
-                    <View style={styles.carte}>
-                        <Text style={styles.carteLabel}>Solde à l&apos;ouverture</Text>
-                        <Text style={styles.carteVal}>{fmt(donnees.solde_ouverture)}</Text>
-                    </View>
-                    <View style={styles.carte}>
-                        <Text style={styles.carteLabel}>Achats de la période</Text>
-                        <Text style={[styles.carteVal, { color: couleurs.orange }]}>+{fmt(donnees.total_achats)}</Text>
-                    </View>
-                    <View style={styles.carte}>
-                        <Text style={styles.carteLabel}>Règlements</Text>
-                        <Text style={[styles.carteVal, { color: couleurs.vert }]}>-{fmt(donnees.total_paiements)}</Text>
-                    </View>
-                    <View style={[styles.carte, { borderColor: couleurs.primaire, borderWidth: 2 }]}>
-                        <Text style={styles.carteLabel}>Solde à la clôture</Text>
-                        <Text style={[styles.carteVal, {
-                            color: donnees.solde_cloture > 0 ? couleurs.rouge : couleurs.vert,
-                        }]}>
-                            {fmt(donnees.solde_cloture)}
-                        </Text>
-                    </View>
-                </View>
-
-                <View style={styles.tableauEntete}>
-                    <Text style={[styles.cellEnt, { width: L.date }]}>Date</Text>
-                    <Text style={[styles.cellEnt, { width: L.piece }]}>Pièce</Text>
-                    <Text style={[styles.cellEnt, { width: L.libelle }]}>Libellé</Text>
-                    <Text style={[styles.cellEnt, { width: L.debit, textAlign: 'right' }]}>Achat</Text>
-                    <Text style={[styles.cellEnt, { width: L.credit, textAlign: 'right' }]}>Règlement</Text>
-                    <Text style={[styles.cellEnt, { width: L.solde, textAlign: 'right' }]}>Solde</Text>
-                </View>
-
-                {donnees.lignes.length === 0 && (
-                    <View style={styles.ligne}>
-                        <Text style={[styles.cell, { width: '100%', textAlign: 'center', color: couleurs.texteFaible }]}>
-                            Aucun mouvement sur cette période.
-                        </Text>
-                    </View>
-                )}
-
-                {donnees.lignes.map((l, i) => (
-                    <View key={`${l.piece}-${i}`} style={[styles.ligne, i % 2 !== 0 ? styles.ligneImp : {}]} wrap={false}>
-                        <Text style={[styles.cell, { width: L.date }]}>{l.date_fr}</Text>
-                        <Text style={[styles.cell, { width: L.piece }]}>{l.piece}</Text>
-                        <Text style={[styles.cell, { width: L.libelle }]}>{l.libelle}</Text>
-                        <Text style={[styles.cell, { width: L.debit, textAlign: 'right' }]}>
-                            {l.debit > 0 ? fmt(l.debit) : ''}
-                        </Text>
-                        <Text style={[styles.cell, { width: L.credit, textAlign: 'right', color: couleurs.vert }]}>
-                            {l.credit > 0 ? fmt(l.credit) : ''}
-                        </Text>
-                        <Text style={[styles.cell, { width: L.solde, textAlign: 'right', fontFamily: 'Helvetica-Bold' }]}>
-                            {fmt(l.solde)}
-                        </Text>
-                    </View>
-                ))}
-
-                <View style={styles.totaux}>
-                    <Text style={[styles.cellTot, { width: '62%' }]}>SOLDE DÛ AU TERME DE LA PÉRIODE</Text>
-                    <Text style={[styles.cellTot, { width: '38%', textAlign: 'right' }]}>
-                        {fmt(donnees.solde_cloture)}
-                    </Text>
-                </View>
-
-                <Text style={styles.pied} fixed>
-                    Relevé établi par {donnees.boutique.nom} · en cas de désaccord, merci de nous contacter
-                    en précisant les numéros de pièce concernés.
+        <DocumentRapport
+            boutique={donnees.boutique}
+            titre="RELEVÉ DE COMPTE FOURNISSEUR"
+            sousTitre={donnees.periode}
+            genereLe={donnees.genere_le}
+            pied={`Relevé établi par ${donnees.boutique.nom} · en cas de désaccord, merci de nous contacter en précisant les numéros de pièce concernés.`}
+        >
+            {/* Destinataire */}
+            <View style={{
+                backgroundColor: couleurs.fondClair, padding: 12, borderRadius: 6,
+                marginBottom: 14, borderLeftWidth: 3, borderLeftColor: couleurs.primaire,
+            }}>
+                <Text style={{ fontSize: 12, fontFamily: 'Helvetica-Bold', color: couleurs.primaire }}>{f.nom}</Text>
+                <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 2 }}>
+                    {[f.public_id, f.telephone, f.email].filter(Boolean).join(' · ')}
                 </Text>
-            </Page>
-        </Document>
+                {(f.adresse || f.ville) && (
+                    <Text style={{ fontSize: 8, color: couleurs.texteFaible, marginTop: 2 }}>
+                        {[f.adresse, f.ville].filter(Boolean).join(', ')}
+                    </Text>
+                )}
+            </View>
+
+            <CartesStats cartes={[
+                { label: "Solde à l'ouverture",  valeur: fmt(donnees.solde_ouverture) },
+                { label: 'Achats de la période', valeur: `+${fmt(donnees.total_achats)}`, couleur: couleurs.orange },
+                { label: 'Règlements',           valeur: `-${fmt(donnees.total_paiements)}`, couleur: couleurs.vert },
+                { label: 'Solde à la clôture',   valeur: fmt(donnees.solde_cloture),
+                  couleur: donnees.solde_cloture > 0 ? couleurs.rouge : couleurs.vert },
+            ]} />
+
+            <SectionTitre>Mouvements de la période</SectionTitre>
+            <TableauRapport
+                colonnes={colonnes}
+                lignes={donnees.lignes}
+                totaux={['SOLDE DÛ AU TERME DE LA PÉRIODE', '', '', '', '', fmt(donnees.solde_cloture)]}
+                vide="Aucun mouvement sur cette période."
+            />
+        </DocumentRapport>
     )
 }

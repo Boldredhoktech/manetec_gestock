@@ -1,5 +1,5 @@
 import React from 'react'
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
 import { couleurs } from '@/lib/pdf/styles'
 import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 
@@ -14,10 +14,14 @@ import { EnteteRapportPDF, type BoutiqueEntete } from '@/lib/pdf/entete-rapport'
 // passe ses données. La mise en page vit à un seul endroit.
 // ══════════════════════════════════════════════════════════════
 
+// Pas de césure : react-pdf coupait les mots à l'anglaise
+// (« FOUR-NISSEUR », « octo-bre »). Un mot trop long passe à la ligne entier.
+Font.registerHyphenationCallback(mot => [mot])
+
 const s = StyleSheet.create({
     page: {
         fontFamily: 'Helvetica', fontSize: 9,
-        color: couleurs.texte, padding: 30, backgroundColor: '#fff',
+        color: couleurs.texte, padding: 30, paddingBottom: 50, backgroundColor: '#fff',
     },
     cartes: { flexDirection: 'row', gap: 8, marginBottom: 14 },
     carte: {
@@ -64,6 +68,14 @@ const s = StyleSheet.create({
         textAlign: 'center', fontSize: 7, color: couleurs.texteFaible,
         borderTopWidth: 1, borderTopColor: couleurs.bordure, paddingTop: 6,
     },
+    caseVide: { borderWidth: 1, borderColor: '#94a3b8', height: 14, borderRadius: 2 },
+    signatures: { flexDirection: 'row', gap: 30, marginTop: 28 },
+    signature:  { flex: 1 },
+    signLabel:  { fontSize: 8, fontFamily: 'Helvetica-Bold', color: couleurs.texteFaible, marginBottom: 26 },
+    signLigne:  {
+        borderTopWidth: 1, borderTopColor: '#94a3b8', paddingTop: 3,
+        fontSize: 7, color: couleurs.texteFaible,
+    },
 })
 
 export type BoutiqueDocument = BoutiqueEntete & { devise?: string }
@@ -90,7 +102,12 @@ export function DocumentRapport({
                     genereLe={genereLe}
                 />
                 {children}
-                {pied && <Text style={s.pied} fixed>{pied}</Text>}
+                {/* Numéroté sur chaque page : un document de plusieurs
+                    feuilles se remet en ordre, et une page manquante se voit. */}
+                <Text style={s.pied} fixed render={({ pageNumber, totalPages }) =>
+                    [pied, totalPages > 1 ? `Page ${pageNumber} / ${totalPages}` : null]
+                        .filter(Boolean).join('  ·  ')
+                } />
             </Page>
         </Document>
     )
@@ -133,6 +150,8 @@ export interface Colonne<T> {
     gras?:     boolean
     /** Couleur calculée sur la donnée (rouge si négatif, etc.). */
     couleur?:  (ligne: T) => string | undefined
+    /** Case vide à remplir à la main (feuille de comptage) : `rendu` est ignoré. */
+    aRemplir?: boolean
 }
 
 export function TableauRapport<T>({
@@ -167,14 +186,14 @@ export function TableauRapport<T>({
                         const couleur = c.couleur?.(ligne)
                         return (
                             <View key={j} style={[s.colonne, { width: c.largeur }]}>
-                                <Text style={[
+                                {c.aRemplir ? <View style={s.caseVide} /> : <Text style={[
                                     s.cellule,
                                     { textAlign: c.align ?? 'left' },
                                     c.gras ? { fontFamily: 'Helvetica-Bold' } : {},
                                     couleur ? { color: couleur } : {},
                                 ]}>
                                     {c.rendu(ligne)}
-                                </Text>
+                                </Text>}
                                 {sous && (
                                     <Text style={[s.sousTexte, { textAlign: c.align ?? 'left' }]}>{sous}</Text>
                                 )}
@@ -186,17 +205,32 @@ export function TableauRapport<T>({
 
             {totaux && totaux.length > 0 && (
                 <View style={s.totaux}>
-                    {colonnes.map((c, i) => (
-                        <View key={i} style={[s.colonne, { width: c.largeur }]}>
-                            <Text style={[s.cellTotal, { textAlign: c.align ?? 'left' }]}>
-                                {totaux[i] ?? ''}
-                            </Text>
+                    {cellulesTotaux(colonnes, totaux).map((t, i) => (
+                        <View key={i} style={[s.colonne, { width: t.largeur }]}>
+                            <Text style={[s.cellTotal, { textAlign: t.align }]}>{t.texte}</Text>
                         </View>
                     ))}
                 </View>
             )}
         </View>
     )
+}
+
+// Le libellé de la ligne de totaux (1re cellule) s'étend sur les colonnes
+// vides qui le suivent : « SOLDE DÛ AU TERME DE LA PÉRIODE » ne tenait pas
+// dans la colonne Date. Les montants, eux, restent dans leur colonne.
+function cellulesTotaux<T>(colonnes: Colonne<T>[], totaux: string[]) {
+    const cellules: { texte: string; largeur: string; align: 'left' | 'right' | 'center' }[] = []
+    colonnes.forEach((c, i) => {
+        const texte = totaux[i] ?? ''
+        if (texte === '' && cellules.length === 1 && totaux.slice(1, i).every(t => !t)) {
+            const libelle = cellules[0]
+            libelle.largeur = `${parseFloat(libelle.largeur) + parseFloat(c.largeur)}%`
+        } else {
+            cellules.push({ texte, largeur: c.largeur, align: c.align ?? 'left' })
+        }
+    })
+    return cellules
 }
 
 // ── Éléments de texte ─────────────────────────────────────────
@@ -242,6 +276,21 @@ export function BlocInfos({ infos }: { infos: { label: string; valeur: string }[
                     <Text style={{ fontSize: 9, fontFamily: 'Helvetica-Bold', marginTop: 2 }}>
                         {info.valeur}
                     </Text>
+                </View>
+            ))}
+        </View>
+    )
+}
+
+// ── Signatures ────────────────────────────────────────────────
+// Pour les pièces qui engagent quelqu'un (comptage, réception…).
+export function BlocSignatures({ roles }: { roles: string[] }) {
+    return (
+        <View style={s.signatures} wrap={false}>
+            {roles.map((role, i) => (
+                <View key={i} style={s.signature}>
+                    <Text style={s.signLabel}>{role}</Text>
+                    <Text style={s.signLigne}>Nom, date et signature</Text>
                 </View>
             ))}
         </View>

@@ -10,7 +10,7 @@ const s = StyleSheet.create({
     logo: { width: 92, height: 46, objectFit: 'contain', marginBottom: 4 },
     nom: { fontSize: 14, fontFamily: 'Helvetica-Bold', color: couleurs.primaire },
     info: { fontSize: 8, color: couleurs.texteFaible, marginTop: 1.5 },
-    droite: { alignItems: 'flex-end', maxWidth: 240 },
+    droite: { alignItems: 'flex-end', maxWidth: 300 },
     titre: { fontSize: 16, fontFamily: 'Helvetica-Bold', color: couleurs.primaire, textAlign: 'right' },
     sousTitre: { fontSize: 9, color: couleurs.texte, textAlign: 'right', marginTop: 2 },
     date: { fontSize: 8, color: couleurs.texteFaible, textAlign: 'right', marginTop: 2 },
