@@ -68,13 +68,15 @@ const _UNITES = [
 ]
 const _DIZAINES = ['', '', 'vingt', 'trente', 'quarante', 'cinquante', 'soixante', '', 'quatre-vingt', '']
 
-function _deuxChiffres(n: number): string {
+// « quatre-vingts » et « deux cents » ne prennent le s qu'en fin de
+// nombre : « quatre-vingt mille », « deux cent mille ».
+function _deuxChiffres(n: number, final = true): string {
     if (n < 20) return _UNITES[n]
     const d = Math.floor(n / 10), u = n % 10
     if (d === 7) return u === 1 ? 'soixante et onze' : 'soixante-' + _UNITES[10 + u]
     if (d === 9) return 'quatre-vingt-' + _UNITES[10 + u]
     const mot = _DIZAINES[d]
-    if (u === 0) return d === 8 ? 'quatre-vingts' : mot
+    if (u === 0) return d === 8 ? (final ? 'quatre-vingts' : 'quatre-vingt') : mot
     if (u === 1 && d !== 8) return mot + ' et un'
     return mot + '-' + _UNITES[u]
 }
@@ -82,10 +84,10 @@ function _deuxChiffres(n: number): string {
 function _troisChiffres(n: number, final: boolean): string {
     if (n === 0) return ''
     const c = Math.floor(n / 100), r = n % 100
-    if (c === 0) return _deuxChiffres(r)
+    if (c === 0) return _deuxChiffres(r, final)
     let s = c === 1 ? 'cent' : _UNITES[c] + ' cent'
     if (c > 1 && r === 0 && final) s += 's'
-    if (r > 0) s += ' ' + _deuxChiffres(r)
+    if (r > 0) s += ' ' + _deuxChiffres(r, final)
     return s
 }
 
