@@ -6,7 +6,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect, notFound } from 'next/navigation'
-import { ArrowLeft } from 'lucide-react'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { aPermission, peutVoirSoldes } from '@/lib/auth/permissions-serveur'
@@ -15,10 +14,9 @@ import { historiqueCorrections } from '@/lib/audit/journaliser'
 import {
     LIBELLES_TYPE, ORIGINES_MOUVEMENT, OPERATEURS_MM, formatF, type CompteChoix, type TypeCompte,
 } from '@/lib/tresorerie/comptes'
-import {
-    FormulaireModifierCompte, FormulaireVirement, FormulaireOperationProprietaire,
-    FormulaireRapprochement, BoutonAnnulerMouvement, BoutonEtatCompte,
-} from '@/components/shop/tresorerie/FormulairesTresorerie'
+import { BoutonAnnulerMouvement, BoutonEtatCompte } from '@/components/shop/tresorerie/FormulairesTresorerie'
+import { ActionsCompteTresorerie } from '@/components/shop/tresorerie/ActionsTresorerie'
+import EnTetePage from '@/components/shop/EnTetePage'
 
 export const metadata: Metadata = { title: 'Compte de trésorerie' }
 
@@ -120,27 +118,27 @@ export default async function PageCompteTresorerie({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <Link href="/compta/tresorerie" aria-label="Retour à la trésorerie" className="text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <div className="min-w-0">
-                        <h1 className="text-xl font-bold text-foreground truncate">{compte.nom}</h1>
-                        <p className="text-sm text-muted-foreground">
-                            {LIBELLES_TYPE[compte.type as TypeCompte]} · {compte.public_id}
-                            {operateur ? ` · ${operateur}` : ''}{compte.banque ? ` · ${compte.banque}` : ''}
-                            {compte.numero ? ` · ${compte.numero}` : ''}{w ? ` · entrepôt ${w.nom}` : ''}
-                            {rev ? ` · reversé sur ${rev.nom}` : ''}
-                            {!compte.est_actif && ' · désactivé'}
-                        </p>
-                    </div>
-                </div>
-            </header>
+            <EnTetePage
+                titre={compte.nom}
+                sousTitre={[
+                    `${LIBELLES_TYPE[compte.type as TypeCompte]} · ${compte.public_id}`,
+                    operateur, compte.banque, compte.numero,
+                    w ? `entrepôt ${w.nom}` : null, rev ? `reversé sur ${rev.nom}` : null,
+                    compte.est_actif ? null : 'désactivé',
+                ].filter(Boolean).join(' · ')}
+                ariane={[{ label: 'Finances' }, { label: 'Trésorerie', href: '/compta/tresorerie' }, { label: compte.nom }]}
+                actions={peutGerer ? (
+                    <ActionsCompteTresorerie comptes={choix} compte={{
+                        id, type: compte.type, nom: compte.nom, operateur: compte.operateur, banque: compte.banque,
+                        numero: compte.numero, solde_ouverture: Number(compte.solde_ouverture),
+                        date_ouverture: compte.date_ouverture, note: compte.note, est_actif: compte.est_actif,
+                    }} />
+                ) : undefined}
+            />
 
-            <main className="flex-1 p-4 sm:p-6 space-y-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-5">
                 <section aria-label="Soldes" className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-                    <div className="col-span-2 lg:col-span-1 rounded-xl p-4 bg-[#0B1F4D] text-white">
+                    <div className="col-span-2 lg:col-span-1 rounded-xl p-4 bg-[var(--nav)] text-white">
                         <p className="text-xs font-semibold uppercase tracking-wide text-white/70">Solde actuel</p>
                         <p className="text-2xl font-bold tabular-nums mt-1">{formatF(soldeActuel)}</p>
                         <p className="text-xs text-white/70 mt-1">Ouverture : {formatF(Number(compte.solde_ouverture))} au {fr(compte.date_ouverture)}</p>
@@ -151,11 +149,11 @@ export default async function PageCompteTresorerie({
                     </div>
                     <div className="rounded-xl p-4 bg-card border border-border">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Entrées de la période</p>
-                        <p className="text-lg font-bold tabular-nums mt-1 text-blue-700">+ {formatF(totalEntrees)}</p>
+                        <p className="text-lg font-bold tabular-nums mt-1 text-[var(--primary-strong)]">+ {formatF(totalEntrees)}</p>
                     </div>
                     <div className="rounded-xl p-4 bg-card border border-border">
                         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Sorties de la période</p>
-                        <p className="text-lg font-bold tabular-nums mt-1 text-red-700">− {formatF(totalSorties)}</p>
+                        <p className="text-lg font-bold tabular-nums mt-1 text-[var(--rouge-texte)]">− {formatF(totalSorties)}</p>
                     </div>
                 </section>
 
@@ -238,36 +236,12 @@ export default async function PageCompteTresorerie({
                     </section>
 
                     <aside className="w-full xl:w-[380px] space-y-3">
-                        {peutGerer && compte.est_actif && (
-                            <>
-                                <details className="bg-card border border-border rounded-xl p-4" open>
-                                    <summary className="cursor-pointer font-semibold text-sm">Rapprochement</summary>
-                                    <div className="pt-4"><FormulaireRapprochement compteId={id} nature={compte.type} /></div>
-                                </details>
-                                <details className="bg-card border border-border rounded-xl p-4">
-                                    <summary className="cursor-pointer font-semibold text-sm">Retrait ou apport du propriétaire</summary>
-                                    <div className="pt-4"><FormulaireOperationProprietaire comptes={choix} compteParDefaut={id} /></div>
-                                </details>
-                                {choix.length >= 2 && (
-                                    <details className="bg-card border border-border rounded-xl p-4">
-                                        <summary className="cursor-pointer font-semibold text-sm">Virement depuis ce compte</summary>
-                                        <div className="pt-4"><FormulaireVirement comptes={choix} sourceParDefaut={id} /></div>
-                                    </details>
-                                )}
-                            </>
-                        )}
-                        {peutGerer && (
-                            <details className="bg-card border border-border rounded-xl p-4">
-                                <summary className="cursor-pointer font-semibold text-sm">Modifier le compte</summary>
-                                <div className="pt-4 space-y-6">
-                                    <FormulaireModifierCompte compte={{
-                                        id, type: compte.type, nom: compte.nom, operateur: compte.operateur, banque: compte.banque,
-                                        numero: compte.numero, solde_ouverture: Number(compte.solde_ouverture),
-                                        date_ouverture: compte.date_ouverture, note: compte.note,
-                                    }} />
-                                    {compte.type !== 'caisse' && <BoutonEtatCompte id={id} actif={compte.est_actif} />}
-                                </div>
-                            </details>
+                        {peutGerer && compte.est_actif && compte.type !== 'caisse' && (
+                            <section className="bg-card border border-border rounded-xl p-4 space-y-2" aria-labelledby="zone">
+                                <h2 id="zone" className="font-semibold text-sm">Désactiver ce compte</h2>
+                                <p className="text-xs text-muted-foreground">Possible seulement quand son solde est nul ; son journal reste consultable.</p>
+                                <BoutonEtatCompte id={id} actif={compte.est_actif} />
+                            </section>
                         )}
 
                         <section className="bg-card border border-border rounded-xl p-4 space-y-3" aria-labelledby="hist">

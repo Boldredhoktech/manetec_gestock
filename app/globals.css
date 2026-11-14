@@ -411,3 +411,15 @@
    écrans pas encore refaits : rabattus sur le fond du thème. */
 .app-manetec.dark :is([style*="#f0f4ff"], [style*="#f8fafc"], [style*="#F8FAFC"], [style*="#F0F4FF"]) { background: var(--background) !important; }
 .app-manetec.dark .bg-blue-100 { background-color: #17244A; }
+
+/* Ascenseur de la barre latérale : le trait reste visible, sans fond
+   blanc ni cadre (demande du 14/11). */
+.app-manetec .sidebar-defilement {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(201, 212, 240, 0.45) transparent;
+}
+.app-manetec .sidebar-defilement::-webkit-scrollbar { width: 6px; background: transparent; }
+.app-manetec .sidebar-defilement::-webkit-scrollbar-track { background: transparent; border: 0; }
+.app-manetec .sidebar-defilement::-webkit-scrollbar-thumb { background: rgba(201, 212, 240, 0.45); border-radius: 999px; border: 0; }
+.app-manetec .sidebar-defilement::-webkit-scrollbar-thumb:hover { background: rgba(250, 204, 21, 0.8); }
+.app-manetec .sidebar-defilement::-webkit-scrollbar-button { display: none; }

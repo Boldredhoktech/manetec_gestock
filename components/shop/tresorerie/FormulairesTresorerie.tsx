@@ -5,10 +5,11 @@
 // virement, retrait / apport, rapprochement, annulations.
 // ═══════════════════════════════════════════════════════════════
 
-import { useActionState, useState, useTransition } from 'react'
+import { useActionState, useEffect, useId, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import Modale from '@/components/ui/Modale'
 import {
     creerCompte, modifierCompte, changerEtatCompte, effectuerVirement, annulerVirement,
     enregistrerOperationProprietaire, annulerOperationProprietaire, enregistrerRapprochement,
@@ -46,23 +47,46 @@ function useFormulaire(action: (f: FormData) => Promise<{ erreur?: string; succe
     }, ETAT0)
 }
 
-function Soumettre({ enAttente, children }: { enAttente: boolean; children: React.ReactNode }) {
-    return (
-        <Button type="submit" disabled={enAttente} className="w-full">
-            {enAttente ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement…</> : children}
+
+
+/** Affichage dans une modale (nouveau design) : `ouvert` / `onFermer`. */
+export type EnModale = { onFermer: () => void }
+
+/**
+ * Le même formulaire, dans la page ou dans une modale. En modale, les
+ * boutons vont dans le pied (toujours visibles) et la modale se ferme
+ * dès que l'opération est enregistrée.
+ */
+function Cadre({ modale, titre, description, idForm, enAttente, libelle, etat, taille = 'md', children }: {
+    modale?: EnModale; titre: string; description?: string; idForm: string; enAttente: boolean
+    libelle: string; etat: Etat; taille?: 'sm' | 'md' | 'lg'; children: React.ReactNode
+}) {
+    useEffect(() => { if (modale && etat.succes) modale.onFermer() }, [etat, modale])
+    const soumettre = (
+        <Button type="submit" form={idForm} disabled={enAttente} className={modale ? '' : 'w-full'}>
+            {enAttente ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement…</> : libelle}
         </Button>
+    )
+    if (!modale) return <div className="space-y-4">{children}{soumettre}</div>
+    return (
+        <Modale ouvert onFermer={modale.onFermer} titre={titre} description={description} taille={taille}
+                pied={<><Button type="button" variant="outline" onClick={modale.onFermer}>Annuler</Button>{soumettre}</>}>
+            {children}
+        </Modale>
     )
 }
 
 const libelleCompte = (c: CompteChoix) => `${c.nom}${c.solde !== undefined ? ` — ${formatF(c.solde)}` : ''}`
 
 // ── Nouveau compte ─────────────────────────────────────────────
-export function FormulaireNouveauCompte({ banques }: { banques: CompteChoix[] }) {
+export function FormulaireNouveauCompte({ banques, modale }: { modale?: EnModale; banques: CompteChoix[] }) {
+    const idForm = useId()
     const [etat, action, enAttente] = useFormulaire(creerCompte)
     const [type, setType] = useState<'mobile_money' | 'banque' | 'tpe'>('mobile_money')
 
     return (
-        <form action={action} className="space-y-4">
+        <Cadre modale={modale} titre="Nouveau compte de trésorerie" description="Les caisses sont créées avec chaque entrepôt." idForm={idForm} enAttente={enAttente} libelle={'Créer le compte'} etat={etat}>
+        <form id={idForm} action={action} className="space-y-4">
             <Message etat={etat} />
             <div className="space-y-1.5">
                 <span className={etiquette}>Type de compte</span>
@@ -119,19 +143,21 @@ export function FormulaireNouveauCompte({ banques }: { banques: CompteChoix[] })
                     <input name="dateOuverture" type="date" max={aujourdhui()} defaultValue={aujourdhui()} className={champ} />
                 </label>
             </div>
-            <Soumettre enAttente={enAttente}>Créer le compte</Soumettre>
         </form>
+        </Cadre>
     )
 }
 
 // ── Modifier un compte ─────────────────────────────────────────
-export function FormulaireModifierCompte({ compte }: {
+export function FormulaireModifierCompte({ compte, modale }: { modale?: EnModale;
     compte: { id: string; type: string; nom: string; operateur: string | null; banque: string | null;
               numero: string | null; solde_ouverture: number; date_ouverture: string; note: string | null }
 }) {
+    const idForm = useId()
     const [etat, action, enAttente] = useFormulaire(modifierCompte)
     return (
-        <form action={action} className="space-y-4">
+        <Cadre modale={modale} titre="Modifier le compte" description="Changer le solde ou la date d’ouverture est une correction tracée." idForm={idForm} enAttente={enAttente} libelle={'Enregistrer les modifications'} etat={etat}>
+        <form id={idForm} action={action} className="space-y-4">
             <Message etat={etat} />
             <input type="hidden" name="id" value={compte.id} />
             <label className="block space-y-1.5"><span className={etiquette}>Nom</span>
@@ -168,18 +194,20 @@ export function FormulaireModifierCompte({ compte }: {
             <label className="block space-y-1.5"><span className={etiquette}>Motif (obligatoire si le solde ou la date d&apos;ouverture change)</span>
                 <input name="motif" className={champ} placeholder="Ex. solde de départ mal saisi" />
             </label>
-            <Soumettre enAttente={enAttente}>Enregistrer les modifications</Soumettre>
         </form>
+        </Cadre>
     )
 }
 
 // ── Virement ───────────────────────────────────────────────────
-export function FormulaireVirement({ comptes, sourceParDefaut }: { comptes: CompteChoix[]; sourceParDefaut?: string }) {
+export function FormulaireVirement({ comptes, sourceParDefaut, modale }: { modale?: EnModale; comptes: CompteChoix[]; sourceParDefaut?: string }) {
+    const idForm = useId()
     const [etat, action, enAttente] = useFormulaire(effectuerVirement)
     const [source, setSource] = useState(sourceParDefaut ?? comptes[0]?.id ?? '')
     const destinations = comptes.filter(c => c.id !== source)
     return (
-        <form action={action} className="space-y-4">
+        <Cadre modale={modale} titre="Virement entre comptes" description="Dépôt d’espèces en banque, retrait, recharge Mobile Money." idForm={idForm} enAttente={enAttente} libelle={'Valider le virement'} etat={etat}>
+        <form id={idForm} action={action} className="space-y-4">
             <Message etat={etat} />
             <label className="block space-y-1.5"><span className={etiquette}>Depuis le compte</span>
                 <select name="compteSourceId" value={source} onChange={e => setSource(e.target.value)} className={champ}>
@@ -208,17 +236,19 @@ export function FormulaireVirement({ comptes, sourceParDefaut }: { comptes: Comp
                 </label>
             </div>
             <p className="text-xs text-muted-foreground">Les frais sont une dépense sur le compte de départ. Un virement ne change pas le chiffre d&apos;affaires.</p>
-            <Soumettre enAttente={enAttente}>Valider le virement</Soumettre>
         </form>
+        </Cadre>
     )
 }
 
 // ── Retrait / apport du propriétaire ───────────────────────────
-export function FormulaireOperationProprietaire({ comptes, compteParDefaut }: { comptes: CompteChoix[]; compteParDefaut?: string }) {
+export function FormulaireOperationProprietaire({ comptes, compteParDefaut, modale }: { modale?: EnModale; comptes: CompteChoix[]; compteParDefaut?: string }) {
+    const idForm = useId()
     const [etat, action, enAttente] = useFormulaire(enregistrerOperationProprietaire)
     const [type, setType] = useState<'retrait' | 'apport'>('retrait')
     return (
-        <form action={action} className="space-y-4">
+        <Cadre modale={modale} titre="Retrait ou apport du propriétaire" description="Ni chiffre d’affaires ni charge : seul le solde du compte change." idForm={idForm} enAttente={enAttente} libelle={type === 'retrait' ? 'Enregistrer le retrait' : 'Enregistrer l\'apport'} etat={etat}>
+        <form id={idForm} action={action} className="space-y-4">
             <Message etat={etat} />
             <div role="group" className="flex gap-2">
                 {(['retrait', 'apport'] as const).map(t => (
@@ -249,16 +279,18 @@ export function FormulaireOperationProprietaire({ comptes, compteParDefaut }: { 
                 <input name="motif" required minLength={2} placeholder={type === 'retrait' ? 'Ex. prélèvement personnel' : 'Ex. renflouer la caisse'} className={champ} />
             </label>
             <p className="text-xs text-muted-foreground">Ni chiffre d&apos;affaires ni charge : seul le solde du compte change.</p>
-            <Soumettre enAttente={enAttente}>{type === 'retrait' ? 'Enregistrer le retrait' : 'Enregistrer l\'apport'}</Soumettre>
         </form>
+        </Cadre>
     )
 }
 
 // ── Rapprochement ──────────────────────────────────────────────
-export function FormulaireRapprochement({ compteId, nature }: { compteId: string; nature: string }) {
+export function FormulaireRapprochement({ compteId, nature, modale }: { modale?: EnModale; compteId: string; nature: string }) {
+    const idForm = useId()
     const [etat, action, enAttente] = useFormulaire(enregistrerRapprochement)
     return (
-        <form action={action} className="space-y-4">
+        <Cadre modale={modale} titre="Rapprochement" description="Comparez le solde réel au solde du logiciel ; l’écart est constaté, jamais corrigé." idForm={idForm} enAttente={enAttente} libelle={'Enregistrer le rapprochement'} etat={etat}>
+        <form id={idForm} action={action} className="space-y-4">
             <Message etat={etat} />
             <input type="hidden" name="compteId" value={compteId} />
             <div className="grid grid-cols-2 gap-3">
@@ -274,8 +306,8 @@ export function FormulaireRapprochement({ compteId, nature }: { compteId: string
                 <input name="note" className={champ} placeholder="Ex. relevé du 31/10" />
             </label>
             <p className="text-xs text-muted-foreground">L&apos;écart est constaté et tracé ; rien n&apos;est corrigé automatiquement.</p>
-            <Soumettre enAttente={enAttente}>Enregistrer le rapprochement</Soumettre>
         </form>
+        </Cadre>
     )
 }
 

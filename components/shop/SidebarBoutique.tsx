@@ -154,7 +154,7 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
             </div>
 
             <nav ref={refNav} onScroll={memoriserDefilement} aria-label="Navigation principale"
-                 className="flex-1 min-h-0 px-3 py-4 space-y-5 overflow-y-auto overscroll-contain">
+                 className="sidebar-defilement flex-1 min-h-0 px-3 py-4 space-y-5 overflow-y-auto overscroll-contain">
                 {navigation.map(groupe => (
                     <div key={groupe.groupe}>
                         <p className={cn('sidebar-group-label px-3 mb-1.5', replie && 'lg:sr-only')}>{groupe.groupe}</p>
@@ -186,31 +186,33 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
                         </div>
                     </div>
                 ))}
+
+                {/* Compte : dans la liste, en bas (14/11) */}
+                <div className="pt-4 mt-2 border-t border-white/10 space-y-0.5">
+                    {session && (
+                        <div className={cn('sidebar-user-card px-3 py-2.5 mb-1.5', replie && 'lg:hidden')}>
+                            <p className="text-xs font-bold text-white truncate">{session.nom_complet}</p>
+                            <p className="text-xs mt-0.5 font-mono truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>
+                                {session.public_id}
+                            </p>
+                        </div>
+                    )}
+                    <Link href="/admin/profil" title="Mon profil"
+                          className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5', replie && 'lg:justify-center lg:px-0',
+                              pathname === '/admin/profil' && 'active')}>
+                        <User className="w-4 h-4 shrink-0" aria-hidden="true" />
+                        <span className={cn('text-sm', libelle)}>Mon profil</span>
+                    </Link>
+                    <button type="button" onClick={() => deconnexion('shop')} title="Déconnexion"
+                            className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5 w-full', replie && 'lg:justify-center lg:px-0')}>
+                        <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
+                        <span className={cn('text-sm', libelle)}>Déconnexion</span>
+                    </button>
+                </div>
             </nav>
 
-            <div className="sidebar-footer px-3 py-4 space-y-2">
-                <div className={cn(replie && 'lg:hidden')}><SelecteurTheme /></div>
-                {session && (
-                    <div className={cn('sidebar-user-card px-3 py-2.5', replie && 'lg:hidden')}>
-                        <p className="text-xs font-bold text-white truncate">{session.nom_complet}</p>
-                        <p className="text-xs mt-0.5 font-mono truncate" style={{ color: 'rgba(255,255,255,0.65)' }}>
-                            {session.public_id}
-                        </p>
-                    </div>
-                )}
-
-                <Link href="/admin/profil" title="Mon profil"
-                      className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5', replie && 'lg:justify-center lg:px-0',
-                          pathname === '/admin/profil' && 'active')}>
-                    <User className="w-4 h-4 shrink-0" aria-hidden="true" />
-                    <span className={cn('text-sm', libelle)}>Mon profil</span>
-                </Link>
-
-                <button type="button" onClick={() => deconnexion('shop')} title="Déconnexion"
-                        className={cn('sidebar-item flex items-center gap-3 px-3 py-2.5 w-full', replie && 'lg:justify-center lg:px-0')}>
-                    <LogOut className="w-4 h-4 shrink-0" aria-hidden="true" />
-                    <span className={cn('text-sm', libelle)}>Déconnexion</span>
-                </button>
+            <div className={cn('sidebar-footer px-3 py-3', replie && 'lg:hidden')}>
+                <SelecteurTheme />
             </div>
 
         </SidebarDrawer>
