@@ -127,6 +127,45 @@ $$;
 ALTER FUNCTION "public"."annuler_inventaire"("p_inventory_id" "uuid", "p_shop_id" "uuid", "p_user_id" "uuid", "p_motif" "text") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."annuler_operation_proprietaire"("p_shop_id" "uuid", "p_operation_id" "uuid", "p_motif" "text", "p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_op     operations_proprietaire%ROWTYPE;
+    v_compte comptes_tresorerie%ROWTYPE;
+BEGIN
+    IF NULLIF(trim(p_motif), '') IS NULL THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Indiquez le motif de l''annulation.');
+    END IF;
+    SELECT * INTO v_op FROM operations_proprietaire
+     WHERE id = p_operation_id AND shop_id = p_shop_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Opération introuvable.');
+    END IF;
+    IF v_op.est_annule THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Cette opération est déjà annulée.');
+    END IF;
+    -- Annuler un APPORT retire l'argent du compte : il doit encore l'avoir.
+    SELECT * INTO v_compte FROM comptes_tresorerie WHERE id = v_op.compte_id FOR UPDATE;
+    IF v_op.type = 'apport' AND v_compte.type IN ('caisse', 'mobile_money')
+       AND solde_compte(v_compte.id) < v_op.montant THEN
+        RETURN jsonb_build_object('succes', false, 'erreur',
+            'Impossible : « ' || v_compte.nom || ' » ne contient plus ces ' || montant_fr(v_op.montant) || '.');
+    END IF;
+    UPDATE operations_proprietaire
+       SET est_annule = TRUE, annule_le = NOW(), annule_par = p_user_id, motif_annulation = trim(p_motif)
+     WHERE id = p_operation_id;
+    RETURN jsonb_build_object('succes', true);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('succes', false, 'erreur', SQLERRM);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."annuler_operation_proprietaire"("p_shop_id" "uuid", "p_operation_id" "uuid", "p_motif" "text", "p_user_id" "uuid") OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."annuler_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
@@ -278,6 +317,55 @@ ALTER FUNCTION "public"."annuler_vente"("p_shop_id" "uuid", "p_sale_id" "uuid", 
 
 COMMENT ON FUNCTION "public"."annuler_vente"("p_shop_id" "uuid", "p_sale_id" "uuid", "p_motif" "text", "p_user_id" "uuid") IS 'Annule une vente : stock rendu, soldes client repris, statut « annulee ». Refuse une vente déjà retournée (le stock reviendrait deux fois).';
 
+
+
+CREATE OR REPLACE FUNCTION "public"."annuler_virement"("p_shop_id" "uuid", "p_virement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_vir   virements_tresorerie%ROWTYPE;
+    v_dest  comptes_tresorerie%ROWTYPE;
+BEGIN
+    IF NULLIF(trim(p_motif), '') IS NULL THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Indiquez le motif de l''annulation.');
+    END IF;
+
+    SELECT * INTO v_vir FROM virements_tresorerie
+     WHERE id = p_virement_id AND shop_id = p_shop_id FOR UPDATE;
+    IF NOT FOUND THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Virement introuvable.');
+    END IF;
+    IF v_vir.est_annule THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Ce virement est déjà annulé.');
+    END IF;
+
+    -- Annuler retire l'argent du compte d'arrivée : il doit encore l'avoir.
+    SELECT * INTO v_dest FROM comptes_tresorerie WHERE id = v_vir.compte_destination_id FOR UPDATE;
+    IF v_dest.type IN ('caisse', 'mobile_money') AND solde_compte(v_dest.id) < v_vir.montant THEN
+        RETURN jsonb_build_object('succes', false, 'erreur',
+            'Impossible : « ' || v_dest.nom || ' » ne contient plus ces ' || montant_fr(v_vir.montant) || '.');
+    END IF;
+
+    UPDATE virements_tresorerie
+       SET est_annule = TRUE, annule_le = NOW(), annule_par = p_user_id, motif_annulation = trim(p_motif)
+     WHERE id = p_virement_id;
+
+    IF v_vir.expense_id IS NOT NULL THEN
+        UPDATE expenses
+           SET est_annule = TRUE, annule_le = NOW(), annule_par = p_user_id,
+               motif_annulation = 'Virement ' || v_vir.public_id || ' annulé : ' || trim(p_motif)
+         WHERE id = v_vir.expense_id;
+    END IF;
+
+    RETURN jsonb_build_object('succes', true);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('succes', false, 'erreur', SQLERRM);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."annuler_virement"("p_shop_id" "uuid", "p_virement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."appliquer_mouvement_solde_client"("p_shop_id" "uuid", "p_client_id" "uuid", "p_champ" "text", "p_delta" numeric, "p_type" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
@@ -829,6 +917,32 @@ $$;
 ALTER FUNCTION "public"."creer_avoir"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_motif" "text", "p_user_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."creer_caisse_entrepot"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_nom TEXT := left('Caisse — ' || NEW.nom, 80);
+BEGIN
+    IF EXISTS (SELECT 1 FROM comptes_tresorerie WHERE warehouse_id = NEW.id AND type = 'caisse') THEN
+        RETURN NEW;
+    END IF;
+    -- Deux entrepôts de même nom : le nom du compte doit rester unique.
+    IF EXISTS (SELECT 1 FROM comptes_tresorerie WHERE shop_id = NEW.shop_id AND nom = v_nom) THEN
+        v_nom := left(v_nom, 70) || ' (' || NEW.public_id || ')';
+    END IF;
+    INSERT INTO comptes_tresorerie (public_id, shop_id, type, nom, warehouse_id, date_ouverture, note)
+    VALUES (prochain_numero(NEW.shop_id, 'CPT'), NEW.shop_id, 'caisse', v_nom, NEW.id,
+            COALESCE(NEW.created_at::date, CURRENT_DATE),
+            'Créée automatiquement avec l''entrepôt.');
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."creer_caisse_entrepot"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."deduire_stock"("p_shop_id" "uuid", "p_product_id" "uuid", "p_warehouse_id" "uuid", "p_quantite" numeric, "p_reference_type" "text", "p_reference_id" "uuid", "p_reference_pid" "text", "p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
@@ -1235,6 +1349,130 @@ $$;
 
 ALTER FUNCTION "public"."effectuer_transfert"("p_data" "jsonb") OWNER TO "postgres";
 
+
+CREATE OR REPLACE FUNCTION "public"."effectuer_virement"("p_shop_id" "uuid", "p_source_id" "uuid", "p_destination_id" "uuid", "p_montant" numeric, "p_frais" numeric, "p_date" "date", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_source  comptes_tresorerie%ROWTYPE;
+    v_dest    comptes_tresorerie%ROWTYPE;
+    v_frais   NUMERIC := COALESCE(p_frais, 0);
+    v_solde   NUMERIC;
+    v_pid     TEXT;
+    v_vir_id  UUID;
+    v_cat     UUID;
+    v_exp     UUID;
+BEGIN
+    IF p_montant IS NULL OR p_montant <= 0 THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Montant invalide.');
+    END IF;
+    IF v_frais < 0 THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Frais invalides.');
+    END IF;
+    IF p_source_id = p_destination_id THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Choisissez deux comptes différents.');
+    END IF;
+    IF COALESCE(p_date, CURRENT_DATE) > CURRENT_DATE THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'La date ne peut pas être dans le futur.');
+    END IF;
+
+    -- Verrou dans un ordre fixe : deux virements croisés ne s'attendent pas.
+    PERFORM 1 FROM comptes_tresorerie WHERE id IN (p_source_id, p_destination_id) ORDER BY id FOR UPDATE;
+    SELECT * INTO v_source FROM comptes_tresorerie WHERE id = p_source_id AND shop_id = p_shop_id;
+    SELECT * INTO v_dest   FROM comptes_tresorerie WHERE id = p_destination_id AND shop_id = p_shop_id;
+    IF v_source.id IS NULL OR v_dest.id IS NULL THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Compte introuvable.');
+    END IF;
+    IF NOT v_source.est_actif OR NOT v_dest.est_actif THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Un des deux comptes est désactivé.');
+    END IF;
+
+    IF v_source.type IN ('caisse', 'mobile_money') THEN
+        v_solde := solde_compte(v_source.id);
+        IF v_solde < p_montant + v_frais THEN
+            RETURN jsonb_build_object('succes', false, 'erreur',
+                'Solde insuffisant sur « ' || v_source.nom || ' » : ' || montant_fr(v_solde) || ' disponibles.');
+        END IF;
+    END IF;
+
+    v_pid := prochain_numero(p_shop_id, 'VIR');
+    INSERT INTO virements_tresorerie (
+        public_id, shop_id, compte_source_id, compte_destination_id,
+        montant, frais, date_virement, reference, note, created_by
+    ) VALUES (
+        v_pid, p_shop_id, p_source_id, p_destination_id,
+        p_montant, v_frais, COALESCE(p_date, CURRENT_DATE),
+        NULLIF(trim(p_reference), ''), NULLIF(trim(p_note), ''), p_user_id
+    ) RETURNING id INTO v_vir_id;
+
+    IF v_frais > 0 THEN
+        SELECT id INTO v_cat FROM expense_categories
+         WHERE shop_id = p_shop_id AND nom = 'Frais bancaires et de transfert' LIMIT 1;
+        IF v_cat IS NULL THEN
+            INSERT INTO expense_categories (shop_id, nom, description, est_actif)
+            VALUES (p_shop_id, 'Frais bancaires et de transfert',
+                    'Créée automatiquement : frais des virements entre comptes.', TRUE)
+            RETURNING id INTO v_cat;
+        END IF;
+        INSERT INTO expenses (public_id, shop_id, category_id, libelle, montant, compte_id,
+                              reference, date_depense, note, created_by)
+        VALUES (prochain_numero(p_shop_id, 'EXP'), p_shop_id, v_cat,
+                'Frais du virement ' || v_pid, v_frais, p_source_id,
+                NULLIF(trim(p_reference), ''), COALESCE(p_date, CURRENT_DATE), NULL, p_user_id)
+        RETURNING id INTO v_exp;
+        UPDATE virements_tresorerie SET expense_id = v_exp WHERE id = v_vir_id;
+    END IF;
+
+    RETURN jsonb_build_object('succes', true, 'id', v_vir_id, 'public_id', v_pid);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('succes', false, 'erreur', SQLERRM);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."effectuer_virement"("p_shop_id" "uuid", "p_source_id" "uuid", "p_destination_id" "uuid", "p_montant" numeric, "p_frais" numeric, "p_date" "date", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."enregistrer_operation_proprietaire"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_type" "text", "p_montant" numeric, "p_date" "date", "p_beneficiaire" "text", "p_motif" "text", "p_reference" "text", "p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_pid TEXT;
+    v_id  UUID;
+BEGIN
+    IF p_type NOT IN ('retrait', 'apport') THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Opération invalide.');
+    END IF;
+    IF p_montant IS NULL OR p_montant <= 0 THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Montant invalide.');
+    END IF;
+    IF NULLIF(trim(p_motif), '') IS NULL THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Indiquez le motif.');
+    END IF;
+    IF COALESCE(p_date, CURRENT_DATE) > CURRENT_DATE THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'La date ne peut pas être dans le futur.');
+    END IF;
+
+    v_pid := prochain_numero(p_shop_id, 'OPR');
+    -- Le trigger de garde vérifie le compte et refuse un découvert
+    -- de caisse ou de Mobile Money.
+    INSERT INTO operations_proprietaire (public_id, shop_id, compte_id, type, montant, date_operation,
+                                         beneficiaire, motif, reference, created_by)
+    VALUES (v_pid, p_shop_id, p_compte_id, p_type, p_montant, COALESCE(p_date, CURRENT_DATE),
+            NULLIF(trim(p_beneficiaire), ''), trim(p_motif), NULLIF(trim(p_reference), ''), p_user_id)
+    RETURNING id INTO v_id;
+
+    RETURN jsonb_build_object('succes', true, 'id', v_id, 'public_id', v_pid);
+EXCEPTION WHEN OTHERS THEN
+    RETURN jsonb_build_object('succes', false, 'erreur', SQLERRM);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."enregistrer_operation_proprietaire"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_type" "text", "p_montant" numeric, "p_date" "date", "p_beneficiaire" "text", "p_motif" "text", "p_reference" "text", "p_user_id" "uuid") OWNER TO "postgres";
+
 SET default_tablespace = '';
 
 SET default_table_access_method = "heap";
@@ -1312,6 +1550,41 @@ $$;
 
 
 ALTER FUNCTION "public"."enregistrer_paiement_manuel"("p_shop_id" "uuid", "p_plan" "text", "p_duree" "text", "p_montant" numeric, "p_admin_id" "uuid", "p_note" "text", "p_reference" "text") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."enregistrer_rapprochement"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_date" "date", "p_solde_reel" numeric, "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_theorique NUMERIC;
+    v_ecart     NUMERIC;
+BEGIN
+    IF p_solde_reel IS NULL THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Indiquez le solde réel.');
+    END IF;
+    IF COALESCE(p_date, CURRENT_DATE) > CURRENT_DATE THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'La date ne peut pas être dans le futur.');
+    END IF;
+
+    SELECT s.solde INTO v_theorique
+      FROM soldes_comptes(p_shop_id, COALESCE(p_date, CURRENT_DATE)) s
+     WHERE s.compte_id = p_compte_id;
+    IF v_theorique IS NULL THEN
+        RETURN jsonb_build_object('succes', false, 'erreur', 'Compte introuvable.');
+    END IF;
+
+    INSERT INTO rapprochements_tresorerie (shop_id, compte_id, date_rapprochement, solde_reel, solde_theorique, note, created_by)
+    VALUES (p_shop_id, p_compte_id, COALESCE(p_date, CURRENT_DATE), p_solde_reel, v_theorique,
+            NULLIF(trim(p_note), ''), p_user_id)
+    RETURNING ecart INTO v_ecart;
+
+    RETURN jsonb_build_object('succes', true, 'solde_theorique', v_theorique, 'ecart', v_ecart);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."enregistrer_rapprochement"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_date" "date", "p_solde_reel" numeric, "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."enregistrer_reception"("p_data" "jsonb") RETURNS "jsonb"
@@ -1636,10 +1909,10 @@ BEGIN
     FOR v_item IN SELECT * FROM jsonb_array_elements(p_data->'paiements')
     LOOP
       INSERT INTO sale_payments (
-        shop_id, sale_id, moyen_paiement, montant, reference
+        shop_id, sale_id, compte_id, montant, reference
       ) VALUES (
         v_shop_id, v_sale_id,
-        v_item->>'moyen_paiement',
+        (v_item->>'compte_id')::UUID,
         ROUND(
           (v_item->>'montant')::NUMERIC / v_regle * (v_encaisse_vente + v_rembourse),
           2
@@ -1735,56 +2008,24 @@ COMMENT ON FUNCTION "public"."enregistrer_vente"("p_data" "jsonb") IS 'Enregistr
 
 CREATE OR REPLACE FUNCTION "public"."especes_attendues_session"("p_session_id" "uuid") RETURNS numeric
     LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public'
     AS $$
-    WITH s AS (
-        SELECT * FROM cash_sessions WHERE id = p_session_id
-    )
-    SELECT
-        s.fond_initial
-        -- Encaissements au comptoir, sur cet entrepôt, ce jour-là
-        + COALESCE((
-            SELECT SUM(sp.montant)
-              FROM sale_payments sp
-              JOIN sales v ON v.id = sp.sale_id
-             WHERE v.shop_id = s.shop_id
-               AND v.warehouse_id = s.warehouse_id
-               AND v.statut = 'completee'
-               AND sp.moyen_paiement = 'cash'
-               AND (v.created_at + interval '1 hour')::date = s.jour
-        ), 0)
-        -- Règlements de facture encaissés en espèces le même jour
-        + COALESCE((
-            SELECT SUM(fp.montant)
-              FROM facture_payments fp
-             WHERE fp.shop_id = s.shop_id
-               AND fp.moyen_paiement = 'cash'
-               AND NOT fp.est_annule
-               AND fp.date_paiement = s.jour
-        ), 0)
-        -- Sorties en espèces du jour
-        - COALESCE((
-            SELECT SUM(e.montant) FROM expenses e
-             WHERE e.shop_id = s.shop_id AND e.moyen_paiement = 'cash'
-               AND NOT e.est_annule AND e.date_depense = s.jour
-        ), 0)
-        - COALESCE((
-            SELECT SUM(sal.montant_net) FROM salary_payments sal
-             WHERE sal.shop_id = s.shop_id AND sal.moyen_paiement = 'cash'
-               AND NOT sal.est_annule AND sal.date_paiement = s.jour
-        ), 0)
-        - COALESCE((
-            SELECT SUM(f.montant) FROM supplier_payments f
-             WHERE f.shop_id = s.shop_id AND f.moyen_paiement = 'cash'
-               AND f.date_paiement = s.jour
-        ), 0)
-      FROM s;
+    SELECT s.fond_initial
+         + COALESCE(SUM(CASE m.sens WHEN 'entree' THEN m.montant ELSE -m.montant END), 0)
+      FROM cash_sessions s
+      LEFT JOIN comptes_tresorerie c
+             ON c.warehouse_id = s.warehouse_id AND c.type = 'caisse'
+      LEFT JOIN mouvements_tresorerie m
+             ON m.compte_id = c.id AND m.jour = s.jour AND NOT m.est_annule
+     WHERE s.id = p_session_id
+     GROUP BY s.id, s.fond_initial
 $$;
 
 
 ALTER FUNCTION "public"."especes_attendues_session"("p_session_id" "uuid") OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."especes_attendues_session"("p_session_id" "uuid") IS 'Espèces que le tiroir devrait contenir : fond initial + encaissements espèces − sorties espèces. Ne couvre que les ESPÈCES : les autres moyens ne passent pas par le tiroir.';
+COMMENT ON FUNCTION "public"."especes_attendues_session"("p_session_id" "uuid") IS 'Espèces que le tiroir devrait contenir : fond initial + entrées − sorties du jour sur la CAISSE de l''entrepôt de la session (ventes, règlements, dépenses, salaires, fournisseurs, virements).';
 
 
 
@@ -1874,6 +2115,67 @@ $$;
 ALTER FUNCTION "public"."fermer_session_caisse"("p_shop_id" "uuid", "p_session_id" "uuid", "p_compte" numeric, "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."garde_mouvement_tresorerie"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+DECLARE
+    v_compte   comptes_tresorerie%ROWTYPE;
+    v_nouveau  JSONB := to_jsonb(NEW);
+    v_ancien   JSONB;
+    v_montant  NUMERIC := (v_nouveau ->> TG_ARGV[0])::NUMERIC;
+    v_sens     TEXT := CASE TG_ARGV[1]
+                           WHEN 'selon_type' THEN CASE v_nouveau ->> 'type' WHEN 'retrait' THEN 'sortie' ELSE 'entree' END
+                           ELSE TG_ARGV[1] END;
+    v_solde    NUMERIC;
+BEGIN
+    IF NEW.compte_id IS NULL THEN
+        RAISE EXCEPTION 'Choisissez le compte (caisse, banque, Mobile Money ou TPE) de ce mouvement.'
+            USING ERRCODE = 'P0001';
+    END IF;
+
+    SELECT * INTO v_compte FROM comptes_tresorerie WHERE id = NEW.compte_id FOR UPDATE;
+
+    IF NOT FOUND OR v_compte.shop_id <> NEW.shop_id THEN
+        RAISE EXCEPTION 'Compte de trésorerie introuvable.' USING ERRCODE = 'P0001';
+    END IF;
+
+    NEW.moyen_paiement := moyen_du_compte(v_compte.type, v_compte.operateur);
+
+    IF TG_OP = 'UPDATE' THEN
+        v_ancien := to_jsonb(OLD);
+    END IF;
+
+    -- Un compte désactivé ne reçoit plus de NOUVEAU mouvement.
+    IF NOT v_compte.est_actif AND (TG_OP = 'INSERT' OR OLD.compte_id IS DISTINCT FROM NEW.compte_id) THEN
+        RAISE EXCEPTION 'Le compte « % » est désactivé.', v_compte.nom USING ERRCODE = 'P0001';
+    END IF;
+
+    IF v_sens = 'sortie'
+       AND v_compte.type IN ('caisse', 'mobile_money')
+       AND COALESCE((v_nouveau ->> 'est_annule')::BOOLEAN, FALSE) = FALSE
+    THEN
+        v_solde := solde_compte(v_compte.id);
+        -- Une correction : l'ancienne version de la ligne est déjà dans le solde.
+        IF TG_OP = 'UPDATE' AND OLD.compte_id = NEW.compte_id
+           AND COALESCE((v_ancien ->> 'est_annule')::BOOLEAN, FALSE) = FALSE THEN
+            v_solde := v_solde + (v_ancien ->> TG_ARGV[0])::NUMERIC;
+        END IF;
+        IF v_solde - v_montant < 0 THEN
+            RAISE EXCEPTION 'Solde insuffisant sur « % » : % disponibles pour une sortie de %.',
+                v_compte.nom, montant_fr(v_solde), montant_fr(v_montant)
+                USING ERRCODE = 'P0001';
+        END IF;
+    END IF;
+
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."garde_mouvement_tresorerie"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."garde_plan_boutique"() RETURNS "trigger"
     LANGUAGE "plpgsql"
     AS $$
@@ -1954,67 +2256,43 @@ ALTER FUNCTION "public"."generate_public_id"("p_shop_id" "uuid", "p_prefix" "tex
 
 
 CREATE OR REPLACE FUNCTION "public"."journees_caisse"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval DEFAULT '01:00:00'::interval) RETURNS TABLE("session_id" "uuid", "public_id" "text", "jour" "date", "entrepot" "text", "statut" "text", "fond_initial" numeric, "attendu_especes" numeric, "compte_especes" numeric, "ecart" numeric, "ouverte_par" "text", "fermee_par" "text", "note_ouverture" "text", "note_fermeture" "text", "encaisse_especes" numeric, "encaisse_autres" numeric, "sorties_especes" numeric, "nb_ventes" integer)
-    LANGUAGE "sql" STABLE SECURITY DEFINER
+    LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
     AS $$
     SELECT
-        cs.id,
-        cs.public_id,
-        cs.jour,
-        w.nom,
-        cs.statut,
-        cs.fond_initial,
-        cs.attendu_especes,
-        cs.compte_especes,
-        cs.ecart,
-        uo.nom_complet,
-        uf.nom_complet,
-        cs.note_ouverture,
-        cs.note_fermeture,
-        COALESCE(v.especes, 0),
-        COALESCE(v.autres,  0),
-        COALESCE(s.especes, 0),
+        cs.id, cs.public_id, cs.jour, w.nom, cs.statut,
+        cs.fond_initial, cs.attendu_especes, cs.compte_especes, cs.ecart,
+        uo.nom_complet, uf.nom_complet, cs.note_ouverture, cs.note_fermeture,
+        COALESCE(t.entrees, 0),
+        COALESCE(v.autres, 0),
+        COALESCE(t.sorties, 0),
         COALESCE(v.nb, 0)::INTEGER
       FROM cash_sessions cs
       JOIN warehouses w  ON w.id  = cs.warehouse_id
+      LEFT JOIN comptes_tresorerie caisse ON caisse.warehouse_id = cs.warehouse_id AND caisse.type = 'caisse'
       LEFT JOIN shop_users uo ON uo.id = cs.ouverte_par
       LEFT JOIN shop_users uf ON uf.id = cs.fermee_par
-      -- Ce qui est entré au comptoir, ce jour-là, dans cet entrepôt.
+      -- Mouvements de la caisse de l'entrepôt ce jour-là (ventes,
+      -- règlements, dépenses, virements, retraits, apports…).
       LEFT JOIN LATERAL (
-          SELECT
-              COALESCE(SUM(sp.montant) FILTER (WHERE sp.moyen_paiement = 'cash'), 0) AS especes,
-              COALESCE(SUM(sp.montant) FILTER (WHERE sp.moyen_paiement <> 'cash'), 0) AS autres,
-              count(DISTINCT sa.id) AS nb
+          SELECT SUM(m.montant) FILTER (WHERE m.sens = 'entree') AS entrees,
+                 SUM(m.montant) FILTER (WHERE m.sens = 'sortie') AS sorties
+            FROM mouvements_tresorerie m
+           WHERE m.compte_id = caisse.id AND m.jour = cs.jour AND NOT m.est_annule
+      ) t ON true
+      -- Ventes du comptoir de cet entrepôt réglées sur un AUTRE compte.
+      LEFT JOIN LATERAL (
+          SELECT COALESCE(SUM(sp.montant) FILTER (WHERE sp.compte_id IS DISTINCT FROM caisse.id), 0) AS autres,
+                 count(DISTINCT sa.id) AS nb
             FROM sale_payments sp
             JOIN sales sa ON sa.id = sp.sale_id
-           WHERE sa.shop_id      = p_shop_id
-             AND sa.warehouse_id = cs.warehouse_id
-             AND sa.statut       = 'completee'
+           WHERE sa.shop_id = p_shop_id AND sa.warehouse_id = cs.warehouse_id
+             AND sa.statut = 'completee'
              AND (sa.created_at + p_decalage)::date = cs.jour
       ) v ON true
-      -- Ce qui est sorti du tiroir en espèces le même jour. Les
-      -- dépenses et les salaires ne portent pas d'entrepôt : ils sont
-      -- comptés au niveau de la boutique, comme le fait déjà
-      -- especes_attendues_session().
-      LEFT JOIN LATERAL (
-          SELECT
-              COALESCE((SELECT SUM(e.montant) FROM expenses e
-                         WHERE e.shop_id = p_shop_id AND NOT e.est_annule
-                           AND e.moyen_paiement = 'cash'
-                           AND e.date_depense = cs.jour), 0)
-            + COALESCE((SELECT SUM(sal.montant_net) FROM salary_payments sal
-                         WHERE sal.shop_id = p_shop_id AND NOT sal.est_annule
-                           AND sal.moyen_paiement = 'cash'
-                           AND sal.date_paiement = cs.jour), 0)
-            + COALESCE((SELECT SUM(f.montant) FROM supplier_payments f
-                         WHERE f.shop_id = p_shop_id
-                           AND f.moyen_paiement = 'cash'
-                           AND f.date_paiement = cs.jour), 0)
-            AS especes
-      ) s ON true
      WHERE cs.shop_id = p_shop_id
        AND cs.jour BETWEEN p_debut AND p_fin
-     ORDER BY cs.jour DESC, w.nom;
+     ORDER BY cs.jour DESC, w.nom
 $$;
 
 
@@ -2352,7 +2630,7 @@ $$;
 ALTER FUNCTION "public"."modifier_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_entete" "jsonb", "p_lignes" "jsonb", "p_user_id" "uuid", "p_user_nom" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
@@ -2402,7 +2680,7 @@ BEGIN
 
     UPDATE facture_payments SET
         montant        = p_montant,
-        moyen_paiement = p_moyen,
+        compte_id      = p_compte_id,
         reference      = NULLIF(p_reference, ''),
         date_paiement  = p_date_paiement,
         modifie_le     = NOW(),
@@ -2416,58 +2694,59 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval DEFAULT '01:00:00'::interval) RETURNS TABLE("jour" "date", "moyen" "text", "entrees" numeric, "sorties" numeric)
-    LANGUAGE "sql" STABLE SECURITY DEFINER
-    SET "search_path" TO 'public'
+CREATE OR REPLACE FUNCTION "public"."montant_fr"("p" numeric) RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
     AS $$
-    WITH mouvements AS (
-        SELECT (s.created_at + p_decalage)::date AS jour,
-               sp.moyen_paiement AS moyen, sp.montant AS montant, 'entree' AS sens
-          FROM sale_payments sp
-          JOIN sales s ON s.id = sp.sale_id
-         WHERE sp.shop_id = p_shop_id AND s.statut = 'completee'
-
-        UNION ALL
-        SELECT fp.date_paiement, fp.moyen_paiement, fp.montant, 'entree'
-          FROM facture_payments fp
-         WHERE fp.shop_id = p_shop_id AND NOT fp.est_annule
-
-        UNION ALL
-        SELECT e.date_depense, e.moyen_paiement, e.montant, 'sortie'
-          FROM expenses e
-         WHERE e.shop_id = p_shop_id AND NOT e.est_annule
-
-        UNION ALL
-        SELECT sal.date_paiement, sal.moyen_paiement, sal.montant_net, 'sortie'
-          FROM salary_payments sal
-         WHERE sal.shop_id = p_shop_id AND NOT sal.est_annule
-
-        UNION ALL
-        SELECT f.date_paiement, f.moyen_paiement, f.montant, 'sortie'
-          FROM supplier_payments f
-         WHERE f.shop_id = p_shop_id
-    )
-    SELECT
-        jour,
-        moyen,
-        COALESCE(SUM(montant) FILTER (WHERE sens = 'entree'), 0),
-        COALESCE(SUM(montant) FILTER (WHERE sens = 'sortie'), 0)
-      FROM mouvements
-     WHERE jour BETWEEN p_debut AND p_fin
-     GROUP BY jour, moyen
-    HAVING SUM(montant) <> 0
-     ORDER BY jour DESC, 3 DESC;
+    SELECT replace(to_char(round(p), 'FM999G999G999G990'), ',', ' ') || ' F'
 $$;
 
 
-ALTER FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) OWNER TO "postgres";
+ALTER FUNCTION "public"."montant_fr"("p" numeric) OWNER TO "postgres";
 
 
-COMMENT ON FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) IS 'Entrées et sorties d''une période, ventilées par journée et par moyen de paiement.';
+CREATE OR REPLACE FUNCTION "public"."mouvements_comptes_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") RETURNS TABLE("jour" "date", "compte_id" "uuid", "compte" "text", "type" "text", "entrees" numeric, "sorties" numeric)
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT m.jour, c.id, c.nom, c.type,
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'entree'), 0),
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'sortie'), 0)
+      FROM mouvements_tresorerie m
+      JOIN comptes_tresorerie c ON c.id = m.compte_id
+     WHERE m.shop_id = p_shop_id AND NOT m.est_annule
+       AND m.jour BETWEEN p_debut AND p_fin
+     GROUP BY m.jour, c.id, c.nom, c.type
+     ORDER BY m.jour DESC, 5 DESC
+$$;
 
+
+ALTER FUNCTION "public"."mouvements_comptes_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."moyen_du_compte"("p_type" "text", "p_operateur" "text") RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+    SELECT CASE p_type
+        WHEN 'caisse' THEN 'cash'
+        WHEN 'banque' THEN 'bank_transfer'
+        WHEN 'tpe'    THEN 'bank_card'
+        ELSE CASE p_operateur
+            WHEN 'mtn'     THEN 'mtn_momo'
+            WHEN 'moov'    THEN 'moov_money'
+            WHEN 'celtiis' THEN 'celtiis_cash'
+            WHEN 'wave'    THEN 'wave'
+            ELSE 'other_mobile'
+        END
+    END
+$$;
+
+
+ALTER FUNCTION "public"."moyen_du_compte"("p_type" "text", "p_operateur" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) RETURNS "text"
@@ -2579,7 +2858,7 @@ $$;
 ALTER FUNCTION "public"."ouvrir_session_caisse"("p_shop_id" "uuid", "p_warehouse_id" "uuid", "p_fond" numeric, "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date" DEFAULT CURRENT_DATE) RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date" DEFAULT CURRENT_DATE) RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
@@ -2613,10 +2892,10 @@ BEGIN
     SELECT generate_public_id(p_shop_id, 'FPAY') INTO v_public_id;
 
     INSERT INTO facture_payments (
-        public_id, shop_id, facture_id, moyen_paiement, montant,
+        public_id, shop_id, facture_id, compte_id, montant,
         reference, note, date_paiement, created_by
     ) VALUES (
-        v_public_id, p_shop_id, p_facture_id, p_moyen, p_montant,
+        v_public_id, p_shop_id, p_facture_id, p_compte_id, p_montant,
         NULLIF(p_reference, ''), NULLIF(p_note, ''), p_date_paiement, p_user_id
     );
 
@@ -2633,10 +2912,10 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") OWNER TO "postgres";
+ALTER FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
@@ -2677,10 +2956,10 @@ BEGIN
 
     INSERT INTO supplier_payments (
         public_id, shop_id, supplier_id, facture_id,
-        montant, moyen_paiement, reference, note, created_by
+        montant, compte_id, reference, note, created_by
     ) VALUES (
         v_pid, p_shop_id, v_facture.supplier_id, p_facture_id,
-        p_montant, p_moyen, NULLIF(p_reference, ''), NULLIF(p_note, ''), p_user_id
+        p_montant, p_compte_id, NULLIF(p_reference, ''), NULLIF(p_note, ''), p_user_id
     );
 
     UPDATE factures_fournisseurs
@@ -2702,10 +2981,10 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
@@ -2736,11 +3015,11 @@ BEGIN
 
   INSERT INTO supplier_payments (
     public_id, shop_id, supplier_id,
-    montant, moyen_paiement, reference,
+    montant, compte_id, reference,
     note, created_by
   ) VALUES (
     v_public_id, p_shop_id, p_supplier_id,
-    p_montant, p_moyen,
+    p_montant, p_compte_id,
     NULLIF(p_reference, ''),
     NULLIF(p_note, ''),
     p_user_id
@@ -2751,7 +3030,23 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
+ALTER FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."prochain_numero"("p_shop_id" "uuid", "p_prefix" "text") RETURNS "text"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO 'public'
+    AS $$
+BEGIN
+    INSERT INTO public_id_counters (shop_id, prefix, last_value)
+    VALUES (p_shop_id, p_prefix, 0)
+    ON CONFLICT (shop_id, prefix) DO NOTHING;
+    RETURN generate_public_id(p_shop_id, p_prefix);
+END;
+$$;
+
+
+ALTER FUNCTION "public"."prochain_numero"("p_shop_id" "uuid", "p_prefix" "text") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."prolonger_abonnement"("p_paiement_id" "uuid", "p_reference_transaction" "text" DEFAULT NULL::"text", "p_details_prestataire" "jsonb" DEFAULT NULL::"jsonb") RETURNS "public"."abonnement_paiements"
@@ -2890,7 +3185,7 @@ $$;
 ALTER FUNCTION "public"."recalculer_statut_facture"("p_facture_id" "uuid") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
+CREATE OR REPLACE FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid", "p_compte_id" "uuid" DEFAULT NULL::"uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
 DECLARE
@@ -2972,11 +3267,11 @@ BEGIN
 
             INSERT INTO expenses (
                 public_id, shop_id, category_id, libelle, montant,
-                moyen_paiement, date_depense, note, created_by
+                compte_id, date_depense, note, created_by
             ) VALUES (
                 v_pid, p_shop_id, v_cat,
                 'Remboursement retour ' || v_retour.public_id,
-                v_retour.montant, 'cash', CURRENT_DATE,
+                v_retour.montant, COALESCE(p_compte_id, (SELECT c.id FROM comptes_tresorerie c WHERE c.type = 'caisse' AND c.warehouse_id = v_retour.warehouse_id)), CURRENT_DATE,
                 COALESCE(NULLIF(p_note, ''), v_retour.motif), p_user_id
             );
         END;
@@ -3017,11 +3312,7 @@ END;
 $$;
 
 
-ALTER FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid") OWNER TO "postgres";
-
-
-COMMENT ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid") IS 'Traite la moitié FINANCIÈRE d''un retour client (décision D2 POS) : avance du client par défaut, remboursement en caisse, avoir à émettre, ou sans suite. La partie stock est faite par effectuer_retour_vente.';
-
+ALTER FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid", "p_compte_id" "uuid") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."rls_auto_enable"() RETURNS "event_trigger"
@@ -3124,6 +3415,43 @@ $$;
 
 
 ALTER FUNCTION "public"."session_boutique_en_service"() OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."solde_compte"("p_compte_id" "uuid") RETURNS numeric
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT c.solde_ouverture
+         + COALESCE((SELECT SUM(CASE m.sens WHEN 'entree' THEN m.montant ELSE -m.montant END)
+                       FROM mouvements_tresorerie m
+                      WHERE m.compte_id = c.id AND NOT m.est_annule), 0)
+      FROM comptes_tresorerie c WHERE c.id = p_compte_id
+$$;
+
+
+ALTER FUNCTION "public"."solde_compte"("p_compte_id" "uuid") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."soldes_comptes"("p_shop_id" "uuid", "p_au" "date" DEFAULT NULL::"date") RETURNS TABLE("compte_id" "uuid", "solde_ouverture" numeric, "entrees" numeric, "sorties" numeric, "solde" numeric)
+    LANGUAGE "sql" STABLE
+    SET "search_path" TO 'public'
+    AS $$
+    SELECT c.id,
+           CASE WHEN p_au IS NULL OR c.date_ouverture <= p_au THEN c.solde_ouverture ELSE 0 END,
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'entree'), 0),
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'sortie'), 0),
+           CASE WHEN p_au IS NULL OR c.date_ouverture <= p_au THEN c.solde_ouverture ELSE 0 END
+             + COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'entree'), 0)
+             - COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'sortie'), 0)
+      FROM comptes_tresorerie c
+      LEFT JOIN mouvements_tresorerie m
+             ON m.compte_id = c.id AND NOT m.est_annule AND (p_au IS NULL OR m.jour <= p_au)
+     WHERE c.shop_id = p_shop_id
+     GROUP BY c.id
+$$;
+
+
+ALTER FUNCTION "public"."soldes_comptes"("p_shop_id" "uuid", "p_au" "date") OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."tresorerie_periode"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval DEFAULT '01:00:00'::interval) RETURNS TABLE("entrees_pos" numeric, "entrees_factures" numeric, "total_entrees" numeric, "sorties_depenses" numeric, "sorties_salaires" numeric, "sorties_fournisseurs" numeric, "total_sorties" numeric, "resultat" numeric, "ventes_facturees" numeric, "non_encaisse" numeric, "stock_pertes" numeric, "stock_gains" numeric, "resultat_economique" numeric)
@@ -3375,69 +3703,27 @@ $$;
 ALTER FUNCTION "public"."valider_inventaire"("p_inventory_id" "uuid", "p_shop_id" "uuid", "p_user_id" "uuid", "p_mode" "text") OWNER TO "postgres";
 
 
-CREATE OR REPLACE FUNCTION "public"."ventilation_caisse"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval DEFAULT '01:00:00'::interval) RETURNS TABLE("moyen" "text", "entrees_periode" numeric, "sorties_periode" numeric, "entrees_cumul" numeric, "sorties_cumul" numeric)
-    LANGUAGE "sql" STABLE SECURITY DEFINER
+CREATE OR REPLACE FUNCTION "public"."ventilation_comptes"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") RETURNS TABLE("compte_id" "uuid", "compte" "text", "type" "text", "est_actif" boolean, "entrees_periode" numeric, "sorties_periode" numeric, "solde" numeric)
+    LANGUAGE "sql" STABLE
     SET "search_path" TO 'public'
     AS $$
-    WITH mouvements AS (
-        -- ENTRÉES ────────────────────────────────────────────
-        -- Encaissements au comptoir : c'est la ligne de règlement qui
-        -- porte le moyen, pas la vente.
-        SELECT sp.moyen_paiement            AS moyen,
-               sp.montant                   AS montant,
-               'entree'                     AS sens,
-               (s.created_at + p_decalage)::date AS jour
-          FROM sale_payments sp
-          JOIN sales s ON s.id = sp.sale_id
-         WHERE sp.shop_id = p_shop_id
-           AND s.statut   = 'completee'
-
-        UNION ALL
-        -- Règlements de facture, sur date_paiement — la date réelle.
-        SELECT fp.moyen_paiement, fp.montant, 'entree', fp.date_paiement
-          FROM facture_payments fp
-         WHERE fp.shop_id = p_shop_id
-           AND NOT fp.est_annule
-
-        -- SORTIES ────────────────────────────────────────────
-        UNION ALL
-        SELECT e.moyen_paiement, e.montant, 'sortie', e.date_depense
-          FROM expenses e
-         WHERE e.shop_id = p_shop_id
-           AND NOT e.est_annule
-
-        UNION ALL
-        SELECT sal.moyen_paiement, sal.montant_net, 'sortie', sal.date_paiement
-          FROM salary_payments sal
-         WHERE sal.shop_id = p_shop_id
-           AND NOT sal.est_annule
-
-        UNION ALL
-        SELECT f.moyen_paiement, f.montant, 'sortie', f.date_paiement
-          FROM supplier_payments f
-         WHERE f.shop_id = p_shop_id
-    )
-    SELECT
-        moyen,
-        COALESCE(SUM(montant) FILTER (
-            WHERE sens = 'entree' AND jour BETWEEN p_debut AND p_fin), 0),
-        COALESCE(SUM(montant) FILTER (
-            WHERE sens = 'sortie' AND jour BETWEEN p_debut AND p_fin), 0),
-        -- Cumul arrêté à la FIN de la période affichée : en consultant
-        -- un mois passé, on voit le solde tel qu'il était alors.
-        COALESCE(SUM(montant) FILTER (
-            WHERE sens = 'entree' AND jour <= p_fin), 0),
-        COALESCE(SUM(montant) FILTER (
-            WHERE sens = 'sortie' AND jour <= p_fin), 0)
-      FROM mouvements
-     GROUP BY moyen
-     ORDER BY
-        COALESCE(SUM(montant) FILTER (WHERE sens = 'entree' AND jour <= p_fin), 0)
-      - COALESCE(SUM(montant) FILTER (WHERE sens = 'sortie' AND jour <= p_fin), 0) DESC;
+    SELECT c.id, c.nom, c.type, c.est_actif,
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'entree'), 0),
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'sortie'), 0),
+           s.solde
+      FROM comptes_tresorerie c
+      JOIN soldes_comptes(p_shop_id, p_fin) s ON s.compte_id = c.id
+      LEFT JOIN mouvements_tresorerie m
+             ON m.compte_id = c.id AND NOT m.est_annule AND m.jour BETWEEN p_debut AND p_fin
+     WHERE c.shop_id = p_shop_id
+     GROUP BY c.id, c.nom, c.type, c.est_actif, s.solde
+    -- Un compte désactivé, vide et sans mouvement n'encombre pas le tableau.
+    HAVING c.est_actif OR s.solde <> 0 OR COUNT(m.montant) > 0
+     ORDER BY CASE c.type WHEN 'caisse' THEN 1 WHEN 'mobile_money' THEN 2 WHEN 'banque' THEN 3 ELSE 4 END, c.nom
 $$;
 
 
-ALTER FUNCTION "public"."ventilation_caisse"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) OWNER TO "postgres";
+ALTER FUNCTION "public"."ventilation_comptes"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."abonnement_alertes" (
@@ -3623,6 +3909,40 @@ COMMENT ON COLUMN "public"."clients"."plafond_credit" IS 'Encours de crédit au-
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."comptes_tresorerie" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "public_id" "text" NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "type" "text" NOT NULL,
+    "nom" "text" NOT NULL,
+    "operateur" "text",
+    "banque" "text",
+    "numero" "text",
+    "warehouse_id" "uuid",
+    "compte_reversement_id" "uuid",
+    "solde_ouverture" numeric(15,2) DEFAULT 0 NOT NULL,
+    "date_ouverture" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "est_actif" boolean DEFAULT true NOT NULL,
+    "note" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "comptes_entrepot_caisse" CHECK ((("warehouse_id" IS NULL) OR ("type" = 'caisse'::"text"))),
+    CONSTRAINT "comptes_mm_operateur" CHECK ((("type" <> 'mobile_money'::"text") OR ("operateur" IS NOT NULL))),
+    CONSTRAINT "comptes_reversement_tpe" CHECK ((("compte_reversement_id" IS NULL) OR ("type" = 'tpe'::"text"))),
+    CONSTRAINT "comptes_tresorerie_nom_check" CHECK ((("length"(TRIM(BOTH FROM "nom")) >= 2) AND ("length"(TRIM(BOTH FROM "nom")) <= 80))),
+    CONSTRAINT "comptes_tresorerie_operateur_check" CHECK (("operateur" = ANY (ARRAY['mtn'::"text", 'moov'::"text", 'celtiis'::"text", 'wave'::"text", 'autre'::"text"]))),
+    CONSTRAINT "comptes_tresorerie_type_check" CHECK (("type" = ANY (ARRAY['caisse'::"text", 'banque'::"text", 'mobile_money'::"text", 'tpe'::"text"])))
+);
+
+
+ALTER TABLE "public"."comptes_tresorerie" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."comptes_tresorerie" IS 'Où se trouve l''argent de la boutique : caisses (une par entrepôt), comptes bancaires, Mobile Money, TPE. Tout mouvement d''argent désigne un compte (compte_id) ; le moyen de paiement en est déduit.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."devis" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "public_id" "text" NOT NULL,
@@ -3721,7 +4041,8 @@ CREATE TABLE IF NOT EXISTS "public"."expenses" (
     "annule_par" "uuid",
     "motif_annulation" "text",
     "modifie_le" timestamp with time zone,
-    "modifie_par" "uuid"
+    "modifie_par" "uuid",
+    "compte_id" "uuid" NOT NULL
 );
 
 
@@ -3789,7 +4110,8 @@ CREATE TABLE IF NOT EXISTS "public"."facture_payments" (
     "annule_par" "uuid",
     "motif_annulation" "text",
     "modifie_le" timestamp with time zone,
-    "modifie_par" "uuid"
+    "modifie_par" "uuid",
+    "compte_id" "uuid" NOT NULL
 );
 
 
@@ -3919,6 +4241,324 @@ COMMENT ON COLUMN "public"."inventory_items"."prix_achat_unitaire" IS 'Prix d''a
 
 
 COMMENT ON COLUMN "public"."inventory_items"."valeur_ecart" IS 'ecart × prix_achat_unitaire. Négatif = perte, positif = gain.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."operations_proprietaire" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "public_id" "text" NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "compte_id" "uuid" NOT NULL,
+    "type" "text" NOT NULL,
+    "montant" numeric(15,2) NOT NULL,
+    "moyen_paiement" "text",
+    "date_operation" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "beneficiaire" "text",
+    "motif" "text" NOT NULL,
+    "reference" "text",
+    "est_annule" boolean DEFAULT false NOT NULL,
+    "annule_le" timestamp with time zone,
+    "annule_par" "uuid",
+    "motif_annulation" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "operations_proprietaire_montant_check" CHECK (("montant" > (0)::numeric)),
+    CONSTRAINT "operations_proprietaire_motif_check" CHECK (("length"(TRIM(BOTH FROM "motif")) >= 2)),
+    CONSTRAINT "operations_proprietaire_type_check" CHECK (("type" = ANY (ARRAY['retrait'::"text", 'apport'::"text"])))
+);
+
+
+ALTER TABLE "public"."operations_proprietaire" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."operations_proprietaire" IS 'Retraits (sorties pour le propriétaire) et apports (argent remis par le propriétaire). Hors chiffre d''affaires et hors charges.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."salary_payments" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "public_id" "text" NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "employee_id" "uuid" NOT NULL,
+    "periode_mois" integer NOT NULL,
+    "periode_annee" integer NOT NULL,
+    "salaire_base" numeric(15,2) NOT NULL,
+    "bonus" numeric(15,2) DEFAULT 0 NOT NULL,
+    "deductions" numeric(15,2) DEFAULT 0 NOT NULL,
+    "montant_net" numeric(15,2) NOT NULL,
+    "moyen_paiement" "text" DEFAULT 'cash'::"text" NOT NULL,
+    "reference" "text",
+    "note" "text",
+    "date_paiement" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "est_annule" boolean DEFAULT false NOT NULL,
+    "annule_le" timestamp with time zone,
+    "annule_par" "uuid",
+    "motif_annulation" "text",
+    "modifie_le" timestamp with time zone,
+    "modifie_par" "uuid",
+    "compte_id" "uuid" NOT NULL,
+    CONSTRAINT "salary_payments_periode_mois_check" CHECK ((("periode_mois" >= 1) AND ("periode_mois" <= 12)))
+);
+
+
+ALTER TABLE "public"."salary_payments" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."salary_payments"."periode_mois" IS 'Mois TRAVAILLÉ (étiquette). Ne jamais filtrer un rapport financier dessus : utiliser date_paiement.';
+
+
+
+COMMENT ON COLUMN "public"."salary_payments"."periode_annee" IS 'Année TRAVAILLÉE (étiquette). Ne jamais filtrer un rapport financier dessus : utiliser date_paiement.';
+
+
+
+COMMENT ON COLUMN "public"."salary_payments"."date_paiement" IS 'Date réelle de sortie de caisse. Clé de rattachement comptable du salaire.';
+
+
+
+COMMENT ON COLUMN "public"."salary_payments"."est_annule" IS 'Versement annulé : reste visible et barré à l''écran, mais EXCLU des totaux, du cumul « versé » et du rapport de paie.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."sale_payments" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "sale_id" "uuid" NOT NULL,
+    "moyen_paiement" "text" NOT NULL,
+    "montant" numeric(15,2) NOT NULL,
+    "reference" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "compte_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."sale_payments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."sales" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "public_id" "text" NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "client_id" "uuid",
+    "warehouse_id" "uuid" NOT NULL,
+    "vendeur_id" "uuid",
+    "statut" "text" DEFAULT 'completee'::"text" NOT NULL,
+    "montant_brut" numeric(15,2) DEFAULT 0 NOT NULL,
+    "remise_globale_pct" numeric(5,2) DEFAULT 0 NOT NULL,
+    "remise_globale_val" numeric(15,2) DEFAULT 0 NOT NULL,
+    "montant_net" numeric(15,2) DEFAULT 0 NOT NULL,
+    "montant_tva" numeric(15,2) DEFAULT 0 NOT NULL,
+    "montant_total" numeric(15,2) DEFAULT 0 NOT NULL,
+    "montant_recu" numeric(15,2) DEFAULT 0 NOT NULL,
+    "montant_rendu" numeric(15,2) DEFAULT 0 NOT NULL,
+    "credit_utilise" numeric(15,2) DEFAULT 0 NOT NULL,
+    "advance_utilise" numeric(15,2) DEFAULT 0 NOT NULL,
+    "change_utilise" numeric(15,2) DEFAULT 0 NOT NULL,
+    "credit_accorde" numeric(15,2) DEFAULT 0 NOT NULL,
+    "note" "text",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "annule_le" timestamp with time zone,
+    "annule_par" "uuid",
+    "motif_annulation" "text",
+    CONSTRAINT "sales_statut_check" CHECK (("statut" = ANY (ARRAY['completee'::"text", 'annulee'::"text", 'remboursee'::"text"])))
+);
+
+
+ALTER TABLE "public"."sales" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."sales"."statut" IS 'completee | annulee. Une vente annulée reste visible et conserve son numéro, mais son stock est rendu, ses soldes client repris, et elle sort de tous les totaux.';
+
+
+
+CREATE TABLE IF NOT EXISTS "public"."supplier_payments" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "public_id" "text" NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "supplier_id" "uuid" NOT NULL,
+    "purchase_order_id" "uuid",
+    "montant" numeric(15,2) NOT NULL,
+    "moyen_paiement" "text" DEFAULT 'cash'::"text" NOT NULL,
+    "reference" "text",
+    "date_paiement" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "note" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "facture_id" "uuid",
+    "compte_id" "uuid" NOT NULL
+);
+
+
+ALTER TABLE "public"."supplier_payments" OWNER TO "postgres";
+
+
+CREATE TABLE IF NOT EXISTS "public"."virements_tresorerie" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "public_id" "text" NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "compte_source_id" "uuid" NOT NULL,
+    "compte_destination_id" "uuid" NOT NULL,
+    "montant" numeric(15,2) NOT NULL,
+    "frais" numeric(15,2) DEFAULT 0 NOT NULL,
+    "expense_id" "uuid",
+    "date_virement" "date" DEFAULT CURRENT_DATE NOT NULL,
+    "reference" "text",
+    "note" "text",
+    "est_annule" boolean DEFAULT false NOT NULL,
+    "annule_le" timestamp with time zone,
+    "annule_par" "uuid",
+    "motif_annulation" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    CONSTRAINT "virements_comptes_distincts" CHECK (("compte_source_id" <> "compte_destination_id")),
+    CONSTRAINT "virements_tresorerie_frais_check" CHECK (("frais" >= (0)::numeric)),
+    CONSTRAINT "virements_tresorerie_montant_check" CHECK (("montant" > (0)::numeric))
+);
+
+
+ALTER TABLE "public"."virements_tresorerie" OWNER TO "postgres";
+
+
+CREATE OR REPLACE VIEW "public"."mouvements_tresorerie" WITH ("security_invoker"='true') AS
+ SELECT "sp"."shop_id",
+    "sp"."compte_id",
+    (("s"."created_at" + '01:00:00'::interval))::"date" AS "jour",
+    'entree'::"text" AS "sens",
+    "sp"."montant",
+    'vente'::"text" AS "origine",
+    "s"."id" AS "origine_id",
+    "s"."public_id",
+    ('Vente '::"text" || "s"."public_id") AS "libelle",
+    "sp"."reference",
+    ("s"."statut" <> 'completee'::"text") AS "est_annule",
+    NULL::timestamp with time zone AS "modifie_le",
+    "sp"."created_at"
+   FROM ("public"."sale_payments" "sp"
+     JOIN "public"."sales" "s" ON (("s"."id" = "sp"."sale_id")))
+UNION ALL
+ SELECT "fp"."shop_id",
+    "fp"."compte_id",
+    "fp"."date_paiement" AS "jour",
+    'entree'::"text" AS "sens",
+    "fp"."montant",
+    'reglement_facture'::"text" AS "origine",
+    "fp"."facture_id" AS "origine_id",
+    "fp"."public_id",
+    ('Règlement de la facture '::"text" || "f"."public_id") AS "libelle",
+    "fp"."reference",
+    "fp"."est_annule",
+    "fp"."modifie_le",
+    "fp"."created_at"
+   FROM ("public"."facture_payments" "fp"
+     JOIN "public"."factures" "f" ON (("f"."id" = "fp"."facture_id")))
+UNION ALL
+ SELECT "e"."shop_id",
+    "e"."compte_id",
+    "e"."date_depense" AS "jour",
+    'sortie'::"text" AS "sens",
+    "e"."montant",
+    'depense'::"text" AS "origine",
+    "e"."id" AS "origine_id",
+    "e"."public_id",
+    "e"."libelle",
+    "e"."reference",
+    "e"."est_annule",
+    "e"."modifie_le",
+    "e"."created_at"
+   FROM "public"."expenses" "e"
+UNION ALL
+ SELECT "sal"."shop_id",
+    "sal"."compte_id",
+    "sal"."date_paiement" AS "jour",
+    'sortie'::"text" AS "sens",
+    "sal"."montant_net" AS "montant",
+    'salaire'::"text" AS "origine",
+    "sal"."id" AS "origine_id",
+    "sal"."public_id",
+    ('Salaire '::"text" || "sal"."public_id") AS "libelle",
+    "sal"."reference",
+    "sal"."est_annule",
+    "sal"."modifie_le",
+    "sal"."created_at"
+   FROM "public"."salary_payments" "sal"
+UNION ALL
+ SELECT "f"."shop_id",
+    "f"."compte_id",
+    "f"."date_paiement" AS "jour",
+    'sortie'::"text" AS "sens",
+    "f"."montant",
+    'paiement_fournisseur'::"text" AS "origine",
+    "f"."id" AS "origine_id",
+    "f"."public_id",
+    ('Paiement fournisseur '::"text" || "f"."public_id") AS "libelle",
+    "f"."reference",
+    false AS "est_annule",
+    NULL::timestamp with time zone AS "modifie_le",
+    "f"."created_at"
+   FROM "public"."supplier_payments" "f"
+UNION ALL
+ SELECT "v"."shop_id",
+    "v"."compte_source_id" AS "compte_id",
+    "v"."date_virement" AS "jour",
+    'sortie'::"text" AS "sens",
+    "v"."montant",
+    'virement'::"text" AS "origine",
+    "v"."id" AS "origine_id",
+    "v"."public_id",
+    ('Virement vers '::"text" || "d"."nom") AS "libelle",
+    "v"."reference",
+    "v"."est_annule",
+    NULL::timestamp with time zone AS "modifie_le",
+    "v"."created_at"
+   FROM ("public"."virements_tresorerie" "v"
+     JOIN "public"."comptes_tresorerie" "d" ON (("d"."id" = "v"."compte_destination_id")))
+UNION ALL
+ SELECT "v"."shop_id",
+    "v"."compte_destination_id" AS "compte_id",
+    "v"."date_virement" AS "jour",
+    'entree'::"text" AS "sens",
+    "v"."montant",
+    'virement'::"text" AS "origine",
+    "v"."id" AS "origine_id",
+    "v"."public_id",
+    ('Virement depuis '::"text" || "o"."nom") AS "libelle",
+    "v"."reference",
+    "v"."est_annule",
+    NULL::timestamp with time zone AS "modifie_le",
+    "v"."created_at"
+   FROM ("public"."virements_tresorerie" "v"
+     JOIN "public"."comptes_tresorerie" "o" ON (("o"."id" = "v"."compte_source_id")))
+UNION ALL
+ SELECT "op"."shop_id",
+    "op"."compte_id",
+    "op"."date_operation" AS "jour",
+        CASE "op"."type"
+            WHEN 'retrait'::"text" THEN 'sortie'::"text"
+            ELSE 'entree'::"text"
+        END AS "sens",
+    "op"."montant",
+    "op"."type" AS "origine",
+    "op"."id" AS "origine_id",
+    "op"."public_id",
+    (
+        CASE "op"."type"
+            WHEN 'retrait'::"text" THEN 'Retrait du propriétaire'::"text"
+            ELSE 'Apport du propriétaire'::"text"
+        END || COALESCE((' — '::"text" || "op"."motif"), ''::"text")) AS "libelle",
+    "op"."reference",
+    "op"."est_annule",
+    NULL::timestamp with time zone AS "modifie_le",
+    "op"."created_at"
+   FROM "public"."operations_proprietaire" "op";
+
+
+ALTER VIEW "public"."mouvements_tresorerie" OWNER TO "postgres";
+
+
+COMMENT ON VIEW "public"."mouvements_tresorerie" IS 'Grand livre de trésorerie : chaque entrée/sortie d''argent rattachée à son compte, annulations comprises (est_annule). Seule source des soldes, qui écartent les lignes annulées.';
 
 
 
@@ -4096,6 +4736,27 @@ COMMENT ON COLUMN "public"."purchase_orders"."statut" IS 'brouillon : en prépar
 
 
 
+CREATE TABLE IF NOT EXISTS "public"."rapprochements_tresorerie" (
+    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
+    "shop_id" "uuid" NOT NULL,
+    "compte_id" "uuid" NOT NULL,
+    "date_rapprochement" "date" NOT NULL,
+    "solde_reel" numeric(15,2) NOT NULL,
+    "solde_theorique" numeric(15,2) NOT NULL,
+    "ecart" numeric(15,2) GENERATED ALWAYS AS (("solde_reel" - "solde_theorique")) STORED,
+    "note" "text",
+    "created_by" "uuid",
+    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
+);
+
+
+ALTER TABLE "public"."rapprochements_tresorerie" OWNER TO "postgres";
+
+
+COMMENT ON TABLE "public"."rapprochements_tresorerie" IS 'Solde réel constaté (relevé, solde MoMo, comptage) face au solde du logiciel à une date. L''écart est CONSTATÉ, jamais corrigé automatiquement.';
+
+
+
 CREATE TABLE IF NOT EXISTS "public"."reception_items" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "shop_id" "uuid" NOT NULL,
@@ -4131,52 +4792,6 @@ CREATE TABLE IF NOT EXISTS "public"."receptions" (
 ALTER TABLE "public"."receptions" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."salary_payments" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "public_id" "text" NOT NULL,
-    "shop_id" "uuid" NOT NULL,
-    "employee_id" "uuid" NOT NULL,
-    "periode_mois" integer NOT NULL,
-    "periode_annee" integer NOT NULL,
-    "salaire_base" numeric(15,2) NOT NULL,
-    "bonus" numeric(15,2) DEFAULT 0 NOT NULL,
-    "deductions" numeric(15,2) DEFAULT 0 NOT NULL,
-    "montant_net" numeric(15,2) NOT NULL,
-    "moyen_paiement" "text" DEFAULT 'cash'::"text" NOT NULL,
-    "reference" "text",
-    "note" "text",
-    "date_paiement" "date" DEFAULT CURRENT_DATE NOT NULL,
-    "created_by" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "est_annule" boolean DEFAULT false NOT NULL,
-    "annule_le" timestamp with time zone,
-    "annule_par" "uuid",
-    "motif_annulation" "text",
-    "modifie_le" timestamp with time zone,
-    "modifie_par" "uuid",
-    CONSTRAINT "salary_payments_periode_mois_check" CHECK ((("periode_mois" >= 1) AND ("periode_mois" <= 12)))
-);
-
-
-ALTER TABLE "public"."salary_payments" OWNER TO "postgres";
-
-
-COMMENT ON COLUMN "public"."salary_payments"."periode_mois" IS 'Mois TRAVAILLÉ (étiquette). Ne jamais filtrer un rapport financier dessus : utiliser date_paiement.';
-
-
-
-COMMENT ON COLUMN "public"."salary_payments"."periode_annee" IS 'Année TRAVAILLÉE (étiquette). Ne jamais filtrer un rapport financier dessus : utiliser date_paiement.';
-
-
-
-COMMENT ON COLUMN "public"."salary_payments"."date_paiement" IS 'Date réelle de sortie de caisse. Clé de rattachement comptable du salaire.';
-
-
-
-COMMENT ON COLUMN "public"."salary_payments"."est_annule" IS 'Versement annulé : reste visible et barré à l''écran, mais EXCLU des totaux, du cumul « versé » et du rapport de paie.';
-
-
-
 CREATE TABLE IF NOT EXISTS "public"."sale_items" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "shop_id" "uuid" NOT NULL,
@@ -4196,20 +4811,6 @@ CREATE TABLE IF NOT EXISTS "public"."sale_items" (
 
 
 ALTER TABLE "public"."sale_items" OWNER TO "postgres";
-
-
-CREATE TABLE IF NOT EXISTS "public"."sale_payments" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "shop_id" "uuid" NOT NULL,
-    "sale_id" "uuid" NOT NULL,
-    "moyen_paiement" "text" NOT NULL,
-    "montant" numeric(15,2) NOT NULL,
-    "reference" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL
-);
-
-
-ALTER TABLE "public"."sale_payments" OWNER TO "postgres";
 
 
 CREATE TABLE IF NOT EXISTS "public"."sale_return_items" (
@@ -4248,43 +4849,6 @@ ALTER TABLE "public"."sale_returns" OWNER TO "postgres";
 
 
 COMMENT ON COLUMN "public"."sale_returns"."reglement" IS 'Issue financière du retour : a_traiter (par défaut à la création), avance (porté au solde du client), rembourse (sortie de caisse), avoir (à émettre depuis la facture), sans_suite. La partie stock est indépendante.';
-
-
-
-CREATE TABLE IF NOT EXISTS "public"."sales" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "public_id" "text" NOT NULL,
-    "shop_id" "uuid" NOT NULL,
-    "client_id" "uuid",
-    "warehouse_id" "uuid" NOT NULL,
-    "vendeur_id" "uuid",
-    "statut" "text" DEFAULT 'completee'::"text" NOT NULL,
-    "montant_brut" numeric(15,2) DEFAULT 0 NOT NULL,
-    "remise_globale_pct" numeric(5,2) DEFAULT 0 NOT NULL,
-    "remise_globale_val" numeric(15,2) DEFAULT 0 NOT NULL,
-    "montant_net" numeric(15,2) DEFAULT 0 NOT NULL,
-    "montant_tva" numeric(15,2) DEFAULT 0 NOT NULL,
-    "montant_total" numeric(15,2) DEFAULT 0 NOT NULL,
-    "montant_recu" numeric(15,2) DEFAULT 0 NOT NULL,
-    "montant_rendu" numeric(15,2) DEFAULT 0 NOT NULL,
-    "credit_utilise" numeric(15,2) DEFAULT 0 NOT NULL,
-    "advance_utilise" numeric(15,2) DEFAULT 0 NOT NULL,
-    "change_utilise" numeric(15,2) DEFAULT 0 NOT NULL,
-    "credit_accorde" numeric(15,2) DEFAULT 0 NOT NULL,
-    "note" "text",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "annule_le" timestamp with time zone,
-    "annule_par" "uuid",
-    "motif_annulation" "text",
-    CONSTRAINT "sales_statut_check" CHECK (("statut" = ANY (ARRAY['completee'::"text", 'annulee'::"text", 'remboursee'::"text"])))
-);
-
-
-ALTER TABLE "public"."sales" OWNER TO "postgres";
-
-
-COMMENT ON COLUMN "public"."sales"."statut" IS 'completee | annulee. Une vente annulée reste visible et conserve son numéro, mais son stock est rendu, ses soldes client repris, et elle sort de tous les totaux.';
 
 
 
@@ -4493,26 +5057,6 @@ CREATE TABLE IF NOT EXISTS "public"."stock_transfers" (
 ALTER TABLE "public"."stock_transfers" OWNER TO "postgres";
 
 
-CREATE TABLE IF NOT EXISTS "public"."supplier_payments" (
-    "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
-    "public_id" "text" NOT NULL,
-    "shop_id" "uuid" NOT NULL,
-    "supplier_id" "uuid" NOT NULL,
-    "purchase_order_id" "uuid",
-    "montant" numeric(15,2) NOT NULL,
-    "moyen_paiement" "text" DEFAULT 'cash'::"text" NOT NULL,
-    "reference" "text",
-    "date_paiement" "date" DEFAULT CURRENT_DATE NOT NULL,
-    "note" "text",
-    "created_by" "uuid",
-    "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
-    "facture_id" "uuid"
-);
-
-
-ALTER TABLE "public"."supplier_payments" OWNER TO "postgres";
-
-
 CREATE TABLE IF NOT EXISTS "public"."supplier_return_items" (
     "id" "uuid" DEFAULT "extensions"."uuid_generate_v4"() NOT NULL,
     "shop_id" "uuid" NOT NULL,
@@ -4668,6 +5212,21 @@ ALTER TABLE ONLY "public"."clients"
 
 
 
+ALTER TABLE ONLY "public"."comptes_tresorerie"
+    ADD CONSTRAINT "comptes_tresorerie_nom_key" UNIQUE ("shop_id", "nom");
+
+
+
+ALTER TABLE ONLY "public"."comptes_tresorerie"
+    ADD CONSTRAINT "comptes_tresorerie_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."comptes_tresorerie"
+    ADD CONSTRAINT "comptes_tresorerie_public_id_key" UNIQUE ("shop_id", "public_id");
+
+
+
 ALTER TABLE ONLY "public"."devis_items"
     ADD CONSTRAINT "devis_items_pkey" PRIMARY KEY ("id");
 
@@ -4758,6 +5317,16 @@ ALTER TABLE ONLY "public"."inventory_items"
 
 
 
+ALTER TABLE ONLY "public"."operations_proprietaire"
+    ADD CONSTRAINT "operations_proprietaire_pkey" PRIMARY KEY ("id");
+
+
+
+ALTER TABLE ONLY "public"."operations_proprietaire"
+    ADD CONSTRAINT "operations_proprietaire_public_id_key" UNIQUE ("shop_id", "public_id");
+
+
+
 ALTER TABLE ONLY "public"."platform_admins"
     ADD CONSTRAINT "platform_admins_email_key" UNIQUE ("email");
 
@@ -4830,6 +5399,11 @@ ALTER TABLE ONLY "public"."purchase_orders"
 
 ALTER TABLE ONLY "public"."purchase_orders"
     ADD CONSTRAINT "purchase_orders_shop_id_public_id_key" UNIQUE ("shop_id", "public_id");
+
+
+
+ALTER TABLE ONLY "public"."rapprochements_tresorerie"
+    ADD CONSTRAINT "rapprochements_tresorerie_pkey" PRIMARY KEY ("id");
 
 
 
@@ -5023,6 +5597,16 @@ ALTER TABLE ONLY "public"."shop_users"
 
 
 
+ALTER TABLE ONLY "public"."virements_tresorerie"
+    ADD CONSTRAINT "virements_public_id_key" UNIQUE ("shop_id", "public_id");
+
+
+
+ALTER TABLE ONLY "public"."virements_tresorerie"
+    ADD CONSTRAINT "virements_tresorerie_pkey" PRIMARY KEY ("id");
+
+
+
 ALTER TABLE ONLY "public"."warehouses"
     ADD CONSTRAINT "warehouses_pkey" PRIMARY KEY ("id");
 
@@ -5038,6 +5622,22 @@ CREATE UNIQUE INDEX "abonnement_paiements_reference_unique" ON "public"."abonnem
 
 
 CREATE INDEX "abonnement_paiements_shop_idx" ON "public"."abonnement_paiements" USING "btree" ("shop_id", "created_at" DESC);
+
+
+
+CREATE INDEX "comptes_tresorerie_shop_idx" ON "public"."comptes_tresorerie" USING "btree" ("shop_id", "type");
+
+
+
+CREATE UNIQUE INDEX "comptes_tresorerie_une_caisse_par_entrepot" ON "public"."comptes_tresorerie" USING "btree" ("warehouse_id") WHERE (("type" = 'caisse'::"text") AND ("warehouse_id" IS NOT NULL));
+
+
+
+CREATE INDEX "expenses_compte_idx" ON "public"."expenses" USING "btree" ("compte_id");
+
+
+
+CREATE INDEX "facture_payments_compte_idx" ON "public"."facture_payments" USING "btree" ("compte_id");
 
 
 
@@ -5457,11 +6057,59 @@ CREATE INDEX "idx_warehouses_shop_id" ON "public"."warehouses" USING "btree" ("s
 
 
 
+CREATE INDEX "operations_proprietaire_compte_idx" ON "public"."operations_proprietaire" USING "btree" ("compte_id");
+
+
+
+CREATE INDEX "rapprochements_compte_idx" ON "public"."rapprochements_tresorerie" USING "btree" ("compte_id", "date_rapprochement" DESC);
+
+
+
+CREATE INDEX "salary_payments_compte_idx" ON "public"."salary_payments" USING "btree" ("compte_id");
+
+
+
+CREATE INDEX "sale_payments_compte_idx" ON "public"."sale_payments" USING "btree" ("compte_id");
+
+
+
 CREATE INDEX "shop_users_identifiant_ancien_idx" ON "public"."shop_users" USING "btree" ("identifiant_ancien") WHERE ("identifiant_ancien" IS NOT NULL);
 
 
 
 CREATE UNIQUE INDEX "shop_users_identifiant_unique" ON "public"."shop_users" USING "btree" ("identifiant");
+
+
+
+CREATE INDEX "supplier_payments_compte_idx" ON "public"."supplier_payments" USING "btree" ("compte_id");
+
+
+
+CREATE INDEX "virements_destination_idx" ON "public"."virements_tresorerie" USING "btree" ("compte_destination_id");
+
+
+
+CREATE INDEX "virements_source_idx" ON "public"."virements_tresorerie" USING "btree" ("compte_source_id");
+
+
+
+CREATE OR REPLACE TRIGGER "expenses_garde_compte" BEFORE INSERT OR UPDATE ON "public"."expenses" FOR EACH ROW EXECUTE FUNCTION "public"."garde_mouvement_tresorerie"('montant', 'sortie');
+
+
+
+CREATE OR REPLACE TRIGGER "facture_payments_garde_compte" BEFORE INSERT OR UPDATE ON "public"."facture_payments" FOR EACH ROW EXECUTE FUNCTION "public"."garde_mouvement_tresorerie"('montant', 'entree');
+
+
+
+CREATE OR REPLACE TRIGGER "operations_proprietaire_garde_compte" BEFORE INSERT OR UPDATE ON "public"."operations_proprietaire" FOR EACH ROW EXECUTE FUNCTION "public"."garde_mouvement_tresorerie"('montant', 'selon_type');
+
+
+
+CREATE OR REPLACE TRIGGER "salary_payments_garde_compte" BEFORE INSERT OR UPDATE ON "public"."salary_payments" FOR EACH ROW EXECUTE FUNCTION "public"."garde_mouvement_tresorerie"('montant_net', 'sortie');
+
+
+
+CREATE OR REPLACE TRIGGER "sale_payments_garde_compte" BEFORE INSERT OR UPDATE ON "public"."sale_payments" FOR EACH ROW EXECUTE FUNCTION "public"."garde_mouvement_tresorerie"('montant', 'entree');
 
 
 
@@ -5477,6 +6125,10 @@ CREATE OR REPLACE TRIGGER "shops_propager_suffixe" AFTER UPDATE OF "suffixe_iden
 
 
 
+CREATE OR REPLACE TRIGGER "supplier_payments_garde_compte" BEFORE INSERT OR UPDATE ON "public"."supplier_payments" FOR EACH ROW EXECUTE FUNCTION "public"."garde_mouvement_tresorerie"('montant', 'sortie');
+
+
+
 CREATE OR REPLACE TRIGGER "trg_categories_updated_at" BEFORE UPDATE ON "public"."categories" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at"();
 
 
@@ -5486,6 +6138,10 @@ CREATE OR REPLACE TRIGGER "trg_check_client_credit" BEFORE INSERT OR UPDATE ON "
 
 
 CREATE OR REPLACE TRIGGER "trg_clients_updated_at" BEFORE UPDATE ON "public"."clients" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "trg_comptes_tresorerie_updated_at" BEFORE UPDATE ON "public"."comptes_tresorerie" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at"();
 
 
 
@@ -5554,6 +6210,10 @@ CREATE OR REPLACE TRIGGER "update_po_updated_at" BEFORE UPDATE ON "public"."purc
 
 
 CREATE OR REPLACE TRIGGER "update_suppliers_updated_at" BEFORE UPDATE ON "public"."suppliers" FOR EACH ROW EXECUTE FUNCTION "public"."update_updated_at"();
+
+
+
+CREATE OR REPLACE TRIGGER "warehouses_creer_caisse" AFTER INSERT ON "public"."warehouses" FOR EACH ROW EXECUTE FUNCTION "public"."creer_caisse_entrepot"();
 
 
 
@@ -5662,6 +6322,21 @@ ALTER TABLE ONLY "public"."clients"
 
 
 
+ALTER TABLE ONLY "public"."comptes_tresorerie"
+    ADD CONSTRAINT "comptes_tresorerie_compte_reversement_id_fkey" FOREIGN KEY ("compte_reversement_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."comptes_tresorerie"
+    ADD CONSTRAINT "comptes_tresorerie_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."comptes_tresorerie"
+    ADD CONSTRAINT "comptes_tresorerie_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id");
+
+
+
 ALTER TABLE ONLY "public"."devis"
     ADD CONSTRAINT "devis_client_id_fkey" FOREIGN KEY ("client_id") REFERENCES "public"."clients"("id") ON DELETE SET NULL;
 
@@ -5718,6 +6393,11 @@ ALTER TABLE ONLY "public"."expenses"
 
 
 ALTER TABLE ONLY "public"."expenses"
+    ADD CONSTRAINT "expenses_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."expenses"
     ADD CONSTRAINT "expenses_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."shop_users"("id");
 
 
@@ -5764,6 +6444,11 @@ ALTER TABLE ONLY "public"."facture_items"
 
 ALTER TABLE ONLY "public"."facture_payments"
     ADD CONSTRAINT "facture_payments_annule_par_fkey" FOREIGN KEY ("annule_par") REFERENCES "public"."shop_users"("id");
+
+
+
+ALTER TABLE ONLY "public"."facture_payments"
+    ADD CONSTRAINT "facture_payments_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
 
 
 
@@ -5872,6 +6557,16 @@ ALTER TABLE ONLY "public"."inventory_items"
 
 
 
+ALTER TABLE ONLY "public"."operations_proprietaire"
+    ADD CONSTRAINT "operations_proprietaire_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."operations_proprietaire"
+    ADD CONSTRAINT "operations_proprietaire_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."platform_sessions"
     ADD CONSTRAINT "platform_sessions_admin_id_fkey" FOREIGN KEY ("admin_id") REFERENCES "public"."platform_admins"("id") ON DELETE CASCADE;
 
@@ -5972,6 +6667,16 @@ ALTER TABLE ONLY "public"."purchase_orders"
 
 
 
+ALTER TABLE ONLY "public"."rapprochements_tresorerie"
+    ADD CONSTRAINT "rapprochements_tresorerie_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."rapprochements_tresorerie"
+    ADD CONSTRAINT "rapprochements_tresorerie_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE CASCADE;
+
+
+
 ALTER TABLE ONLY "public"."reception_items"
     ADD CONSTRAINT "reception_items_po_item_id_fkey" FOREIGN KEY ("poi_id") REFERENCES "public"."purchase_order_items"("id");
 
@@ -6028,6 +6733,11 @@ ALTER TABLE ONLY "public"."salary_payments"
 
 
 ALTER TABLE ONLY "public"."salary_payments"
+    ADD CONSTRAINT "salary_payments_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."salary_payments"
     ADD CONSTRAINT "salary_payments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."shop_users"("id");
 
 
@@ -6064,6 +6774,11 @@ ALTER TABLE ONLY "public"."sale_items"
 
 ALTER TABLE ONLY "public"."sale_items"
     ADD CONSTRAINT "sale_items_warehouse_id_fkey" FOREIGN KEY ("warehouse_id") REFERENCES "public"."warehouses"("id");
+
+
+
+ALTER TABLE ONLY "public"."sale_payments"
+    ADD CONSTRAINT "sale_payments_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
 
 
 
@@ -6288,6 +7003,11 @@ ALTER TABLE ONLY "public"."stock_transfers"
 
 
 ALTER TABLE ONLY "public"."supplier_payments"
+    ADD CONSTRAINT "supplier_payments_compte_id_fkey" FOREIGN KEY ("compte_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."supplier_payments"
     ADD CONSTRAINT "supplier_payments_created_by_fkey" FOREIGN KEY ("created_by") REFERENCES "public"."shop_users"("id");
 
 
@@ -6349,6 +7069,26 @@ ALTER TABLE ONLY "public"."supplier_returns"
 
 ALTER TABLE ONLY "public"."suppliers"
     ADD CONSTRAINT "suppliers_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY "public"."virements_tresorerie"
+    ADD CONSTRAINT "virements_tresorerie_compte_destination_id_fkey" FOREIGN KEY ("compte_destination_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."virements_tresorerie"
+    ADD CONSTRAINT "virements_tresorerie_compte_source_id_fkey" FOREIGN KEY ("compte_source_id") REFERENCES "public"."comptes_tresorerie"("id");
+
+
+
+ALTER TABLE ONLY "public"."virements_tresorerie"
+    ADD CONSTRAINT "virements_tresorerie_expense_id_fkey" FOREIGN KEY ("expense_id") REFERENCES "public"."expenses"("id");
+
+
+
+ALTER TABLE ONLY "public"."virements_tresorerie"
+    ADD CONSTRAINT "virements_tresorerie_shop_id_fkey" FOREIGN KEY ("shop_id") REFERENCES "public"."shops"("id") ON DELETE CASCADE;
 
 
 
@@ -6426,6 +7166,13 @@ ALTER TABLE "public"."clients" ENABLE ROW LEVEL SECURITY;
 
 
 CREATE POLICY "clients_isolation" ON "public"."clients" USING (("shop_id" = ( SELECT ((("auth"."jwt"() -> 'user_metadata'::"text") ->> 'shop_id'::"text"))::"uuid" AS "uuid")));
+
+
+
+ALTER TABLE "public"."comptes_tresorerie" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "comptes_tresorerie_isolation" ON "public"."comptes_tresorerie" USING (("shop_id" = ( SELECT ((("auth"."jwt"() -> 'user_metadata'::"text") ->> 'shop_id'::"text"))::"uuid" AS "uuid")));
 
 
 
@@ -6549,6 +7296,10 @@ CREATE POLICY "licence_en_service" ON "public"."clients" AS RESTRICTIVE USING ((
 
 
 
+CREATE POLICY "licence_en_service" ON "public"."comptes_tresorerie" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
+
+
+
 CREATE POLICY "licence_en_service" ON "public"."devis" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
 
 
@@ -6597,6 +7348,10 @@ CREATE POLICY "licence_en_service" ON "public"."inventory_items" AS RESTRICTIVE 
 
 
 
+CREATE POLICY "licence_en_service" ON "public"."operations_proprietaire" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
+
+
+
 CREATE POLICY "licence_en_service" ON "public"."price_history" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
 
 
@@ -6618,6 +7373,10 @@ CREATE POLICY "licence_en_service" ON "public"."purchase_order_items" AS RESTRIC
 
 
 CREATE POLICY "licence_en_service" ON "public"."purchase_orders" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
+
+
+
+CREATE POLICY "licence_en_service" ON "public"."rapprochements_tresorerie" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
 
 
 
@@ -6705,6 +7464,10 @@ CREATE POLICY "licence_en_service" ON "public"."suppliers" AS RESTRICTIVE USING 
 
 
 
+CREATE POLICY "licence_en_service" ON "public"."virements_tresorerie" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
+
+
+
 CREATE POLICY "licence_en_service" ON "public"."warehouses" AS RESTRICTIVE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service")) WITH CHECK (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
 
 
@@ -6714,6 +7477,13 @@ CREATE POLICY "licence_en_service_ecriture_shops" ON "public"."shops" AS RESTRIC
 
 
 CREATE POLICY "licence_en_service_suppression_shops" ON "public"."shops" AS RESTRICTIVE FOR DELETE USING (( SELECT "public"."session_boutique_en_service"() AS "session_boutique_en_service"));
+
+
+
+ALTER TABLE "public"."operations_proprietaire" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "operations_proprietaire_isolation" ON "public"."operations_proprietaire" USING (("shop_id" = ( SELECT ((("auth"."jwt"() -> 'user_metadata'::"text") ->> 'shop_id'::"text"))::"uuid" AS "uuid")));
 
 
 
@@ -6758,6 +7528,13 @@ ALTER TABLE "public"."purchase_order_items" ENABLE ROW LEVEL SECURITY;
 
 
 ALTER TABLE "public"."purchase_orders" ENABLE ROW LEVEL SECURITY;
+
+
+ALTER TABLE "public"."rapprochements_tresorerie" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "rapprochements_tresorerie_isolation" ON "public"."rapprochements_tresorerie" USING (("shop_id" = ( SELECT ((("auth"."jwt"() -> 'user_metadata'::"text") ->> 'shop_id'::"text"))::"uuid" AS "uuid")));
+
 
 
 ALTER TABLE "public"."reception_items" ENABLE ROW LEVEL SECURITY;
@@ -6903,6 +7680,13 @@ CREATE POLICY "transfers_isolation" ON "public"."stock_transfers" USING (("shop_
 
 
 CREATE POLICY "variants_isolation" ON "public"."product_variants" USING (("shop_id" = ( SELECT ((("auth"."jwt"() -> 'user_metadata'::"text") ->> 'shop_id'::"text"))::"uuid" AS "uuid")));
+
+
+
+ALTER TABLE "public"."virements_tresorerie" ENABLE ROW LEVEL SECURITY;
+
+
+CREATE POLICY "virements_tresorerie_isolation" ON "public"."virements_tresorerie" USING (("shop_id" = ( SELECT ((("auth"."jwt"() -> 'user_metadata'::"text") ->> 'shop_id'::"text"))::"uuid" AS "uuid")));
 
 
 
@@ -7084,6 +7868,12 @@ GRANT ALL ON FUNCTION "public"."annuler_inventaire"("p_inventory_id" "uuid", "p_
 
 
 
+GRANT ALL ON FUNCTION "public"."annuler_operation_proprietaire"("p_shop_id" "uuid", "p_operation_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."annuler_operation_proprietaire"("p_shop_id" "uuid", "p_operation_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."annuler_operation_proprietaire"("p_shop_id" "uuid", "p_operation_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."annuler_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."annuler_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."annuler_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "service_role";
@@ -7093,6 +7883,12 @@ GRANT ALL ON FUNCTION "public"."annuler_paiement_facture"("p_shop_id" "uuid", "p
 GRANT ALL ON FUNCTION "public"."annuler_vente"("p_shop_id" "uuid", "p_sale_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."annuler_vente"("p_shop_id" "uuid", "p_sale_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."annuler_vente"("p_shop_id" "uuid", "p_sale_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."annuler_virement"("p_shop_id" "uuid", "p_virement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."annuler_virement"("p_shop_id" "uuid", "p_virement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."annuler_virement"("p_shop_id" "uuid", "p_virement_id" "uuid", "p_motif" "text", "p_user_id" "uuid") TO "service_role";
 
 
 
@@ -7150,6 +7946,12 @@ GRANT ALL ON FUNCTION "public"."creer_avoir"("p_shop_id" "uuid", "p_facture_id" 
 
 
 
+GRANT ALL ON FUNCTION "public"."creer_caisse_entrepot"() TO "anon";
+GRANT ALL ON FUNCTION "public"."creer_caisse_entrepot"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."creer_caisse_entrepot"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."deduire_stock"("p_shop_id" "uuid", "p_product_id" "uuid", "p_warehouse_id" "uuid", "p_quantite" numeric, "p_reference_type" "text", "p_reference_id" "uuid", "p_reference_pid" "text", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."deduire_stock"("p_shop_id" "uuid", "p_product_id" "uuid", "p_warehouse_id" "uuid", "p_quantite" numeric, "p_reference_type" "text", "p_reference_id" "uuid", "p_reference_pid" "text", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."deduire_stock"("p_shop_id" "uuid", "p_product_id" "uuid", "p_warehouse_id" "uuid", "p_quantite" numeric, "p_reference_type" "text", "p_reference_id" "uuid", "p_reference_pid" "text", "p_user_id" "uuid") TO "service_role";
@@ -7180,6 +7982,18 @@ GRANT ALL ON FUNCTION "public"."effectuer_transfert"("p_data" "jsonb") TO "servi
 
 
 
+GRANT ALL ON FUNCTION "public"."effectuer_virement"("p_shop_id" "uuid", "p_source_id" "uuid", "p_destination_id" "uuid", "p_montant" numeric, "p_frais" numeric, "p_date" "date", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."effectuer_virement"("p_shop_id" "uuid", "p_source_id" "uuid", "p_destination_id" "uuid", "p_montant" numeric, "p_frais" numeric, "p_date" "date", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."effectuer_virement"("p_shop_id" "uuid", "p_source_id" "uuid", "p_destination_id" "uuid", "p_montant" numeric, "p_frais" numeric, "p_date" "date", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."enregistrer_operation_proprietaire"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_type" "text", "p_montant" numeric, "p_date" "date", "p_beneficiaire" "text", "p_motif" "text", "p_reference" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."enregistrer_operation_proprietaire"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_type" "text", "p_montant" numeric, "p_date" "date", "p_beneficiaire" "text", "p_motif" "text", "p_reference" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."enregistrer_operation_proprietaire"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_type" "text", "p_montant" numeric, "p_date" "date", "p_beneficiaire" "text", "p_motif" "text", "p_reference" "text", "p_user_id" "uuid") TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."abonnement_paiements" TO "anon";
 GRANT ALL ON TABLE "public"."abonnement_paiements" TO "authenticated";
 GRANT ALL ON TABLE "public"."abonnement_paiements" TO "service_role";
@@ -7188,6 +8002,12 @@ GRANT ALL ON TABLE "public"."abonnement_paiements" TO "service_role";
 
 REVOKE ALL ON FUNCTION "public"."enregistrer_paiement_manuel"("p_shop_id" "uuid", "p_plan" "text", "p_duree" "text", "p_montant" numeric, "p_admin_id" "uuid", "p_note" "text", "p_reference" "text") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."enregistrer_paiement_manuel"("p_shop_id" "uuid", "p_plan" "text", "p_duree" "text", "p_montant" numeric, "p_admin_id" "uuid", "p_note" "text", "p_reference" "text") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."enregistrer_rapprochement"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_date" "date", "p_solde_reel" numeric, "p_note" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."enregistrer_rapprochement"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_date" "date", "p_solde_reel" numeric, "p_note" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."enregistrer_rapprochement"("p_shop_id" "uuid", "p_compte_id" "uuid", "p_date" "date", "p_solde_reel" numeric, "p_note" "text", "p_user_id" "uuid") TO "service_role";
 
 
 
@@ -7218,6 +8038,12 @@ GRANT ALL ON FUNCTION "public"."evolution_tresorerie"("p_shop_id" "uuid", "p_moi
 GRANT ALL ON FUNCTION "public"."fermer_session_caisse"("p_shop_id" "uuid", "p_session_id" "uuid", "p_compte" numeric, "p_note" "text", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."fermer_session_caisse"("p_shop_id" "uuid", "p_session_id" "uuid", "p_compte" numeric, "p_note" "text", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."fermer_session_caisse"("p_shop_id" "uuid", "p_session_id" "uuid", "p_compte" numeric, "p_note" "text", "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."garde_mouvement_tresorerie"() TO "anon";
+GRANT ALL ON FUNCTION "public"."garde_mouvement_tresorerie"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."garde_mouvement_tresorerie"() TO "service_role";
 
 
 
@@ -7269,15 +8095,27 @@ GRANT ALL ON FUNCTION "public"."modifier_facture_fournisseur"("p_shop_id" "uuid"
 
 
 
-GRANT ALL ON FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."modifier_paiement_facture"("p_shop_id" "uuid", "p_paiement_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_date_paiement" "date", "p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) TO "anon";
-GRANT ALL ON FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) TO "service_role";
+GRANT ALL ON FUNCTION "public"."montant_fr"("p" numeric) TO "anon";
+GRANT ALL ON FUNCTION "public"."montant_fr"("p" numeric) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."montant_fr"("p" numeric) TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."mouvements_comptes_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."mouvements_comptes_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."mouvements_comptes_jour"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."moyen_du_compte"("p_type" "text", "p_operateur" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."moyen_du_compte"("p_type" "text", "p_operateur" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."moyen_du_compte"("p_type" "text", "p_operateur" "text") TO "service_role";
 
 
 
@@ -7299,21 +8137,27 @@ GRANT ALL ON FUNCTION "public"."ouvrir_session_caisse"("p_shop_id" "uuid", "p_wa
 
 
 
-GRANT ALL ON FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") TO "anon";
-GRANT ALL ON FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") TO "service_role";
+GRANT ALL ON FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."payer_facture"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid", "p_date_paiement" "date") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."payer_facture_fournisseur"("p_shop_id" "uuid", "p_facture_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "service_role";
 
 
 
-GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_moyen" "text", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_supplier_id" "uuid", "p_montant" numeric, "p_compte_id" "uuid", "p_reference" "text", "p_note" "text", "p_user_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."prochain_numero"("p_shop_id" "uuid", "p_prefix" "text") TO "anon";
+GRANT ALL ON FUNCTION "public"."prochain_numero"("p_shop_id" "uuid", "p_prefix" "text") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."prochain_numero"("p_shop_id" "uuid", "p_prefix" "text") TO "service_role";
 
 
 
@@ -7334,9 +8178,9 @@ GRANT ALL ON FUNCTION "public"."recalculer_statut_facture"("p_facture_id" "uuid"
 
 
 
-GRANT ALL ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid") TO "anon";
-GRANT ALL ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid") TO "authenticated";
-GRANT ALL ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid") TO "service_role";
+GRANT ALL ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid", "p_compte_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid", "p_compte_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."regler_retour_vente"("p_shop_id" "uuid", "p_retour_id" "uuid", "p_mode" "text", "p_note" "text", "p_user_id" "uuid", "p_compte_id" "uuid") TO "service_role";
 
 
 
@@ -7355,6 +8199,18 @@ GRANT ALL ON FUNCTION "public"."rouvrir_session_caisse"("p_shop_id" "uuid", "p_s
 GRANT ALL ON FUNCTION "public"."session_boutique_en_service"() TO "anon";
 GRANT ALL ON FUNCTION "public"."session_boutique_en_service"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."session_boutique_en_service"() TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."solde_compte"("p_compte_id" "uuid") TO "anon";
+GRANT ALL ON FUNCTION "public"."solde_compte"("p_compte_id" "uuid") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."solde_compte"("p_compte_id" "uuid") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."soldes_comptes"("p_shop_id" "uuid", "p_au" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."soldes_comptes"("p_shop_id" "uuid", "p_au" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."soldes_comptes"("p_shop_id" "uuid", "p_au" "date") TO "service_role";
 
 
 
@@ -7382,9 +8238,9 @@ GRANT ALL ON FUNCTION "public"."valider_inventaire"("p_inventory_id" "uuid", "p_
 
 
 
-GRANT ALL ON FUNCTION "public"."ventilation_caisse"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) TO "anon";
-GRANT ALL ON FUNCTION "public"."ventilation_caisse"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) TO "authenticated";
-GRANT ALL ON FUNCTION "public"."ventilation_caisse"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date", "p_decalage" interval) TO "service_role";
+GRANT ALL ON FUNCTION "public"."ventilation_comptes"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") TO "anon";
+GRANT ALL ON FUNCTION "public"."ventilation_comptes"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") TO "authenticated";
+GRANT ALL ON FUNCTION "public"."ventilation_comptes"("p_shop_id" "uuid", "p_debut" "date", "p_fin" "date") TO "service_role";
 
 
 
@@ -7448,6 +8304,12 @@ GRANT ALL ON TABLE "public"."client_balance_operations" TO "service_role";
 GRANT ALL ON TABLE "public"."clients" TO "anon";
 GRANT ALL ON TABLE "public"."clients" TO "authenticated";
 GRANT ALL ON TABLE "public"."clients" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."comptes_tresorerie" TO "anon";
+GRANT ALL ON TABLE "public"."comptes_tresorerie" TO "authenticated";
+GRANT ALL ON TABLE "public"."comptes_tresorerie" TO "service_role";
 
 
 
@@ -7523,6 +8385,48 @@ GRANT ALL ON TABLE "public"."inventory_items" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."operations_proprietaire" TO "anon";
+GRANT ALL ON TABLE "public"."operations_proprietaire" TO "authenticated";
+GRANT ALL ON TABLE "public"."operations_proprietaire" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."salary_payments" TO "anon";
+GRANT ALL ON TABLE "public"."salary_payments" TO "authenticated";
+GRANT ALL ON TABLE "public"."salary_payments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."sale_payments" TO "anon";
+GRANT ALL ON TABLE "public"."sale_payments" TO "authenticated";
+GRANT ALL ON TABLE "public"."sale_payments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."sales" TO "anon";
+GRANT ALL ON TABLE "public"."sales" TO "authenticated";
+GRANT ALL ON TABLE "public"."sales" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."supplier_payments" TO "anon";
+GRANT ALL ON TABLE "public"."supplier_payments" TO "authenticated";
+GRANT ALL ON TABLE "public"."supplier_payments" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."virements_tresorerie" TO "anon";
+GRANT ALL ON TABLE "public"."virements_tresorerie" TO "authenticated";
+GRANT ALL ON TABLE "public"."virements_tresorerie" TO "service_role";
+
+
+
+GRANT ALL ON TABLE "public"."mouvements_tresorerie" TO "anon";
+GRANT ALL ON TABLE "public"."mouvements_tresorerie" TO "authenticated";
+GRANT ALL ON TABLE "public"."mouvements_tresorerie" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."platform_admins" TO "anon";
 GRANT ALL ON TABLE "public"."platform_admins" TO "authenticated";
 GRANT ALL ON TABLE "public"."platform_admins" TO "service_role";
@@ -7577,6 +8481,12 @@ GRANT ALL ON TABLE "public"."purchase_orders" TO "service_role";
 
 
 
+GRANT ALL ON TABLE "public"."rapprochements_tresorerie" TO "anon";
+GRANT ALL ON TABLE "public"."rapprochements_tresorerie" TO "authenticated";
+GRANT ALL ON TABLE "public"."rapprochements_tresorerie" TO "service_role";
+
+
+
 GRANT ALL ON TABLE "public"."reception_items" TO "anon";
 GRANT ALL ON TABLE "public"."reception_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."reception_items" TO "service_role";
@@ -7589,21 +8499,9 @@ GRANT ALL ON TABLE "public"."receptions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."salary_payments" TO "anon";
-GRANT ALL ON TABLE "public"."salary_payments" TO "authenticated";
-GRANT ALL ON TABLE "public"."salary_payments" TO "service_role";
-
-
-
 GRANT ALL ON TABLE "public"."sale_items" TO "anon";
 GRANT ALL ON TABLE "public"."sale_items" TO "authenticated";
 GRANT ALL ON TABLE "public"."sale_items" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."sale_payments" TO "anon";
-GRANT ALL ON TABLE "public"."sale_payments" TO "authenticated";
-GRANT ALL ON TABLE "public"."sale_payments" TO "service_role";
 
 
 
@@ -7616,12 +8514,6 @@ GRANT ALL ON TABLE "public"."sale_return_items" TO "service_role";
 GRANT ALL ON TABLE "public"."sale_returns" TO "anon";
 GRANT ALL ON TABLE "public"."sale_returns" TO "authenticated";
 GRANT ALL ON TABLE "public"."sale_returns" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."sales" TO "anon";
-GRANT ALL ON TABLE "public"."sales" TO "authenticated";
-GRANT ALL ON TABLE "public"."sales" TO "service_role";
 
 
 
@@ -7682,12 +8574,6 @@ GRANT ALL ON TABLE "public"."stock_transfer_items" TO "service_role";
 GRANT ALL ON TABLE "public"."stock_transfers" TO "anon";
 GRANT ALL ON TABLE "public"."stock_transfers" TO "authenticated";
 GRANT ALL ON TABLE "public"."stock_transfers" TO "service_role";
-
-
-
-GRANT ALL ON TABLE "public"."supplier_payments" TO "anon";
-GRANT ALL ON TABLE "public"."supplier_payments" TO "authenticated";
-GRANT ALL ON TABLE "public"."supplier_payments" TO "service_role";
 
 
 

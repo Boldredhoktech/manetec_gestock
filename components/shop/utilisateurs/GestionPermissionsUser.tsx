@@ -31,6 +31,7 @@ const PERMISSIONS_PAR_ROLE: Record<string, { code: string; label: string; descri
         { code: 'stock.audit.validate',    label: 'Valider les inventaires',  description: 'Peut valider les inventaires physiques' },
         { code: 'reports.generate',        label: 'Générer des rapports',     description: 'Accès aux rapports PDF' },
         { code: 'suppliers.edit',          label: 'Modifier les fournisseurs', description: 'Peut modifier les fiches fournisseurs' },
+        { code: 'data.import',             label: 'Importer des données',     description: 'Imports Excel : produits et stock, clients, fournisseurs, soldes d’ouverture' },
         { code: 'treasury.balances.view',  label: 'Voir la trésorerie',       description: 'Soldes et journaux des caisses, banques et Mobile Money' },
         { code: 'treasury.manage',         label: 'Gérer la trésorerie',      description: 'Comptes, virements, retraits/apports, rapprochements (inclut la vue des soldes)' },
     ],
@@ -38,6 +39,7 @@ const PERMISSIONS_PAR_ROLE: Record<string, { code: string; label: string; descri
         { code: 'users.view',              label: 'Voir les utilisateurs',    description: 'Peut consulter la liste des utilisateurs' },
         { code: 'settings.view',           label: 'Voir les paramètres',      description: 'Lecture seule des paramètres boutique' },
         { code: 'reports.all',             label: 'Tous les rapports',        description: 'Accès à tous les rapports avancés' },
+        { code: 'data.import',             label: 'Importer des données',     description: 'Imports Excel : produits et stock, clients, fournisseurs, soldes d’ouverture' },
     ],
 }
 

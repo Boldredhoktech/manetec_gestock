@@ -27,7 +27,7 @@ import {
     LayoutDashboard, Users, Settings, UserSquare, ShoppingCart,
     Package, FileText, Warehouse, Tags, Award, BarChart3, Receipt,
     ClipboardCheck, Send, Truck, CreditCard, PackageCheck, FileInput,
-    ArrowLeftRight, SlidersHorizontal, Undo2, ClipboardList, Wallet, Landmark,
+    ArrowLeftRight, SlidersHorizontal, Undo2, ClipboardList, Wallet, Landmark, FileUp,
 } from 'lucide-react'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
@@ -61,6 +61,8 @@ export const NAVIGATION_BOUTIQUE: GroupeNavigation[] = [
               permission: PERMISSIONS.PARAMETRES_GERER },
             { label: 'Abonnement',      href: '/admin/abonnement',   icone: CreditCard,
               permission: PERMISSIONS.PARAMETRES_GERER },
+            { label: 'Import de données', href: '/admin/import',     icone: FileUp,
+              permission: PERMISSIONS.IMPORTER_DONNEES },
         ],
     },
     {

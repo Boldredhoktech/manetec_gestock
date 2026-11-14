@@ -79,6 +79,9 @@ export const PERMISSIONS = {
     // retraits/apports, rapprochements ; elle donne aussi la vue des soldes.
     TRESORERIE_SOLDES_VOIR: 'treasury.balances.view',
     TRESORERIE_GERER: 'treasury.manage',
+    // Imports Excel (mig 042) : produits, clients, fournisseurs et soldes
+    // d'ouverture. Admin par défaut, accordable.
+    IMPORTER_DONNEES: 'data.import',
     // Administration
     UTILISATEURS_GERER: 'users.manage',
     PARAMETRES_GERER: 'settings.manage',

@@ -561,7 +561,7 @@ export async function getDonneesRapportFournisseurs(
             .eq('shop_id', shopId)
             .order('nom'),
         adminClient.from('factures_fournisseurs')
-            .select('supplier_id, statut, date_facture, date_echeance, montant_ttc, montant_restant, a_completer, public_id')
+            .select('supplier_id, statut, date_facture, date_echeance, montant_ttc, montant_restant, a_completer, public_id, est_ouverture')
             .eq('shop_id', shopId)
             .neq('statut', 'annulee'),
         adminClient.from('supplier_payments')
@@ -580,13 +580,15 @@ export async function getDonneesRapportFournisseurs(
         const sesFactures = toutesFactures.filter(x => x.supplier_id === f.id)
         const sesPaiements = tousPaiements.filter(x => x.supplier_id === f.id)
 
-        const achatsPeriode    = sesFactures.filter(x => dansPeriode(x.date_facture))
+        // Une dette d'ouverture (import, mig 042) n'est pas un achat : elle
+        // reste dans le solde, donc dans le solde d'ouverture recalculé.
+        const achatsPeriode    = sesFactures.filter(x => !x.est_ouverture && dansPeriode(x.date_facture))
             .reduce((a, x) => a + Number(x.montant_ttc ?? 0), 0)
         const paiementsPeriode = sesPaiements.filter(x => dansPeriode(x.date_paiement))
             .reduce((a, x) => a + Number(x.montant ?? 0), 0)
 
         // Ce qui s'est passé APRÈS la période, pour remonter au solde de clôture.
-        const achatsApres    = sesFactures.filter(x => apresFin(x.date_facture))
+        const achatsApres    = sesFactures.filter(x => !x.est_ouverture && apresFin(x.date_facture))
             .reduce((a, x) => a + Number(x.montant_ttc ?? 0), 0)
         const paiementsApres = sesPaiements.filter(x => apresFin(x.date_paiement))
             .reduce((a, x) => a + Number(x.montant ?? 0), 0)
@@ -674,7 +676,7 @@ export async function getDonneesReleveFournisseur(
                 .select('public_id, nom, telephone, email, adresse, ville')
                 .eq('id', supplierId).eq('shop_id', shopId).single(),
             adminClient.from('factures_fournisseurs')
-                .select('public_id, reference_fourn, date_facture, montant_ttc, montant_restant, statut, a_completer')
+                .select('public_id, reference_fourn, date_facture, montant_ttc, montant_restant, statut, a_completer, est_ouverture')
                 .eq('shop_id', shopId).eq('supplier_id', supplierId).neq('statut', 'annulee'),
             adminClient.from('supplier_payments')
                 .select('public_id, date_paiement, montant, moyen_paiement, reference, facture_id, factures_fournisseurs(public_id)')
@@ -685,7 +687,9 @@ export async function getDonneesReleveFournisseur(
         date:      f.date_facture as string,
         type:      'facture' as const,
         piece:     f.public_id as string,
-        libelle:   f.a_completer
+        libelle:   f.est_ouverture
+            ? 'Solde d’ouverture (dette reprise au démarrage)'
+            : f.a_completer
             ? 'Facture à compléter (créée par une réception)'
             : (f.reference_fourn ? `Facture fournisseur ${f.reference_fourn}` : 'Facture fournisseur'),
         debit:     Number(f.montant_ttc ?? 0),

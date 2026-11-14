@@ -6,6 +6,10 @@ const nextConfig: NextConfig = {
 
     experimental: {
         serverActions: {
+            // Imports Excel (mig 042) : un fichier de quelques milliers de
+            // lignes dépasse la limite par défaut de 1 Mo. Vercel plafonne
+            // le corps d'une requête à 4,5 Mo.
+            bodySizeLimit: '4mb',
             // ✅ Ajout du domaine de production en plus de localhost
             allowedOrigins: [
                 'localhost:3000',
