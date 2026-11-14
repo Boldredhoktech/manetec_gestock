@@ -279,3 +279,135 @@
         margin: 0 auto;
     }
 }
+/* ════════════════════════════════════════════════════════════════
+   NOUVEAU DESIGN (lot 1, 14/11) — limité au logiciel : .app-manetec est
+   posé par app/(shop)/layout.tsx. La page publique et la connexion
+   gardent les styles ci-dessus.
+   Bleu = structure et actions ; jaune = mise en avant (jamais en texte
+   sur blanc) ; rouge = alertes. Clair + sombre (.dark).
+   ════════════════════════════════════════════════════════════════ */
+.app-manetec {
+    --background:          #F4F6FB;
+    --foreground:          #0E1630;
+    --card:                #FFFFFF;
+    --card-foreground:     #0E1630;
+    --popover:             #FFFFFF;
+    --popover-foreground:  #0E1630;
+    --surface2:            #F8FAFD;
+    --border:              #E2E7F0;
+    --input:               #C9D3E6;
+    --ring:                #1D4ED8;
+    --muted:               #EEF1F7;
+    --muted-foreground:    #566079;
+    --primary:             #1D4ED8;
+    --primary-foreground:  #FFFFFF;
+    --primary-strong:      #1E40AF;
+    --primary-soft:        #E8EEFF;
+    --secondary:           #EEF1F7;
+    --secondary-foreground:#0E1630;
+    --accent:              #FEF6C7;
+    --accent-foreground:   #7A4A00;
+    --jaune:               #FACC15;
+    --sur-jaune:           #1A1400;
+    --destructive:         #DC2626;
+    --destructive-foreground: #FFFFFF;
+    --rouge-doux:          #FDE6E6;
+    --rouge-texte:         #B01C1C;
+    --nav:                 #0B1F4D;
+    --radius:              0.75rem;
+
+    --sidebar-bg:              #0B1F4D;
+    --sidebar-fg:              #FFFFFF;
+    --sidebar-muted:           #C9D4F0;
+    --sidebar-item-hover-bg:   rgba(255,255,255,0.08);
+    --sidebar-item-active-bg:  #FACC15;
+    --sidebar-item-active-fg:  #1A1400;
+    --sidebar-border:          rgba(255,255,255,0.10);
+
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-inter), system-ui, sans-serif;
+    font-variant-numeric: tabular-nums;
+}
+.app-manetec :is(h1, h2, h3, .titre-design) {
+    font-family: var(--font-space), var(--font-inter), system-ui, sans-serif;
+    letter-spacing: -0.01em;
+}
+.app-manetec.dark {
+    --background:          #080E1F;
+    --foreground:          #E7ECF7;
+    --card:                #111A31;
+    --card-foreground:     #E7ECF7;
+    --popover:             #111A31;
+    --popover-foreground:  #E7ECF7;
+    --surface2:            #0D1529;
+    --border:              #243152;
+    --input:               #2C3A5E;
+    --ring:                #5B8CFF;
+    --muted:               #17213C;
+    --muted-foreground:    #9AA7C4;
+    --primary:             #5B8CFF;
+    --primary-foreground:  #06102A;
+    --primary-strong:      #9DB8FF;
+    --primary-soft:        #17244A;
+    --secondary:           #17213C;
+    --secondary-foreground:#E7ECF7;
+    --accent:              #2E2608;
+    --accent-foreground:   #FCD95C;
+    --destructive:         #F26464;
+    --rouge-doux:          #3A1418;
+    --rouge-texte:         #FF9C9C;
+    --nav:                 #060B19;
+    --sidebar-bg:          #060B19;
+    color-scheme: dark;
+}
+
+/* ── Barre latérale, nouveau style ─────────────────────────────── */
+.app-manetec .sidebar-royal { background-color: var(--sidebar-bg); }
+.app-manetec .sidebar-royal .sidebar-item { border-radius: 10px; font-weight: 500; }
+.app-manetec .sidebar-royal .sidebar-item.active { font-weight: 700; box-shadow: none; }
+.app-manetec .sidebar-royal .sidebar-group-label { color: #8C9BC4; letter-spacing: 0.1em; font-size: 11px; font-weight: 700; }
+.app-manetec .sidebar-royal .sidebar-user-card { background: #14306E; border-radius: 12px; }
+
+/* ── Couche de compatibilité ───────────────────────────────────
+   Les écrans pas encore refaits (lots 2 à 5) portent des couleurs
+   écrites en dur. On les rabat sur la nouvelle palette, et on les rend
+   lisibles en mode sombre. À retirer quand tous les écrans seront
+   refaits. */
+.app-manetec .text-\[\#15335a\], .app-manetec .text-\[\#0f2742\]      { color: var(--primary-strong); }
+.app-manetec .bg-\[\#15335a\], .app-manetec .bg-\[\#0f2742\]          { background-color: var(--primary); }
+.app-manetec .hover\:bg-\[\#0f2742\]:hover                            { background-color: var(--primary-strong); }
+.app-manetec .border-\[\#15335a\]                                    { border-color: var(--primary); }
+.app-manetec .ring-\[\#15335a\]\/30, .app-manetec .focus\:ring-\[\#15335a\]\/30:focus { --tw-ring-color: color-mix(in srgb, var(--primary) 30%, transparent); }
+.app-manetec .text-\[\#ef5e22\]                                      { color: var(--rouge-texte); }
+.app-manetec .bg-\[\#ef5e22\]                                        { background-color: var(--jaune); color: var(--sur-jaune); }
+.app-manetec .bg-\[\#f8fafc\], .app-manetec .bg-\[\#f0f4ff\]          { background-color: var(--background); }
+
+.app-manetec.dark :is(.bg-white, .bg-card)                         { background-color: var(--card); }
+.app-manetec.dark :is(.bg-gray-50, .bg-slate-50, .bg-muted\/30, .bg-muted\/40) { background-color: var(--surface2); }
+.app-manetec.dark :is(.bg-gray-100, .bg-slate-100)                 { background-color: var(--muted); }
+.app-manetec.dark :is(.text-gray-900, .text-gray-800, .text-gray-700, .text-slate-900, .text-slate-800, .text-slate-700) { color: var(--foreground); }
+.app-manetec.dark :is(.text-gray-600, .text-gray-500, .text-slate-600, .text-slate-500) { color: var(--muted-foreground); }
+.app-manetec.dark :is(.text-gray-400, .text-gray-300)              { color: #7F8DB3; }
+.app-manetec.dark :is(.border-gray-100, .border-gray-200, .border-gray-300, .border-slate-200) { border-color: var(--border); }
+.app-manetec.dark :is(.divide-gray-100, .divide-gray-200) > :not(:last-child) { border-color: var(--border); }
+.app-manetec.dark .bg-green-50  { background-color: #0F2A1E; }
+.app-manetec.dark .bg-blue-50   { background-color: #13213F; }
+.app-manetec.dark .bg-amber-50, .app-manetec.dark .bg-yellow-50  { background-color: #2E2608; }
+.app-manetec.dark .bg-red-50    { background-color: #3A1418; }
+.app-manetec.dark .bg-purple-50, .app-manetec.dark .bg-violet-50 { background-color: #231A3D; }
+.app-manetec.dark :is(.text-green-700, .text-green-800, .text-green-600) { color: #6EE7A8; }
+.app-manetec.dark :is(.text-blue-700, .text-blue-800, .text-blue-900, .text-blue-600) { color: #9DB8FF; }
+.app-manetec.dark :is(.text-amber-700, .text-amber-800, .text-amber-900, .text-amber-600) { color: #FCD95C; }
+.app-manetec.dark :is(.text-red-700, .text-red-800, .text-red-600) { color: #FF9C9C; }
+.app-manetec.dark :is(.border-green-200, .border-blue-200, .border-amber-200, .border-red-200, .border-yellow-200) { border-color: var(--border); }
+.app-manetec.dark :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]), select, textarea) {
+    background-color: var(--surface2);
+    color: var(--foreground);
+    border-color: var(--input);
+}
+.app-manetec.dark ::placeholder { color: #7F8DB3; }
+/* Fonds clairs écrits en ligne (style="background: #f0f4ff"…) dans les
+   écrans pas encore refaits : rabattus sur le fond du thème. */
+.app-manetec.dark :is([style*="#f0f4ff"], [style*="#f8fafc"], [style*="#F8FAFC"], [style*="#F0F4FF"]) { background: var(--background) !important; }
+.app-manetec.dark .bg-blue-100 { background-color: #17244A; }

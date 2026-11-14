@@ -9,6 +9,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import AssistantImport from '@/components/shop/import/AssistantImport'
+import EnTetePage from '@/components/shop/EnTetePage'
 import HistoriqueImports, { type ImportPasse } from '@/components/shop/import/HistoriqueImports'
 
 export const metadata: Metadata = { title: 'Import de données' }
@@ -30,13 +31,12 @@ export default async function PageImport() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <h1 className="text-xl font-bold text-foreground">Import de données</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                    Reprenez vos produits, clients et fournisseurs avec leurs soldes de départ, sans tout ressaisir.
-                </p>
-            </header>
-            <main className="flex-1 p-4 sm:p-6 space-y-6">
+            <EnTetePage
+                titre="Import de données"
+                sousTitre="Reprenez vos produits, clients et fournisseurs avec leurs soldes de départ, sans tout ressaisir."
+                ariane={[{ label: 'Boutique' }, { label: 'Import de données' }]}
+            />
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
                 <AssistantImport dateDemarrage={boutique?.date_demarrage ?? null} />
                 <section aria-labelledby="historique" className="bg-card border border-border rounded-xl">
                     <h2 id="historique" className="p-4 border-b border-border font-semibold">Imports précédents</h2>

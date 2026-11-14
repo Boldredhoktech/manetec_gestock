@@ -11,6 +11,8 @@ interface Props {
     title: string
     /** Contenu de la sidebar (logo, navigation, footer) */
     children: React.ReactNode
+    /** Ordinateur : barre repliée en icônes (nouveau design). */
+    replie?: boolean
 }
 
 /**
@@ -19,12 +21,19 @@ interface Props {
  *  - < lg           : barre supérieure mobile avec hamburger + drawer coulissant + overlay
  *                     (téléphone Android + tablette portrait)
  */
-export default function SidebarDrawer({ title, children }: Props) {
+export default function SidebarDrawer({ title, children, replie = false }: Props) {
     const [open, setOpen] = useState(false)
     const pathname = usePathname()
 
     // Fermer le drawer à chaque navigation
     useEffect(() => { setOpen(false) }, [pathname])
+
+    // Le bouton « Menu » du bas d'écran (téléphone) ouvre le tiroir.
+    useEffect(() => {
+        const ouvrir = () => setOpen(true)
+        window.addEventListener('manetec:menu', ouvrir)
+        return () => window.removeEventListener('manetec:menu', ouvrir)
+    }, [])
 
     // Bloquer le scroll du body quand le drawer est ouvert
     useEffect(() => {
@@ -63,7 +72,8 @@ export default function SidebarDrawer({ title, children }: Props) {
             {/* ── Sidebar / Drawer ────────────────────────────────── */}
             <aside
                 className={cn(
-                    'sidebar-royal w-60 shrink-0 flex flex-col z-50',
+                    'sidebar-royal w-60 shrink-0 flex flex-col z-50 transition-[width] duration-200',
+                    replie && 'lg:w-[76px]',
                     'fixed inset-y-0 left-0 transition-transform duration-300 ease-in-out',
                     // Ordinateur : la barre reste à la hauteur de l'écran et
                     // défile seule, indépendamment de la page.

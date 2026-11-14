@@ -10,6 +10,7 @@ import {
     nettoyerSaisieIdentifiant,
     transitionIdentifiantOuverte,
 } from '@/lib/auth/identifiant'
+import { COOKIE_THEME, estTheme } from '@/lib/theme'
 import { revalidatePath } from 'next/cache'
 import { ouvrirSessionAuth } from '@/lib/auth/session-auth'
 import { etatAbonnement, peutEntrerBoutiqueExpiree, CHEMIN_ABONNEMENT, MESSAGES_ABONNEMENT } from '@/lib/abonnement/etat'
@@ -263,6 +264,13 @@ export async function connexionBoutique(formData: FormData) {
     // Bandeau « votre identifiant a changé » : posé tant que la personne
     // se connecte avec l'ancien, effacé dès qu'elle utilise le nouveau.
     const magasinCookies = await cookies()
+    // Thème choisi par l'utilisateur (nouveau design) : le serveur le rend
+    // directement, sans éclair blanc au premier affichage.
+    if (estTheme(utilisateur.preference_theme)) {
+        magasinCookies.set(COOKIE_THEME, utilisateur.preference_theme, {
+            path: '/', sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: 60 * 60 * 24 * 365,
+        })
+    }
     if (viaAncienIdentifiant) {
         magasinCookies.set(COOKIE_NOUVEL_IDENTIFIANT, utilisateur.identifiant, {
             httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production',

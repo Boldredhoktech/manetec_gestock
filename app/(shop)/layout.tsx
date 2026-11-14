@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { COOKIE_NOUVEL_IDENTIFIANT } from '@/lib/auth/identifiant'
 import BandeauNouvelIdentifiant from '@/components/shop/BandeauNouvelIdentifiant'
+import RechercheGlobale from '@/components/shop/RechercheGlobale'
+import { COOKIE_THEME, ID_RACINE_APP, SCRIPT_THEME_SYSTEME, estTheme } from '@/lib/theme'
 import { etatAbonnementBoutique, peutEntrerBoutiqueExpiree } from '@/lib/abonnement/etat'
 
 export default async function LayoutShop({
@@ -32,12 +34,20 @@ export default async function LayoutShop({
         redirect('/login?suspendu=expire')
     }
 
-    const nouvelIdentifiant = (await cookies()).get(COOKIE_NOUVEL_IDENTIFIANT)?.value
+    const magasin = await cookies()
+    const nouvelIdentifiant = magasin.get(COOKIE_NOUVEL_IDENTIFIANT)?.value
+    const brut = magasin.get(COOKIE_THEME)?.value
+    const theme = estTheme(brut) ? brut : 'systeme'
 
+    // Nouveau design (lot 1) : tout le logiciel vit sous .app-manetec, qui
+    // porte la palette, les polices et le thème clair / sombre.
     return (
-        <>
+        <div id={ID_RACINE_APP} data-theme={theme}
+             className={`app-manetec min-h-screen ${theme === 'sombre' ? 'dark' : ''}`}>
+            <script dangerouslySetInnerHTML={{ __html: SCRIPT_THEME_SYSTEME }} />
             {nouvelIdentifiant && <BandeauNouvelIdentifiant identifiant={nouvelIdentifiant} />}
             {children}
-        </>
+            <RechercheGlobale />
+        </div>
     )
 }
