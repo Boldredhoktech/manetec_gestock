@@ -16,7 +16,7 @@ const STATUT: Record<string, { label: string; bg: string; couleur: string; icone
     non_payee:           { label: 'Non payée',   bg: 'bg-red-100',   couleur: 'text-red-700',   icone: AlertCircle },
     partiellement_payee: { label: 'Part. payée', bg: 'bg-amber-100', couleur: 'text-amber-700', icone: Clock       },
     payee:               { label: 'Payée',        bg: 'bg-green-100', couleur: 'text-green-700', icone: CheckCircle },
-    annulee:             { label: 'Annulée',      bg: 'bg-gray-100',  couleur: 'text-gray-500',  icone: FileInput   },
+    annulee:             { label: 'Annulée',      bg: 'bg-muted',  couleur: 'text-muted-foreground',  icone: FileInput   },
 }
 
 export default async function PageFacturesFournisseurs() {
@@ -50,20 +50,17 @@ export default async function PageFacturesFournisseurs() {
         ['non_payee','partiellement_payee'].includes(f.statut)).length ?? 0
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                        <div className="bg-white/20 p-2 rounded-xl">
-                            <FileInput className="w-5 h-5 text-white" />
+                        <div className="bg-muted p-2 rounded-xl">
+                            <FileInput className="w-5 h-5 text-foreground" />
                         </div>
                         <div>
-                            <h1 className="text-xl font-bold text-white">Factures fournisseurs</h1>
-                            <p className="text-sm text-white/70 mt-0.5">
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Factures fournisseurs</h1>
+                            <p className="text-sm text-muted-foreground mt-0.5">
                                 {nbImpayees > 0
                                     ? `${nbImpayees} impayée(s) · Total dû : ${formatMontant(totalDu, devise)}`
                                     : '10 dernières factures'
@@ -73,7 +70,7 @@ export default async function PageFacturesFournisseurs() {
                     </div>
                     <Link
                         href="/stock/factures-fournisseurs/nouvelle"
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-card text-[var(--primary-strong)] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm"
                     >
                         <Plus className="w-4 h-4" />
                         Nouvelle facture
@@ -81,7 +78,7 @@ export default async function PageFacturesFournisseurs() {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-4">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full space-y-4">
 
                 {nbImpayees > 0 && (
                     <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-center gap-3">
@@ -94,31 +91,31 @@ export default async function PageFacturesFournisseurs() {
                 )}
 
                 {!factures || factures.length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-2xl p-16 shadow-sm text-center space-y-4">
-                        <FileInput className="w-10 h-10 mx-auto text-gray-300" />
+                    <div className="bg-card border border-border rounded-2xl p-16 shadow-sm text-center space-y-4">
+                        <FileInput className="w-10 h-10 mx-auto text-muted-foreground/80" />
                         <div>
-                            <p className="text-sm font-semibold text-gray-700">Aucune facture fournisseur</p>
-                            <p className="text-sm text-gray-400 mt-1">
+                            <p className="text-sm font-semibold text-foreground">Aucune facture fournisseur</p>
+                            <p className="text-sm text-muted-foreground/80 mt-1">
                                 Enregistrez vos achats fournisseurs sous forme de factures.
                             </p>
                         </div>
                         <Link href="/stock/factures-fournisseurs/nouvelle"
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#15335a] text-white font-bold text-sm rounded-xl hover:bg-[#0f2742] transition-colors">
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-sm rounded-xl hover:opacity-90 transition-colors">
                             <Plus className="w-4 h-4" />
                             Créer une facture fournisseur
                         </Link>
                     </div>
                 ) : (
-                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
 
-                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-100">
-                            <p className="text-sm font-bold text-gray-700">10 dernières factures</p>
+                        <div className="flex items-center justify-between px-5 py-3.5 border-b border-border">
+                            <p className="text-sm font-bold text-foreground">10 dernières factures</p>
                         </div>
 
                       <div className="overflow-x-auto">
                        <div className="min-w-[760px]">
                         <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                             style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}>
+                             style={{ background: 'var(--nav)' }}>
                             <div className="col-span-2">Référence</div>
                             <div className="col-span-2">Date</div>
                             <div className="col-span-3">Fournisseur</div>
@@ -136,13 +133,13 @@ export default async function PageFacturesFournisseurs() {
                                 return (
                                     <Link key={f.id}
                                           href={`/stock/factures-fournisseurs/${f.id}`}
-                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group ${i % 2 === 0 ? '' : 'bg-[var(--surface2)]/50'}`}>
                                         <div className="col-span-2">
-                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
+                                            <p className="text-xs font-bold font-mono text-foreground group-hover:text-primary">
                                                 {f.public_id}
                                             </p>
                                             {f.reference_fourn && (
-                                                <p className="text-xs text-gray-400 mt-0.5 truncate">{f.reference_fourn}</p>
+                                                <p className="text-xs text-muted-foreground/80 mt-0.5 truncate">{f.reference_fourn}</p>
                                             )}
                                             {f.a_completer && (
                                                 <span className="inline-block mt-1 px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-100 text-amber-700 border border-amber-200">
@@ -151,20 +148,20 @@ export default async function PageFacturesFournisseurs() {
                                             )}
                                         </div>
                                         <div className="col-span-2">
-                                            <p className="text-xs text-gray-500">{formatDate(f.date_facture)}</p>
+                                            <p className="text-xs text-muted-foreground">{formatDate(f.date_facture)}</p>
                                             {f.date_echeance && (
-                                                <p className={`text-xs mt-0.5 ${enRetard ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                                                <p className={`text-xs mt-0.5 ${enRetard ? 'text-red-500 font-bold' : 'text-muted-foreground/80'}`}>
                                                     Éch. {formatDate(f.date_echeance)}
                                                 </p>
                                             )}
                                         </div>
                                         <div className="col-span-3">
-                                            <p className="text-xs font-medium text-gray-700 truncate">
+                                            <p className="text-xs font-medium text-foreground truncate">
                                                 {(f.suppliers as any)?.nom ?? '—'}
                                             </p>
                                         </div>
                                         <div className="col-span-2 text-right">
-                                            <p className="text-xs font-bold text-gray-800">
+                                            <p className="text-xs font-bold text-foreground">
                                                 {formatMontant(f.montant_ttc, devise)}
                                             </p>
                                         </div>

@@ -19,7 +19,7 @@ const STATUT_LABELS: Record<string, { label: string; bg: string; couleur: string
     non_payee:           { label: 'Non payée',         bg: 'bg-red-500/20',   couleur: 'text-red-300'   },
     partiellement_payee: { label: 'Partiellement payée', bg: 'bg-amber-500/20', couleur: 'text-amber-300' },
     payee:               { label: 'Payée',              bg: 'bg-green-500/20', couleur: 'text-green-300' },
-    annulee:             { label: 'Annulée',            bg: 'bg-gray-500/20',  couleur: 'text-gray-300'  },
+    annulee:             { label: 'Annulée',            bg: 'bg-gray-500/20',  couleur: 'text-muted-foreground/80'  },
 }
 
 export default async function PageDetailFactureFournisseur({ params }: Props) {
@@ -64,39 +64,36 @@ export default async function PageDetailFactureFournisseur({ params }: Props) {
         && aPermission(user, PERMISSIONS.FACTURE_FOURNISSEUR_SAISIR)
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center gap-4">
                     <Link href="/stock/factures-fournisseurs"
-                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-white" />
+                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted hover:bg-border transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-foreground" />
                     </Link>
                     <div>
-                        <h1 className="text-xl font-bold text-white">{facture.public_id}</h1>
-                        <p className="text-sm text-white/70 mt-0.5">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{facture.public_id}</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             {(facture.suppliers as any)?.nom ?? '—'} · {formatDate(facture.date_facture)}
                         </p>
                     </div>
                     <div className="ml-auto flex items-center gap-2">
                         {modifiable && (
                             <Link href={`/stock/factures-fournisseurs/${facture.id}/modifier`}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-bold text-white transition-colors">
+                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-muted hover:bg-border border border-border text-xs font-bold text-foreground transition-colors">
                                 <Pencil className="w-3.5 h-3.5" />
                                 {facture.a_completer ? 'Compléter' : 'Modifier'}
                             </Link>
                         )}
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold border border-white/20 ${statutConfig.bg} ${statutConfig.couleur}`}>
+                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold border border-border ${statutConfig.bg} ${statutConfig.couleur}`}>
                             {statutConfig.label}
                         </span>
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-5">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full space-y-5">
                 <CarteDetailFactureFournisseur facture={facture} boutique={boutique} />
             </main>
         </div>

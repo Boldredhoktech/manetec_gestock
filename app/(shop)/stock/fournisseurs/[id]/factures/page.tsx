@@ -19,7 +19,7 @@ const STATUT: Record<string, { label: string; bg: string; couleur: string; icone
     non_payee:          { label: 'Non payée',         bg: 'bg-red-100',   couleur: 'text-red-700',   icone: AlertCircle   },
     partiellement_payee:{ label: 'Partiel. payée',    bg: 'bg-amber-100', couleur: 'text-amber-700', icone: Clock         },
     payee:              { label: 'Payée',              bg: 'bg-green-100', couleur: 'text-green-700', icone: CheckCircle   },
-    annulee:            { label: 'Annulée',            bg: 'bg-gray-100',  couleur: 'text-gray-600',  icone: FileText      },
+    annulee:            { label: 'Annulée',            bg: 'bg-muted',  couleur: 'text-muted-foreground',  icone: FileText      },
 }
 
 export default async function PageFacturesFournisseur({ params }: Props) {
@@ -54,29 +54,28 @@ export default async function PageFacturesFournisseur({ params }: Props) {
     const nbImpayees    = factures?.filter(f => ['non_payee','partiellement_payee'].includes(f.statut)).length ?? 0
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
-            <header style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                    className="px-6 py-5 shadow-lg">
+        <div className="flex flex-col min-h-screen">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href={`/stock/fournisseurs/${id}`}
-                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-white" />
+                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted hover:bg-border transition-colors">
+                            <ArrowLeft className="w-5 h-5 text-foreground" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-white">Factures fournisseur</h1>
-                            <p className="text-sm text-white/70 mt-0.5">{fournisseur.nom}</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Factures fournisseur</h1>
+                            <p className="text-sm text-muted-foreground mt-0.5">{fournisseur.nom}</p>
                         </div>
                     </div>
                     <div className="flex items-center gap-3">
-                        <div className="text-right px-4 py-2 bg-white/15 rounded-xl">
-                            <p className="text-xs text-white/70">Solde dû</p>
-                            <p className="text-base font-black text-white">
+                        <div className="text-right px-4 py-2 bg-muted rounded-xl">
+                            <p className="text-xs text-muted-foreground">Solde dû</p>
+                            <p className="text-base font-black text-foreground">
                                 {formatMontant((fournisseur as any)['solde_du'] ?? 0, devise)}
                             </p>
                         </div>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                              className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors">
+                              className="flex items-center gap-2 px-4 py-2 bg-card text-[var(--primary-strong)] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors">
                             <Plus className="w-4 h-4" />
                             Nouvelle facture
                         </Link>
@@ -84,7 +83,7 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full">
 
                 {/* Résumé */}
                 {nbImpayees > 0 && (
@@ -98,21 +97,21 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                 )}
 
                 {!factures || factures.length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-2xl p-16 shadow-sm text-center space-y-4">
-                        <FileText className="w-10 h-10 mx-auto text-gray-300" />
-                        <p className="text-sm text-gray-500">Aucune facture fournisseur.</p>
+                    <div className="bg-card border border-border rounded-2xl p-16 shadow-sm text-center space-y-4">
+                        <FileText className="w-10 h-10 mx-auto text-muted-foreground/80" />
+                        <p className="text-sm text-muted-foreground">Aucune facture fournisseur.</p>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#15335a] text-white font-bold text-sm rounded-xl hover:bg-[#0f2742] transition-colors">
+                              className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white font-bold text-sm rounded-xl hover:opacity-90 transition-colors">
                             <Plus className="w-4 h-4" />
                             Créer une facture
                         </Link>
                     </div>
                 ) : (
-                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                        <div className="min-w-[760px]">
                         <div className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                             style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}>
+                             style={{ background: 'var(--nav)' }}>
                             <div className="col-span-2">Référence</div>
                             <div className="col-span-2">Date</div>
                             <div className="col-span-2">Réf. fourn.</div>
@@ -129,25 +128,25 @@ export default async function PageFacturesFournisseur({ params }: Props) {
                                 return (
                                     <Link key={f.id}
                                           href={LIENS.factureFournisseur(f.id)}
-                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                          className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group ${i % 2 === 0 ? '' : 'bg-[var(--surface2)]/50'}`}>
                                         <div className="col-span-2">
-                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
+                                            <p className="text-xs font-bold font-mono text-foreground group-hover:text-primary">
                                                 {f.public_id}
                                             </p>
                                         </div>
                                         <div className="col-span-2">
-                                            <p className="text-xs text-gray-500">{formatDate(f.date_facture)}</p>
+                                            <p className="text-xs text-muted-foreground">{formatDate(f.date_facture)}</p>
                                             {f.date_echeance && (
-                                                <p className={`text-xs mt-0.5 ${enRetard ? 'text-red-500 font-bold' : 'text-gray-400'}`}>
+                                                <p className={`text-xs mt-0.5 ${enRetard ? 'text-red-500 font-bold' : 'text-muted-foreground/80'}`}>
                                                     Éch. {formatDate(f.date_echeance)}
                                                 </p>
                                             )}
                                         </div>
                                         <div className="col-span-2">
-                                            <p className="text-xs text-gray-500 truncate">{f.reference_fourn ?? '—'}</p>
+                                            <p className="text-xs text-muted-foreground truncate">{f.reference_fourn ?? '—'}</p>
                                         </div>
                                         <div className="col-span-2 text-right">
-                                            <p className="text-xs font-bold text-gray-800">{formatMontant(f.montant_ttc, devise)}</p>
+                                            <p className="text-xs font-bold text-foreground">{formatMontant(f.montant_ttc, devise)}</p>
                                         </div>
                                         <div className="col-span-2 text-right">
                                             <p className={`text-xs font-bold ${f.montant_restant > 0 ? 'text-red-600' : 'text-green-600'}`}>

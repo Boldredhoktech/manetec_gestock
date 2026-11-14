@@ -13,7 +13,7 @@ export const metadata: Metadata = { title: 'Bons de commande' }
 
 // Vocabulaire unique, celui de la base.
 const STATUT_BC: Record<string, { label: string; bg: string; couleur: string }> = {
-    brouillon:    { label: 'Brouillon',       bg: 'bg-gray-100',    couleur: 'text-gray-600'   },
+    brouillon:    { label: 'Brouillon',       bg: 'bg-muted',    couleur: 'text-muted-foreground'   },
     soumis:       { label: 'Envoyé',          bg: 'bg-blue-100',    couleur: 'text-blue-700'   },
     recu_partiel: { label: 'Reçu en partie',  bg: 'bg-amber-100',   couleur: 'text-amber-700'  },
     recu_total:   { label: 'Reçu',            bg: 'bg-green-100',   couleur: 'text-green-700'  },
@@ -50,10 +50,10 @@ export default async function PageBonsCommande() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                     <div>
-                        <h1 className="text-xl font-bold text-foreground">Bons de commande</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Bons de commande</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
                             Commander chez un fournisseur, puis réceptionner la marchandise
                         </p>
@@ -69,20 +69,20 @@ export default async function PageBonsCommande() {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <div className="max-w-5xl mx-auto">
                     {(bons ?? []).length === 0 ? (
-                        <div className="bg-white border border-gray-200 rounded-2xl px-6 py-16 text-center">
-                            <ClipboardList className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-                            <p className="text-sm font-bold text-gray-700">Aucun bon de commande</p>
-                            <p className="text-xs text-gray-500 mt-1 max-w-md mx-auto">
+                        <div className="bg-card border border-border rounded-2xl px-6 py-16 text-center">
+                            <ClipboardList className="w-10 h-10 text-muted-foreground/80 mx-auto mb-3" />
+                            <p className="text-sm font-bold text-foreground">Aucun bon de commande</p>
+                            <p className="text-xs text-muted-foreground mt-1 max-w-md mx-auto">
                                 Le bon de commande est facultatif : vous pouvez réceptionner de la marchandise
                                 et enregistrer une facture sans passer par lui. Il sert à formaliser une commande
                                 avant livraison, et à suivre ce qui reste à recevoir.
                             </p>
                         </div>
                     ) : (
-                        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100">
+                        <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
                             {(bons ?? []).map(b => {
                                 const cfg    = STATUT_BC[b.statut] ?? STATUT_BC.brouillon
                                 const lignes = (b.purchase_order_items ?? []) as { quantite_cmd: number; quantite_recue: number }[]
@@ -90,30 +90,30 @@ export default async function PageBonsCommande() {
                                 const recu   = lignes.reduce((a, l) => a + l.quantite_recue, 0)
                                 return (
                                     <Link key={b.id} href={`/stock/bons-de-commande/${b.id}`}
-                                          className="flex items-center gap-3 px-5 py-4 hover:bg-[#15335a]/5 transition-colors group">
+                                          className="flex items-center gap-3 px-5 py-4 hover:bg-[var(--primary-soft)] transition-colors group">
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 flex-wrap">
-                                                <p className="text-sm font-bold text-gray-900 group-hover:text-[#15335a]">
+                                                <p className="text-sm font-bold text-foreground group-hover:text-primary">
                                                     {nom(b.suppliers) ?? 'Fournisseur'}
                                                 </p>
                                                 <span className={`px-2 py-0.5 text-[11px] font-bold rounded-full ${cfg.bg} ${cfg.couleur}`}>
                                                     {cfg.label}
                                                 </span>
                                             </div>
-                                            <p className="text-xs font-mono text-gray-400 mt-0.5">
+                                            <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">
                                                 {b.public_id} · {formatDate(b.date_commande)}
                                                 {nom(b.warehouses) ? ` · ${nom(b.warehouses)}` : ''}
                                             </p>
                                             {cmd > 0 && (
-                                                <p className="text-xs text-gray-500 mt-1">
+                                                <p className="text-xs text-muted-foreground mt-1">
                                                     Reçu {recu} / {cmd} article(s) commandé(s)
                                                 </p>
                                             )}
                                         </div>
-                                        <p className="text-sm font-bold text-gray-800 shrink-0">
+                                        <p className="text-sm font-bold text-foreground shrink-0">
                                             {formatMontant(b.montant_total, devise)}
                                         </p>
-                                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#15335a] shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground/80 group-hover:text-primary shrink-0" />
                                     </Link>
                                 )
                             })}

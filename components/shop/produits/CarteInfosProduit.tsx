@@ -13,14 +13,14 @@ export default function CarteInfosProduit({ produit }: Props) {
     const config = produit.type_config_json as any
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-5">
 
             {/* En-tête */}
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                    <Package className="w-5 h-5 text-[#15335a]" />
+            <div className="flex items-center gap-2 pb-3 border-b border-border">
+                <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                    <Package className="w-5 h-5 text-[var(--primary-strong)]" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">Informations générales</h2>
+                <h2 className="text-sm font-bold text-foreground">Informations générales</h2>
                 <span className={`ml-auto px-2.5 py-0.5 rounded-full text-xs font-bold ${typeConfig.couleur}`}>
           {typeConfig.label}
         </span>
@@ -38,7 +38,7 @@ export default function CarteInfosProduit({ produit }: Props) {
 
             {/* Description */}
             {produit.description && (
-                <div className="p-3 bg-gray-50 rounded-xl text-sm text-gray-600">
+                <div className="p-3 bg-[var(--surface2)] rounded-xl text-sm text-muted-foreground">
                     {produit.description}
                 </div>
             )}
@@ -115,8 +115,8 @@ export default function CarteInfosProduit({ produit }: Props) {
 function InfoLine({ label, val }: { label: string; val: string }) {
     return (
         <div>
-            <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-            <p className="text-sm font-semibold text-gray-800">{val}</p>
+            <p className="text-xs text-muted-foreground/80 mb-0.5">{label}</p>
+            <p className="text-sm font-semibold text-foreground">{val}</p>
         </div>
     )
 }

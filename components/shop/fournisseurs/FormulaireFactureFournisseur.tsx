@@ -107,7 +107,7 @@ export default function FormulaireFactureFournisseur({ factureExistante, supplie
         setTimeout(() => router.push(LIENS.factureFournisseur(res.facture_id as string)), 1000)
     }
 
-    const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 transition-colors'
+    const ic = 'w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
@@ -153,33 +153,33 @@ export default function FormulaireFactureFournisseur({ factureExistante, supplie
             )}
 
             {/* Infos générales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)]">Informations générales</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {!fe && <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Entrepôt destinataire</label>
+                        <label className="text-sm font-medium text-foreground">Entrepôt destinataire</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
                             <option value="">— Non précisé —</option>
                             {entrepots.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
                         </select>
                     </div>}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Réf. facture fournisseur</label>
+                        <label className="text-sm font-medium text-foreground">Réf. facture fournisseur</label>
                         <input type="text" value={referenceFourn} onChange={e => setReferenceFourn(e.target.value)}
                                placeholder="N° de la facture reçue" className={ic} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Date d'échéance</label>
+                        <label className="text-sm font-medium text-foreground">Date d'échéance</label>
                         <input type="date" value={dateEcheance} onChange={e => setDateEcheance(e.target.value)} className={ic} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Notes</label>
+                        <label className="text-sm font-medium text-foreground">Notes</label>
                         <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
                                placeholder="Remarques..." className={ic} />
                     </div>
                 </div>
 
-                    {!fe && <label className="flex items-start gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                    {!fe && <label className="flex items-start gap-2.5 p-3 bg-[var(--surface2)] border border-border rounded-xl cursor-pointer">
                         <input
                             type="checkbox"
                             checked={genererReception}
@@ -188,10 +188,10 @@ export default function FormulaireFactureFournisseur({ factureExistante, supplie
                             disabled={!warehouseId}
                         />
                         <span className="text-xs">
-                            <span className="font-bold text-gray-800 block">
+                            <span className="font-bold text-foreground block">
                                 Faire entrer la marchandise en stock
                             </span>
-                            <span className="text-gray-500">
+                            <span className="text-muted-foreground">
                                 {warehouseId
                                     ? "Une réception est créée avec cette facture : le stock augmente et l'entrée apparaît dans le journal des mouvements. La dette, elle, reste comptée une seule fois."
                                     : "Choisissez un entrepôt destinataire pour activer cette option."}
@@ -201,11 +201,11 @@ export default function FormulaireFactureFournisseur({ factureExistante, supplie
             </div>
 
             {/* Lignes */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-[#15335a]">Articles / Services</h2>
+                    <h2 className="text-sm font-bold text-[var(--primary-strong)]">Articles / Services</h2>
                     <button type="button" onClick={ajouterLigne}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5">
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)]">
                         <Plus className="w-3.5 h-3.5" />Ajouter une ligne
                     </button>
                 </div>
@@ -213,33 +213,33 @@ export default function FormulaireFactureFournisseur({ factureExistante, supplie
                 <div className="overflow-x-auto">
                  <div className="min-w-[640px] space-y-3">
                 {lignes.map((l, i) => (
-                    <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-xl">
+                    <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-[var(--surface2)] rounded-xl">
                         <div className="col-span-3">
-                            <label className="text-xs text-gray-400 mb-1 block">Produit (optionnel)</label>
+                            <label className="text-xs text-muted-foreground/80 mb-1 block">Produit (optionnel)</label>
                             <select value={l.product_id ?? ''} onChange={e => mettreAJour(i, 'product_id', e.target.value || null)}
                                     disabled={estFigee(i) || (nbFigees > 0 && !l.product_id)}
                                     title={estFigee(i) ? 'Reçu en stock : le produit ne change pas' : undefined}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none disabled:bg-gray-100 disabled:text-gray-500">
+                                    className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none disabled:bg-gray-100 disabled:text-muted-foreground">
                                 <option value="">— Libre —</option>
                                 {produits.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
                             </select>
                         </div>
                         <div className="col-span-4">
-                            <label className="text-xs text-gray-400 mb-1 block">Désignation *</label>
+                            <label className="text-xs text-muted-foreground/80 mb-1 block">Désignation *</label>
                             <input type="text" value={l.designation} onChange={e => mettreAJour(i, 'designation', e.target.value)}
-                                   placeholder="Description" className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                                   placeholder="Description" className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-1">
-                            <label className="text-xs text-gray-400 mb-1 block">Qté</label>
-                            <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', v)} entier disabled={estFigee(i)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none disabled:bg-gray-100 disabled:text-gray-500" />
+                            <label className="text-xs text-muted-foreground/80 mb-1 block">Qté</label>
+                            <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', v)} entier disabled={estFigee(i)} className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none disabled:bg-gray-100 disabled:text-muted-foreground" />
                         </div>
                         <div className="col-span-2">
-                            <label className="text-xs text-gray-400 mb-1 block">Prix HT</label>
-                            <ChampNombre value={l.prix_unitaire} onChange={v => mettreAJour(i, 'prix_unitaire', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                            <label className="text-xs text-muted-foreground/80 mb-1 block">Prix HT</label>
+                            <ChampNombre value={l.prix_unitaire} onChange={v => mettreAJour(i, 'prix_unitaire', v)} className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-1">
-                            <label className="text-xs text-gray-400 mb-1 block">TVA%</label>
-                            <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none" />
+                            <label className="text-xs text-muted-foreground/80 mb-1 block">TVA%</label>
+                            <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none" />
                         </div>
                         <div className="col-span-1 pt-5 flex justify-center">
                             <button type="button" onClick={() => supprimerLigne(i)} disabled={lignes.length === 1 || estFigee(i)}
@@ -252,21 +252,21 @@ export default function FormulaireFactureFournisseur({ factureExistante, supplie
                  </div>
                 </div>
 
-                <div className="flex justify-end gap-6 pt-2 border-t border-gray-100 text-sm">
+                <div className="flex justify-end gap-6 pt-2 border-t border-border text-sm">
                     <div className="text-right">
-                        <p className="text-gray-400 text-xs">Montant HT</p>
-                        <p className="font-bold text-gray-700">{montantHT.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-muted-foreground/80 text-xs">Montant HT</p>
+                        <p className="font-bold text-foreground">{montantHT.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-gray-400 text-xs">Total TTC</p>
-                        <p className="text-xl font-black text-[#15335a]">{montantTTC.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-muted-foreground/80 text-xs">Total TTC</p>
+                        <p className="text-xl font-black text-[var(--primary-strong)]">{montantTTC.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                 </div>
             </div>
 
             <button type="button" onClick={handleSoumettre} disabled={enAttente || succes}
                     className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}>
+                    style={{ background: 'var(--primary)' }}>
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 animate-spin" />Enregistrement...</>
                     : (fe ? 'Enregistrer les modifications' : 'Enregistrer la facture fournisseur')

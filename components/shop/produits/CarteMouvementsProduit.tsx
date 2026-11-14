@@ -21,22 +21,22 @@ const TYPE_CONFIG: Record<string, { label: string; couleur: string; bg: string; 
     transfert_entree:   { label: 'Transfert entrant',  couleur: 'text-purple-600', bg: 'bg-purple-50', icone: 'trans' },
     ajustement_positif: { label: 'Ajustement +',       couleur: 'text-green-600',  bg: 'bg-green-50',  icone: 'in'    },
     ajustement_negatif: { label: 'Ajustement -',       couleur: 'text-red-500',    bg: 'bg-red-50',    icone: 'out'   },
-    inventaire:         { label: 'Inventaire',         couleur: 'text-gray-600',   bg: 'bg-gray-50',   icone: 'trans' },
+    inventaire:         { label: 'Inventaire',         couleur: 'text-muted-foreground',   bg: 'bg-[var(--surface2)]',   icone: 'trans' },
 }
 
 export default function CarteMouvementsProduit({ mouvements }: Props) {
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2">
-                <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                    <History className="w-5 h-5 text-[#15335a]" />
+                <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                    <History className="w-5 h-5 text-[var(--primary-strong)]" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">5 derniers mouvements</h2>
+                <h2 className="text-sm font-bold text-foreground">5 derniers mouvements</h2>
             </div>
 
             {mouvements.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">
+                <div className="text-center py-8 text-muted-foreground/80 text-sm">
                     Aucun mouvement enregistré.
                 </div>
             ) : (
@@ -47,7 +47,7 @@ export default function CarteMouvementsProduit({ mouvements }: Props) {
                         return (
                             <div key={m.id}
                                  className={`flex items-start gap-3 p-3 ${config.bg} rounded-xl`}>
-                                <div className={`mt-0.5 p-1.5 rounded-lg bg-white border ${
+                                <div className={`mt-0.5 p-1.5 rounded-lg bg-card border ${
                                     estEntree ? 'border-green-200' :
                                         config.icone === 'out' ? 'border-red-200' : 'border-purple-200'
                                 }`}>
@@ -66,23 +66,23 @@ export default function CarteMouvementsProduit({ mouvements }: Props) {
                                         </p>
                                     </div>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <p className="text-xs text-gray-400 font-mono">{m.public_id}</p>
+                                        <p className="text-xs text-muted-foreground/80 font-mono">{m.public_id}</p>
                                         {m.warehouses && (
-                                            <p className="text-xs text-gray-400">· {m.warehouses.nom}</p>
+                                            <p className="text-xs text-muted-foreground/80">· {m.warehouses.nom}</p>
                                         )}
                                     </div>
                                     <div className="flex items-center justify-between mt-1">
-                                        <p className="text-xs text-gray-500">
+                                        <p className="text-xs text-muted-foreground">
                                             {m.shop_users?.nom_complet ?? 'Système'}
                                         </p>
-                                        <p className="text-xs text-gray-400">
-                                            {m.quantite_avant} → <span className="font-bold text-gray-600">{m.quantite_apres}</span>
+                                        <p className="text-xs text-muted-foreground/80">
+                                            {m.quantite_avant} → <span className="font-bold text-muted-foreground">{m.quantite_apres}</span>
                                         </p>
                                     </div>
                                     {m.note && (
-                                        <p className="text-xs text-gray-500 mt-1 italic">{m.note}</p>
+                                        <p className="text-xs text-muted-foreground mt-1 italic">{m.note}</p>
                                     )}
-                                    <p className="text-xs text-gray-400 mt-0.5">{formatDate(m.created_at)}</p>
+                                    <p className="text-xs text-muted-foreground/80 mt-0.5">{formatDate(m.created_at)}</p>
                                 </div>
                             </div>
                         )

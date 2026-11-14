@@ -21,13 +21,13 @@ export default function CarteStockProduit({ stockLevels, seuilAlerte, unite }: P
     const enRupture  = stockTotal <= 0
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2">
-                <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                    <Warehouse className="w-5 h-5 text-[#15335a]" />
+                <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                    <Warehouse className="w-5 h-5 text-[var(--primary-strong)]" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">Stock disponible</h2>
+                <h2 className="text-sm font-bold text-foreground">Stock disponible</h2>
             </div>
 
             {/* Total */}
@@ -59,20 +59,20 @@ export default function CarteStockProduit({ stockLevels, seuilAlerte, unite }: P
             {/* Par entrepôt */}
             {stockLevels.length > 1 && (
                 <div className="space-y-2">
-                    <p className="text-xs font-bold text-gray-500 uppercase tracking-wider">Par entrepôt</p>
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Par entrepôt</p>
                     {stockLevels.map((s, i) => (
-                        <div key={i} className="flex items-center justify-between p-2.5 bg-gray-50 rounded-lg">
+                        <div key={i} className="flex items-center justify-between p-2.5 bg-[var(--surface2)] rounded-lg">
                             <div className="flex items-center gap-2">
-                                <Warehouse className="w-3.5 h-3.5 text-gray-400" />
-                                <span className="text-xs text-gray-700 font-medium">
+                                <Warehouse className="w-3.5 h-3.5 text-muted-foreground/80" />
+                                <span className="text-xs text-foreground font-medium">
                   {s.warehouses?.nom ?? 'Entrepôt'}
                                     {s.warehouses?.est_defaut && (
-                                        <span className="ml-1.5 text-[10px] text-[#15335a] font-bold">défaut</span>
+                                        <span className="ml-1.5 text-[10px] text-[var(--primary-strong)] font-bold">défaut</span>
                                     )}
                 </span>
                             </div>
                             <span className={`text-sm font-bold ${
-                                s.quantite <= 0 ? 'text-red-500' : 'text-gray-800'
+                                s.quantite <= 0 ? 'text-red-500' : 'text-foreground'
                             }`}>
                 {s.quantite} {unite}
               </span>

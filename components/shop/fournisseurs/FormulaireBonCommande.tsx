@@ -114,7 +114,7 @@ export default function FormulaireBonCommande({
         }, 1000)
     }
 
-    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 transition-colors'
+    const inputClass = 'w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
@@ -134,12 +134,12 @@ export default function FormulaireBonCommande({
             )}
 
             {/* Informations générales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)]">Informations générales</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-foreground">
                             Entrepôt de destination <span className="text-red-500">*</span>
                         </label>
                         <select
@@ -154,7 +154,7 @@ export default function FormulaireBonCommande({
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Date de livraison souhaitée</label>
+                        <label className="text-sm font-medium text-foreground">Date de livraison souhaitée</label>
                         <input
                             type="date"
                             value={dateLivraison}
@@ -165,7 +165,7 @@ export default function FormulaireBonCommande({
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Notes / Conditions</label>
+                    <label className="text-sm font-medium text-foreground">Notes / Conditions</label>
                     <textarea
                         value={notes}
                         onChange={e => setNotes(e.target.value)}
@@ -177,13 +177,13 @@ export default function FormulaireBonCommande({
             </div>
 
             {/* Lignes de commande */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between">
-                    <h2 className="text-sm font-bold text-[#15335a]">Articles commandés</h2>
+                    <h2 className="text-sm font-bold text-[var(--primary-strong)]">Articles commandés</h2>
                     <button
                         type="button"
                         onClick={ajouterLigne}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors"
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)] transition-colors"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         Ajouter une ligne
@@ -193,15 +193,15 @@ export default function FormulaireBonCommande({
                 <div className="overflow-x-auto">
                  <div className="space-y-3 min-w-[640px]">
                     {lignes.map((ligne, i) => (
-                        <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-xl">
+                        <div key={i} className="grid grid-cols-12 gap-2 items-start p-3 bg-[var(--surface2)] rounded-xl">
 
                             {/* Produit (optionnel) */}
                             <div className="col-span-3">
-                                <label className="text-xs text-gray-400 mb-1 block">Produit (optionnel)</label>
+                                <label className="text-xs text-muted-foreground/80 mb-1 block">Produit (optionnel)</label>
                                 <select
                                     value={ligne.product_id}
                                     onChange={e => mettreAJourLigne(i, 'product_id', e.target.value)}
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                    className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 >
                                     <option value="">— Libre —</option>
                                     {produits.map(p => (
@@ -212,26 +212,26 @@ export default function FormulaireBonCommande({
 
                             {/* Désignation */}
                             <div className="col-span-4">
-                                <label className="text-xs text-gray-400 mb-1 block">Désignation *</label>
+                                <label className="text-xs text-muted-foreground/80 mb-1 block">Désignation *</label>
                                 <input
                                     type="text"
                                     value={ligne.designation}
                                     onChange={e => mettreAJourLigne(i, 'designation', e.target.value)}
                                     placeholder="Description de l'article"
-                                    className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                    className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 />
                             </div>
 
                             {/* Quantité */}
                             <div className="col-span-2">
-                                <label className="text-xs text-gray-400 mb-1 block">Quantité *</label>
-                                <ChampNombre value={ligne.quantite} onChange={v => mettreAJourLigne(i, 'quantite', v)} entier className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                                <label className="text-xs text-muted-foreground/80 mb-1 block">Quantité *</label>
+                                <ChampNombre value={ligne.quantite} onChange={v => mettreAJourLigne(i, 'quantite', v)} entier className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring/30" />
                             </div>
 
                             {/* Prix unitaire */}
                             <div className="col-span-2">
-                                <label className="text-xs text-gray-400 mb-1 block">Prix unitaire</label>
-                                <ChampNombre value={ligne.prix_unitaire} onChange={v => mettreAJourLigne(i, 'prix_unitaire', v)} className="w-full px-2 py-2 bg-white border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                                <label className="text-xs text-muted-foreground/80 mb-1 block">Prix unitaire</label>
+                                <ChampNombre value={ligne.prix_unitaire} onChange={v => mettreAJourLigne(i, 'prix_unitaire', v)} className="w-full px-2 py-2 bg-card border border-border rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-ring/30" />
                             </div>
 
                             {/* Supprimer */}
@@ -251,10 +251,10 @@ export default function FormulaireBonCommande({
                 </div>
 
                 {/* Total */}
-                <div className="flex justify-end pt-2 border-t border-gray-100">
+                <div className="flex justify-end pt-2 border-t border-border">
                     <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-gray-500">Total estimé</span>
-                        <span className="text-xl font-black text-[#15335a]">
+                        <span className="text-sm font-medium text-muted-foreground">Total estimé</span>
+                        <span className="text-xl font-black text-[var(--primary-strong)]">
                             {montantTotal.toLocaleString('fr-FR')} FCFA
                         </span>
                     </div>
@@ -266,7 +266,7 @@ export default function FormulaireBonCommande({
                 onClick={handleSoumettre}
                 disabled={enAttente || succes}
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl transition-all disabled:opacity-50"
-                style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
+                style={{ background: 'var(--primary)' }}
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>

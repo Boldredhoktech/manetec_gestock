@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import ChampNombre from '@/components/ui/ChampNombre'
 import ChampImageProduit from '@/components/shop/produits/ChampImageProduit'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 interface Produit {
     id:              string
@@ -114,13 +115,14 @@ export default function FormulaireModifierProduit({ produit, categories, marques
         if (res && 'avertissement' in res && res.avertissement) { setErreur(res.avertissement); return }
 
         setSucces(true)
-        setTimeout(() => router.push(`/stock/produits/${produit.id}`), 1200)
+        router.replace(`/stock/produits/${produit.id}`, { scroll: false })
+        router.refresh()
     }
 
-    const inputClass = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 transition-colors'
+    const inputClass = 'w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40 transition-colors'
 
     return (
-        <div className="space-y-5 py-4">
+        <div className="space-y-5">
 
             {erreur && (
                 <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
@@ -131,16 +133,16 @@ export default function FormulaireModifierProduit({ produit, categories, marques
             {succes && (
                 <div className="flex items-center gap-3 bg-green-50 border border-green-200 text-green-700 rounded-xl px-4 py-3 text-sm">
                     <CheckCircle className="w-4 h-4 shrink-0" />
-                    Produit modifié avec succès. Redirection...
+                    Produit modifié avec succès.
                 </div>
             )}
 
             {/* Informations générales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
+            <div className="bloc-form bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)]">Informations générales</h2>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-foreground">
                         Nom <span className="text-red-500">*</span>
                     </label>
                     <input type="text" value={nom} onChange={e => setNom(e.target.value)}
@@ -156,7 +158,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                 )}
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Description</label>
+                    <label className="text-sm font-medium text-foreground">Description</label>
                     <textarea value={description} onChange={e => setDescription(e.target.value)}
                               rows={2} placeholder="Description optionnelle"
                               className={inputClass + ' resize-none'} />
@@ -164,7 +166,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Type de produit</label>
+                        <label className="text-sm font-medium text-foreground">Type de produit</label>
                         <select value={typeProduit} onChange={e => setTypeProduit(e.target.value)}
                                 className={inputClass}>
                             {TYPES.map(t => (
@@ -173,7 +175,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Unité de vente</label>
+                        <label className="text-sm font-medium text-foreground">Unité de vente</label>
                         <select value={unite} onChange={e => setUnite(e.target.value)}
                                 className={inputClass}>
                             {UNITES.map(u => (
@@ -185,12 +187,12 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">SKU</label>
+                        <label className="text-sm font-medium text-foreground">SKU</label>
                         <input type="text" value={sku} onChange={e => setSku(e.target.value)}
                                placeholder="Référence interne" className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Code-barres</label>
+                        <label className="text-sm font-medium text-foreground">Code-barres</label>
                         <input type="text" value={codeBarres} onChange={e => setCodeBarres(e.target.value)}
                                placeholder="EAN-13, QR code..." className={inputClass} />
                     </div>
@@ -198,7 +200,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Catégorie</label>
+                        <label className="text-sm font-medium text-foreground">Catégorie</label>
                         <select value={categoryId} onChange={e => setCategoryId(e.target.value)}
                                 className={inputClass}>
                             <option value="">— Aucune —</option>
@@ -208,7 +210,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Marque</label>
+                        <label className="text-sm font-medium text-foreground">Marque</label>
                         <select value={brandId} onChange={e => setBrandId(e.target.value)}
                                 className={inputClass}>
                             <option value="">— Aucune —</option>
@@ -221,18 +223,18 @@ export default function FormulaireModifierProduit({ produit, categories, marques
             </div>
 
             {/* Grille tarifaire */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a]">Grille tarifaire</h2>
+            <div className="bloc-form bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)]">Grille tarifaire</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-foreground">
                             Prix d'achat <span className="text-red-500">*</span>
                         </label>
                         <ChampNombre value={prixAchat} onChange={v => setPrixAchat(v)} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-foreground">
                             Prix de vente <span className="text-red-500">*</span>
                         </label>
                         <ChampNombre value={prixVente} onChange={v => setPrixVente(v)} className={inputClass} />
@@ -241,31 +243,31 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Prix de gros</label>
+                        <label className="text-sm font-medium text-foreground">Prix de gros</label>
                         <ChampNombre value={prixGros} onChange={v => setPrixGros(v)} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Prix minimum</label>
+                        <label className="text-sm font-medium text-foreground">Prix minimum</label>
                         <ChampNombre value={prixMinimum} onChange={v => setPrixMinimum(v)} className={inputClass} />
                     </div>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">TVA (%)</label>
+                        <label className="text-sm font-medium text-foreground">TVA (%)</label>
                         <ChampNombre value={tvaPct} onChange={v => setTvaPct(v)} className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Seuil d'alerte stock</label>
+                        <label className="text-sm font-medium text-foreground">Seuil d'alerte stock</label>
                         <ChampNombre value={seuilAlerte} onChange={v => setSeuilAlerte(v)} entier className={inputClass} />
                     </div>
                 </div>
 
                 {/* Marge indicative */}
                 {prixAchat > 0 && prixVente > 0 && (
-                    <div className="p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl flex justify-between items-center">
-                        <span className="text-xs font-bold text-[#15335a]">Marge brute estimée</span>
-                        <span className="text-sm font-black text-[#15335a]">
+                    <div className="p-3 bg-[var(--primary-soft)] border border-primary/20 rounded-xl flex justify-between items-center">
+                        <span className="text-xs font-bold text-[var(--primary-strong)]">Marge brute estimée</span>
+                        <span className="text-sm font-black text-[var(--primary-strong)]">
                             {(((prixVente - prixAchat) / prixAchat) * 100).toFixed(1)}%
                         </span>
                     </div>
@@ -273,16 +275,16 @@ export default function FormulaireModifierProduit({ produit, categories, marques
             </div>
 
             {/* Options avancées */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a]">Options avancées</h2>
+            <div className="bloc-form bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)]">Options avancées</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <label className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-xl border-2 transition-all ${
-                        necessiteImei ? 'bg-blue-50 border-blue-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                        necessiteImei ? 'bg-blue-50 border-blue-300' : 'bg-[var(--surface2)] border-border hover:border-border'
                     }`}>
                         <input type="checkbox" checked={necessiteImei}
                                onChange={e => setNecessiteImei(e.target.checked)}
-                               className="rounded accent-[#15335a]" />
+                               className="rounded accent-[var(--primary)]" />
                         <div>
                             <p className="text-sm font-bold text-blue-700">IMEI requis</p>
                             <p className="text-xs text-blue-500">Téléphones, tablettes</p>
@@ -290,7 +292,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     </label>
 
                     <label className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-xl border-2 transition-all ${
-                        necessiteSerie ? 'bg-purple-50 border-purple-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                        necessiteSerie ? 'bg-purple-50 border-purple-300' : 'bg-[var(--surface2)] border-border hover:border-border'
                     }`}>
                         <input type="checkbox" checked={necessiteSerie}
                                onChange={e => setNecessiteSerie(e.target.checked)}
@@ -302,7 +304,7 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     </label>
 
                     <label className={`flex items-center gap-2.5 cursor-pointer p-3 rounded-xl border-2 transition-all ${
-                        estRetournable ? 'bg-amber-50 border-amber-300' : 'bg-gray-50 border-gray-200 hover:border-gray-300'
+                        estRetournable ? 'bg-amber-50 border-amber-300' : 'bg-[var(--surface2)] border-border hover:border-border'
                     }`}>
                         <input type="checkbox" checked={estRetournable}
                                onChange={e => setEstRetournable(e.target.checked)}
@@ -315,22 +317,19 @@ export default function FormulaireModifierProduit({ produit, categories, marques
 
                     <div className="p-3 bg-green-50 border-2 border-green-200 rounded-xl">
                         <p className="text-xs font-bold text-green-700 mb-1.5">Garantie (mois)</p>
-                        <ChampNombre value={garantieMois} onChange={v => setGarantieMois(v)} entier className="w-full px-2 py-1.5 bg-white border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="0 = aucune" />
+                        <ChampNombre value={garantieMois} onChange={v => setGarantieMois(v)} entier className="w-full px-2 py-1.5 bg-card border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" placeholder="0 = aucune" />
                     </div>
                 </div>
             </div>
 
-            <Button
-                onClick={handleSoumettre}
-                disabled={enAttente}
-                className="w-full py-3 font-bold text-base rounded-xl"
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-            >
-                {enAttente
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement...</>
-                    : 'Enregistrer les modifications'
-                }
-            </Button>
+            <PiedFormulaire>
+                <Button onClick={handleSoumettre} disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement...</>
+                        : 'Enregistrer les modifications'
+                    }
+                </Button>
+            </PiedFormulaire>
         </div>
     )
 }

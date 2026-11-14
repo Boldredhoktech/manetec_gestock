@@ -5,6 +5,7 @@ import { creerProduit } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
 import ChampImageProduit from '@/components/shop/produits/ChampImageProduit'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 interface Props {
     categories: { id: string; nom: string; parent_id: string | null }[]
@@ -49,7 +50,7 @@ export default function FormulaireProduit({ categories, marques, entrepots, imag
             )}
 
             {/* Informations principales */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Informations générales</h2>
 
                 <div className="space-y-1.5">
@@ -121,7 +122,7 @@ export default function FormulaireProduit({ categories, marques, entrepots, imag
             </div>
 
             {/* Prix */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Prix</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -155,7 +156,7 @@ export default function FormulaireProduit({ categories, marques, entrepots, imag
             </div>
 
             {/* Stock initial */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Stock initial</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -191,7 +192,7 @@ export default function FormulaireProduit({ categories, marques, entrepots, imag
             </div>
 
             {/* Options avancées */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Options avancées</h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -226,17 +227,19 @@ export default function FormulaireProduit({ categories, marques, entrepots, imag
                         <p className="text-xs font-bold text-green-700 mb-1.5">Garantie (mois)</p>
                         <input type="number" name="garantie_mois" min="0"
                                placeholder="0 = aucune" disabled={enAttente}
-                               className="w-full px-2.5 py-1.5 bg-white border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
+                               className="w-full px-2.5 py-1.5 bg-card border border-green-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400" />
                     </div>
                 </div>
             </div>
 
-            <Button type="submit" disabled={enAttente} className="w-full">
-                {enAttente
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer le produit'
-                }
-            </Button>
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
+                        : 'Créer le produit'
+                    }
+                </Button>
+            </PiedFormulaire>
 
         </form>
     )

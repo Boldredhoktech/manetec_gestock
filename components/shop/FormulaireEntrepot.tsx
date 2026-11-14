@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { creerEntrepot } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
@@ -25,7 +26,7 @@ export default function FormulaireEntrepot() {
                 </div>
             )}
 
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-foreground">
                         Nom <span className="text-destructive">*</span>
@@ -66,12 +67,14 @@ export default function FormulaireEntrepot() {
                 </label>
             </div>
 
-            <Button type="submit" disabled={enAttente} className="w-full">
-                {enAttente
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer l\'entrepôt'
-                }
-            </Button>
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
+                        : 'Créer l\'entrepôt'
+                    }
+                </Button>
+            </PiedFormulaire>
         </form>
     )
 }

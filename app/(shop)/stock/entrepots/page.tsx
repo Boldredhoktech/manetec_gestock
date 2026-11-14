@@ -4,8 +4,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, AlertTriangle } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import { classeBouton } from '@/components/ui/classe-bouton'
 import TableauEntrepots from '@/components/shop/TableauEntrepots'
+import FormulaireEntrepot from '@/components/shop/FormulaireEntrepot'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { getPlanBoutique } from '@/lib/supabase/getPlanBoutique'
@@ -18,6 +21,7 @@ export default async function PageEntrepots() {
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
     if (!aPermission(user, PERMISSIONS.STOCK_VOIR)) redirect('/admin/dashboard')
+    const peutCreer = aPermission(user, PERMISSIONS.STOCK_AJUSTEMENT)
 
     const adminClient = createAdminClient()
     const [{ data: entrepots }, { limites }] = await Promise.all([
@@ -34,23 +38,22 @@ export default async function PageEntrepots() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">Entrepôts</h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {entrepots?.length ?? 0} entrepôt(s)
-                        </p>
-                    </div>
-                    <Button asChild>
-                        <Link href="/stock/entrepots/nouveau">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Nouvel entrepôt
-                        </Link>
-                    </Button>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6 space-y-4">
+            <EnTetePage
+                titre="Entrepôts"
+                sousTitre={`${entrepots?.length ?? 0} entrepôt(s)`}
+                ariane={[{ label: 'Stock' }, { label: 'Entrepôts' }]}
+                actions={peutCreer ? (
+                    <Link href="/stock/entrepots?nouveau=1" scroll={false} className={classeBouton('primaire')}>
+                        <Plus className="w-4 h-4" aria-hidden="true" />Nouvel entrepôt
+                    </Link>
+                ) : undefined}
+            />
+            {peutCreer && (
+                <ModaleUrl param="nouveau" titre="Nouvel entrepôt" description="Sa caisse est créée avec lui." taille="lg">
+                    <FormulaireEntrepot />
+                </ModaleUrl>
+            )}
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-4">
                 {entrepotsFiges && (
                     <div className="flex items-start gap-3 p-4 rounded-xl border border-amber-300 bg-amber-50 text-amber-800">
                         <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />

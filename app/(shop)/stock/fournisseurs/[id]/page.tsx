@@ -65,49 +65,46 @@ export default async function PageDetailFournisseur({ params }: Props) {
         non_payee:           { label: 'Non payée',   bg: 'bg-red-100',   couleur: 'text-red-700'   },
         partiellement_payee: { label: 'Part. payée', bg: 'bg-amber-100', couleur: 'text-amber-700' },
         payee:               { label: 'Payée',        bg: 'bg-green-100', couleur: 'text-green-700' },
-        annulee:             { label: 'Annulée',      bg: 'bg-gray-100',  couleur: 'text-gray-500'  },
+        annulee:             { label: 'Annulée',      bg: 'bg-muted',  couleur: 'text-muted-foreground'  },
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
             {/* ── Header ─────────────────────────────────── */}
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/stock/fournisseurs"
-                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-white" />
+                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted hover:bg-border transition-colors">
+                            <ArrowLeft className="w-5 h-5 text-foreground" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-white">{fournisseur.nom}</h1>
-                            <p className="text-sm text-white/70 mt-0.5 font-mono">{fournisseur.public_id}</p>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{fournisseur.nom}</h1>
+                            <p className="text-sm text-muted-foreground mt-0.5 font-mono">{fournisseur.public_id}</p>
                         </div>
                     </div>
 
                     {/* Boutons d'action */}
                     <div className="flex items-center gap-2 flex-wrap">
                         <Link href={`/stock/bons-de-commande/nouveau?fournisseur=${id}`}
-                              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-sm rounded-xl transition-colors border border-white/20">
+                              className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-border text-foreground font-bold text-sm rounded-xl transition-colors border border-border">
                             <ClipboardList className="w-4 h-4" />
                             Bon de commande
                         </Link>
                         <Link href={`/stock/fournisseurs/${id}/reception`}
-                              className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-sm rounded-xl transition-colors border border-white/20">
+                              className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-border text-foreground font-bold text-sm rounded-xl transition-colors border border-border">
                             <PackageCheck className="w-4 h-4" />
                             Réception
                         </Link>
                         <a href={`/api/v1/pdf/releve-fournisseur/${id}`}
                            target="_blank" rel="noopener noreferrer"
-                           className="flex items-center gap-2 px-4 py-2 bg-white/15 hover:bg-white/25 text-white font-bold text-sm rounded-xl transition-colors border border-white/20">
+                           className="flex items-center gap-2 px-4 py-2 bg-muted hover:bg-border text-foreground font-bold text-sm rounded-xl transition-colors border border-border">
                             <FileText className="w-4 h-4" />
                             Relevé
                         </a>
                         <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                              className="flex items-center gap-2 px-4 py-2 bg-white text-[#15335a] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm">
+                              className="flex items-center gap-2 px-4 py-2 bg-card text-[var(--primary-strong)] font-bold text-sm rounded-xl hover:bg-white/90 transition-colors shadow-sm">
                             <FileInput className="w-4 h-4" />
                             Facture fourn.
                         </Link>
@@ -115,96 +112,101 @@ export default async function PageDetailFournisseur({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-5xl mx-auto w-full space-y-5">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl mx-auto w-full space-y-5">
 
                 {/* ── Infos fournisseur ──────────────────── */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                     {/* Carte contact */}
-                    <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                        <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                            <Building2 className="w-5 h-5 text-[#15335a]" />
-                            <h2 className="text-sm font-bold text-gray-900">Informations</h2>
+                    <div className="lg:col-span-2 bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 pb-3 border-b border-border">
+                            <Building2 className="w-5 h-5 text-[var(--primary-strong)]" />
+                            <h2 className="text-sm font-bold text-foreground">Informations</h2>
                         </div>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                             {fournisseur.telephone && (
-                                <div className="flex items-center gap-2 text-gray-600">
-                                    <Phone className="w-4 h-4 text-gray-400 shrink-0" />
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Phone className="w-4 h-4 text-muted-foreground/80 shrink-0" />
                                     {fournisseur.telephone}
                                 </div>
                             )}
                             {fournisseur.email && (
-                                <div className="flex items-center gap-2 text-gray-600">
-                                    <Mail className="w-4 h-4 text-gray-400 shrink-0" />
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Mail className="w-4 h-4 text-muted-foreground/80 shrink-0" />
                                     {fournisseur.email}
                                 </div>
                             )}
                             {(fournisseur.ville || fournisseur.pays) && (
-                                <div className="flex items-center gap-2 text-gray-600">
-                                    <MapPin className="w-4 h-4 text-gray-400 shrink-0" />
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <MapPin className="w-4 h-4 text-muted-foreground/80 shrink-0" />
                                     {[fournisseur.adresse, fournisseur.ville, fournisseur.pays].filter(Boolean).join(', ')}
                                 </div>
                             )}
                             {fournisseur.nom_contact && (
-                                <div className="text-gray-600">
-                                    <span className="text-gray-400 text-xs">Contact : </span>
+                                <div className="text-muted-foreground">
+                                    <span className="text-muted-foreground/80 text-xs">Contact : </span>
                                     {fournisseur.nom_contact}
                                     {fournisseur.poste_contact && (
-                                        <span className="text-gray-400 text-xs ml-1">({fournisseur.poste_contact})</span>
+                                        <span className="text-muted-foreground/80 text-xs ml-1">({fournisseur.poste_contact})</span>
                                     )}
                                 </div>
                             )}
                             {fournisseur.ifu && (
-                                <div className="text-gray-600 text-xs">IFU : {fournisseur.ifu}</div>
+                                <div className="text-muted-foreground text-xs">IFU : {fournisseur.ifu}</div>
                             )}
                             {fournisseur.rccm && (
-                                <div className="text-gray-600 text-xs">RCCM : {fournisseur.rccm}</div>
+                                <div className="text-muted-foreground text-xs">RCCM : {fournisseur.rccm}</div>
                             )}
                         </div>
                         {fournisseur.notes && (
-                            <p className="text-xs text-gray-400 italic border-t border-gray-100 pt-3">
+                            <p className="text-xs text-muted-foreground/80 italic border-t border-border pt-3">
                                 {fournisseur.notes}
                             </p>
                         )}
                     </div>
 
                     {/* Carte solde */}
-                    <div className={`bg-white border-2 rounded-2xl p-5 shadow-sm flex flex-col items-center justify-center gap-3 ${
-                        soldeDu > 0 ? 'border-red-200' : 'border-gray-200'
+                    <div className={`bg-card border-2 rounded-2xl p-5 shadow-sm flex flex-col items-center justify-center gap-3 ${
+                        soldeDu > 0 ? 'border-[var(--rouge-texte)]/30' : 'border-border'
                     }`}>
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Solde dû</p>
-                        <p className={`text-3xl font-black ${soldeDu > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                        <p className="text-xs font-bold text-muted-foreground/80 uppercase tracking-wider">Solde dû</p>
+                        <p className={`text-3xl font-black ${soldeDu > 0 ? 'text-[var(--rouge-texte)]' : 'text-[var(--primary-strong)]'}`}>
                             {formatMontant(soldeDu, devise)}
                         </p>
                         {soldeDu > 0 && (
                             <Link href={`/stock/fournisseurs/${id}/factures`}
-                                  className="text-xs text-[#15335a] font-bold hover:underline">
+                                  className="text-xs text-[var(--primary-strong)] font-bold hover:underline">
                                 Voir les factures →
                             </Link>
+                        )}
+                        {peutPayer && soldeDu > 0 && (
+                            <CartePaiementFournisseur
+                                fournisseur={{ id: fournisseur.id, solde_dû: fournisseur.solde_dû }}
+                            />
                         )}
                     </div>
                 </div>
 
                 {/* ── Dernières factures fournisseur ──────── */}
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                         <div className="flex items-center gap-2">
-                            <FileInput className="w-4 h-4 text-[#15335a]" />
-                            <h2 className="text-sm font-bold text-gray-900">
+                            <FileInput className="w-4 h-4 text-[var(--primary-strong)]" />
+                            <h2 className="text-sm font-bold text-foreground">
                                 Dernières factures fournisseur
                             </h2>
                         </div>
                         <Link href={`/stock/fournisseurs/${id}/factures`}
-                              className="text-xs text-[#15335a] font-bold hover:underline">
+                              className="text-xs text-[var(--primary-strong)] font-bold hover:underline">
                             Voir tout →
                         </Link>
                     </div>
 
                     {!factures || factures.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
+                        <div className="text-center py-8 text-muted-foreground/80">
                             <p className="text-sm">Aucune facture.</p>
                             <Link href={`/stock/fournisseurs/${id}/factures/nouvelle`}
-                                  className="text-xs text-[#15335a] font-bold hover:underline mt-1 inline-block">
+                                  className="text-xs text-[var(--primary-strong)] font-bold hover:underline mt-1 inline-block">
                                 Créer une facture →
                             </Link>
                         </div>
@@ -215,18 +217,18 @@ export default async function PageDetailFournisseur({ params }: Props) {
                                 return (
                                     <Link key={f.id}
                                           href={`/stock/factures-fournisseurs/${f.id}`}
-                                          className={`flex items-center gap-4 px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                          className={`flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group ${i % 2 === 0 ? '' : 'bg-[var(--surface2)]/50'}`}>
                                         <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
+                                            <p className="text-sm font-bold font-mono text-foreground group-hover:text-primary">
                                                 {f.public_id}
                                             </p>
-                                            <p className="text-xs text-gray-400">{formatDate(f.date_facture)}</p>
+                                            <p className="text-xs text-muted-foreground/80">{formatDate(f.date_facture)}</p>
                                         </div>
                                         <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${cfg.bg} ${cfg.couleur}`}>
                                             {cfg.label}
                                         </span>
                                         <div className="text-right shrink-0">
-                                            <p className="text-sm font-bold text-gray-800">{formatMontant(f.montant_ttc, devise)}</p>
+                                            <p className="text-sm font-bold text-foreground">{formatMontant(f.montant_ttc, devise)}</p>
                                             {f.montant_restant > 0 && (
                                                 <p className="text-xs text-red-500 font-bold">
                                                     Restant : {formatMontant(f.montant_restant, devise)}
@@ -241,25 +243,25 @@ export default async function PageDetailFournisseur({ params }: Props) {
                 </div>
 
                 {/* ── Dernières réceptions ────────────────── */}
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                         <div className="flex items-center gap-2">
-                            <PackageCheck className="w-4 h-4 text-[#15335a]" />
-                            <h2 className="text-sm font-bold text-gray-900">
+                            <PackageCheck className="w-4 h-4 text-[var(--primary-strong)]" />
+                            <h2 className="text-sm font-bold text-foreground">
                                 Dernières réceptions
                             </h2>
                         </div>
                         <Link href="/stock/receptions"
-                              className="text-xs text-[#15335a] font-bold hover:underline">
+                              className="text-xs text-[var(--primary-strong)] font-bold hover:underline">
                             Voir tout →
                         </Link>
                     </div>
 
                     {!receptions || receptions.length === 0 ? (
-                        <div className="text-center py-8 text-gray-400">
+                        <div className="text-center py-8 text-muted-foreground/80">
                             <p className="text-sm">Aucune réception.</p>
                             <Link href={`/stock/fournisseurs/${id}/reception`}
-                                  className="text-xs text-[#15335a] font-bold hover:underline mt-1 inline-block">
+                                  className="text-xs text-[var(--primary-strong)] font-bold hover:underline mt-1 inline-block">
                                 Enregistrer une réception →
                             </Link>
                         </div>
@@ -268,14 +270,14 @@ export default async function PageDetailFournisseur({ params }: Props) {
                             {receptions.map((r, i) => (
                                 <Link key={r.id}
                                       href={`/stock/receptions/${r.id}`}
-                                      className={`flex items-center justify-between px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                      className={`flex items-center justify-between px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group ${i % 2 === 0 ? '' : 'bg-[var(--surface2)]/50'}`}>
                                     <div>
-                                        <p className="text-sm font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
+                                        <p className="text-sm font-bold font-mono text-foreground group-hover:text-primary">
                                             {r.public_id}
                                         </p>
-                                        <p className="text-xs text-gray-400">{formatDate(r.date_reception)}</p>
+                                        <p className="text-xs text-muted-foreground/80">{formatDate(r.date_reception)}</p>
                                     </div>
-                                    <p className="text-sm font-bold text-gray-800">
+                                    <p className="text-sm font-bold text-foreground">
                                         {formatMontant(r.montant_total, devise)}
                                     </p>
                                 </Link>
@@ -294,11 +296,6 @@ export default async function PageDetailFournisseur({ params }: Props) {
                 {/* Reglement libre du solde : cet ecran existait depuis
                     le debut sans etre affiche nulle part, donc
                     payerFournisseur() n'etait atteignable par personne. */}
-                {peutPayer && (
-                    <CartePaiementFournisseur
-                        fournisseur={{ id: fournisseur.id, solde_dû: fournisseur.solde_dû }}
-                    />
-                )}
 
             </main>
         </div>

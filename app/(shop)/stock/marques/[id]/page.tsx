@@ -45,50 +45,47 @@ export default async function PageDetailMarque({ params }: Props) {
     )
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center gap-4">
                     <Link href="/stock/marques"
-                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-white" />
+                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted hover:bg-border transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-foreground" />
                     </Link>
                     <div>
                         <div className="flex items-center gap-2">
-                            <Star className="w-5 h-5 text-white/80" />
-                            <h1 className="text-xl font-bold text-white">{marque.nom}</h1>
+                            <Star className="w-5 h-5 text-muted-foreground" />
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{marque.nom}</h1>
                         </div>
                         {marque.description && (
-                            <p className="text-sm text-white/60 mt-0.5">{marque.description}</p>
+                            <p className="text-sm text-muted-foreground mt-0.5">{marque.description}</p>
                         )}
                     </div>
                     <div className="ml-auto hidden sm:flex items-center gap-3">
-                        <div className="text-center px-4 py-2 bg-white/15 rounded-xl">
-                            <p className="text-xs text-white/70">Produits</p>
-                            <p className="text-lg font-black text-white">{produits?.length ?? 0}</p>
+                        <div className="text-center px-4 py-2 bg-muted rounded-xl">
+                            <p className="text-xs text-muted-foreground">Produits</p>
+                            <p className="text-lg font-black text-foreground">{produits?.length ?? 0}</p>
                         </div>
-                        <div className="text-center px-4 py-2 bg-white/15 rounded-xl">
-                            <p className="text-xs text-white/70">Valeur stock</p>
-                            <p className="text-lg font-black text-white">{formatMontant(valeurStock)}</p>
+                        <div className="text-center px-4 py-2 bg-muted rounded-xl">
+                            <p className="text-xs text-muted-foreground">Valeur stock</p>
+                            <p className="text-lg font-black text-foreground">{formatMontant(valeurStock)}</p>
                         </div>
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-2 p-5 border-b border-gray-100">
-                        <Package className="w-5 h-5 text-[#15335a]" />
-                        <h2 className="text-sm font-bold text-gray-900">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full">
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-2 p-5 border-b border-border">
+                        <Package className="w-5 h-5 text-[var(--primary-strong)]" />
+                        <h2 className="text-sm font-bold text-foreground">
                             Articles de cette marque ({produits?.length ?? 0})
                         </h2>
                     </div>
 
                     {!produits || produits.length === 0 ? (
-                        <div className="text-center py-16 text-gray-400">
+                        <div className="text-center py-16 text-muted-foreground/80">
                             <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
                             <p className="text-sm">Aucun article pour cette marque.</p>
                         </div>
@@ -98,30 +95,30 @@ export default async function PageDetailMarque({ params }: Props) {
                                 const stock = (p.stock_levels as any[])?.[0]?.quantite ?? 0
                                 return (
                                     <Link key={p.id} href={`/stock/produits/${p.id}`}
-                                          className="flex items-center gap-4 px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group">
-                                        <div className="shrink-0 bg-[#15335a]/10 p-2 rounded-xl group-hover:bg-[#15335a]/20 transition-colors">
-                                            <Package className="w-4 h-4 text-[#15335a]" />
+                                          className="flex items-center gap-4 px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group">
+                                        <div className="shrink-0 bg-[var(--primary-soft)] p-2 rounded-xl group-hover:bg-[var(--primary-soft)] transition-colors">
+                                            <Package className="w-4 h-4 text-[var(--primary-strong)]" />
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2">
-                                                <p className="text-sm font-semibold text-gray-900 group-hover:text-[#15335a] transition-colors truncate">
+                                                <p className="text-sm font-semibold text-foreground group-hover:text-primary transition-colors truncate">
                                                     {p.nom}
                                                 </p>
                                                 {!p.est_actif && (
-                                                    <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                                                    <span className="text-xs text-muted-foreground/80 bg-muted px-2 py-0.5 rounded-full shrink-0">
                             Désactivé
                           </span>
                                                 )}
                                             </div>
-                                            <p className="text-xs font-mono text-gray-400 mt-0.5">{p.public_id}</p>
+                                            <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">{p.public_id}</p>
                                         </div>
                                         <div className="text-right shrink-0">
-                                            <p className={`text-sm font-bold ${stock <= 0 ? 'text-red-600' : 'text-gray-700'}`}>
+                                            <p className={`text-sm font-bold ${stock <= 0 ? 'text-red-600' : 'text-foreground'}`}>
                                                 {stock <= 0 ? 'Rupture' : `${stock} ${p.unite}`}
                                             </p>
-                                            <p className="text-xs text-gray-400">{formatMontant(p.prix_vente)}</p>
+                                            <p className="text-xs text-muted-foreground/80">{formatMontant(p.prix_vente)}</p>
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-[#15335a] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+                                        <ChevronRight className="w-4 h-4 text-[var(--primary-strong)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                                     </Link>
                                 )
                             })}

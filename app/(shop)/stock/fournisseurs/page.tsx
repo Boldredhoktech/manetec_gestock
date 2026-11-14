@@ -4,8 +4,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import { classeBouton } from '@/components/ui/classe-bouton'
 import TableauFournisseurs from '@/components/shop/fournisseurs/TableauFournisseurs'
+import FormulaireFournisseur from '@/components/shop/fournisseurs/FormulaireFournisseur'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
@@ -16,6 +19,7 @@ export default async function PageFournisseurs() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
     if (!aPermission(user, PERMISSIONS.FOURNISSEURS_VOIR)) redirect('/admin/dashboard')
+    const peutCreer = aPermission(user, PERMISSIONS.FOURNISSEURS_CREER)
 
     const adminClient = createAdminClient()
 
@@ -36,23 +40,22 @@ export default async function PageFournisseurs() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">Fournisseurs</h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {fournisseurs?.length ?? 0} fournisseur(s)
-                        </p>
-                    </div>
-                    <Button asChild>
-                        <Link href="/stock/fournisseurs/nouveau">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Nouveau fournisseur
-                        </Link>
-                    </Button>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6">
+            <EnTetePage
+                titre="Fournisseurs"
+                sousTitre={`${fournisseurs?.length ?? 0} fournisseur(s)`}
+                ariane={[{ label: 'Achats' }, { label: 'Fournisseurs' }]}
+                actions={peutCreer ? (
+                    <Link href="/stock/fournisseurs?nouveau=1" scroll={false} className={classeBouton('primaire')}>
+                        <Plus className="w-4 h-4" aria-hidden="true" />Nouveau fournisseur
+                    </Link>
+                ) : undefined}
+            />
+            {peutCreer && (
+                <ModaleUrl param="nouveau" titre="Nouveau fournisseur" description="Seul le nom est obligatoire." taille="lg">
+                    <FormulaireFournisseur />
+                </ModaleUrl>
+            )}
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <TableauFournisseurs fournisseurs={fournisseurs ?? []} />
             </main>
         </div>

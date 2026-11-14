@@ -45,19 +45,19 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                     <div className="bg-purple-100 p-2 rounded-lg">
                         <Palette className="w-5 h-5 text-purple-600" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">
+                    <h2 className="text-sm font-bold text-foreground">
                         Variantes ({variantes.length})
                     </h2>
                 </div>
                 <button onClick={() => setAjout(!ajout)}
-                        className="flex items-center gap-1.5 text-xs text-[#15335a] font-bold hover:underline">
+                        className="flex items-center gap-1.5 text-xs text-[var(--primary-strong)] font-bold hover:underline">
                     <Plus className="w-3.5 h-3.5" />
                     Ajouter
                 </button>
@@ -68,15 +68,15 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
                 <div className="p-3 bg-purple-50 border border-purple-200 rounded-xl space-y-3">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         <div>
-                            <label className="text-xs font-medium text-gray-600 mb-1 block">Nom</label>
+                            <label className="text-xs font-medium text-muted-foreground mb-1 block">Nom</label>
                             <input type="text" value={nom} onChange={e => setNom(e.target.value)}
                                    placeholder="Ex: Rouge 128Go"
-                                   className="w-full px-2.5 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white" />
+                                   className="w-full px-2.5 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 bg-card" />
                         </div>
                         <div>
-                            <label className="text-xs font-medium text-gray-600 mb-1 block">Type</label>
+                            <label className="text-xs font-medium text-muted-foreground mb-1 block">Type</label>
                             <select value={type} onChange={e => setType(e.target.value)}
-                                    className="w-full px-2.5 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 bg-white">
+                                    className="w-full px-2.5 py-2 text-sm border border-purple-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 bg-card">
                                 {Object.entries(TYPE_LABELS).map(([k, v]) => (
                                     <option key={k} value={k}>{v}</option>
                                 ))}
@@ -85,10 +85,10 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
                     </div>
                     {type === 'color' && (
                         <div className="flex items-center gap-3">
-                            <label className="text-xs font-medium text-gray-600">Couleur</label>
+                            <label className="text-xs font-medium text-muted-foreground">Couleur</label>
                             <input type="color" value={couleur} onChange={e => setCouleur(e.target.value)}
                                    className="w-8 h-8 rounded cursor-pointer border-0" />
-                            <span className="text-xs font-mono text-gray-500">{couleur}</span>
+                            <span className="text-xs font-mono text-muted-foreground">{couleur}</span>
                         </div>
                     )}
                     <div className="flex gap-2">
@@ -98,7 +98,7 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
                             Ajouter
                         </button>
                         <button onClick={() => setAjout(false)}
-                                className="px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700">
+                                className="px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">
                             Annuler
                         </button>
                     </div>
@@ -108,13 +108,13 @@ export default function CarteVariantesProduit({ variantes, productId, shopId }: 
             {/* Liste variantes */}
             <div className="flex flex-wrap gap-2">
                 {variantes.map(v => (
-                    <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 rounded-full">
+                    <div key={v.id} className="flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full">
                         {v.color_hex && (
-                            <div className="w-3.5 h-3.5 rounded-full border border-gray-300 shrink-0"
+                            <div className="w-3.5 h-3.5 rounded-full border border-border shrink-0"
                                  style={{ backgroundColor: v.color_hex }} />
                         )}
-                        <span className="text-xs font-semibold text-gray-700">{v.nom}</span>
-                        <span className="text-xs text-gray-400">({TYPE_LABELS[v.attribute_type] ?? v.attribute_type})</span>
+                        <span className="text-xs font-semibold text-foreground">{v.nom}</span>
+                        <span className="text-xs text-muted-foreground/80">({TYPE_LABELS[v.attribute_type] ?? v.attribute_type})</span>
                     </div>
                 ))}
             </div>

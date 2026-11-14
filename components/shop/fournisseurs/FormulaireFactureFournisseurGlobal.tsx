@@ -117,7 +117,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
         setTimeout(() => router.push(LIENS.factureFournisseur((res as any).facture_id)), 1000)
     }
 
-    const ic = 'w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 transition-colors'
+    const ic = 'w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 transition-colors'
 
     return (
         <div className="space-y-5 py-4">
@@ -134,11 +134,11 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
             )}
 
             {/* Informations générales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a]">Informations générales</h2>
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)]">Informations générales</h2>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-foreground">
                         Fournisseur <span className="text-red-500">*</span>
                     </label>
                     <select value={supplierId} onChange={e => setSupplierId(e.target.value)} className={ic}>
@@ -168,29 +168,29 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Entrepôt destinataire</label>
+                        <label className="text-sm font-medium text-foreground">Entrepôt destinataire</label>
                         <select value={warehouseId} onChange={e => setWarehouseId(e.target.value)} className={ic}>
                             <option value="">— Non précisé —</option>
                             {entrepots.map(e => <option key={e.id} value={e.id}>{e.nom}</option>)}
                         </select>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Réf. facture fournisseur</label>
+                        <label className="text-sm font-medium text-foreground">Réf. facture fournisseur</label>
                         <input type="text" value={referenceFourn} onChange={e => setReferenceFourn(e.target.value)}
                                placeholder="N° de la facture reçue" className={ic} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Date d'échéance</label>
+                        <label className="text-sm font-medium text-foreground">Date d'échéance</label>
                         <input type="date" value={dateEcheance} onChange={e => setDateEcheance(e.target.value)} className={ic} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Notes</label>
+                        <label className="text-sm font-medium text-foreground">Notes</label>
                         <input type="text" value={notes} onChange={e => setNotes(e.target.value)}
                                placeholder="Remarques..." className={ic} />
                     </div>
                 </div>
 
-                <label className="flex items-start gap-2.5 p-3 bg-gray-50 border border-gray-200 rounded-xl cursor-pointer">
+                <label className="flex items-start gap-2.5 p-3 bg-[var(--surface2)] border border-border rounded-xl cursor-pointer">
                     <input
                         type="checkbox"
                         checked={genererReception}
@@ -199,10 +199,10 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                         disabled={!warehouseId}
                     />
                     <span className="text-xs">
-                        <span className="font-bold text-gray-800 block">
+                        <span className="font-bold text-foreground block">
                             Faire entrer la marchandise en stock
                         </span>
-                        <span className="text-gray-500">
+                        <span className="text-muted-foreground">
                             {warehouseId
                                 ? "Une réception est créée avec cette facture : le stock augmente et l'entrée apparaît dans le journal des mouvements. La dette, elle, reste comptée une seule fois."
                                 : "Choisissez un entrepôt destinataire pour activer cette option."}
@@ -212,16 +212,16 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
             </div>
 
             {/* Lignes — produits obligatoires */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h2 className="text-sm font-bold text-[#15335a]">Articles commandés</h2>
-                        <p className="text-xs text-gray-400 mt-0.5">
+                        <h2 className="text-sm font-bold text-[var(--primary-strong)]">Articles commandés</h2>
+                        <p className="text-xs text-muted-foreground/80 mt-0.5">
                             Seuls les produits existants dans votre catalogue sont acceptés.
                         </p>
                     </div>
                     <button type="button" onClick={ajouterLigne}
-                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5">
+                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)]">
                         <Plus className="w-3.5 h-3.5" />Ajouter un article
                     </button>
                 </div>
@@ -229,17 +229,17 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 {lignes.map((l, i) => {
                     const produitChoisi = produits.find(p => p.id === l.product_id)
                     return (
-                        <div key={i} className="p-4 bg-gray-50 rounded-xl space-y-3">
+                        <div key={i} className="p-4 bg-[var(--surface2)] rounded-xl space-y-3">
 
                             {/* Ligne 1 : Sélection produit */}
                             <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-gray-600">
+                                <label className="text-xs font-semibold text-muted-foreground">
                                     Produit <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={l.product_id}
                                     onChange={e => choisirProduit(i, e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                    className="w-full px-3 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 >
                                     <option value="">— Sélectionnez un produit —</option>
                                     {produits.map(p => (
@@ -259,24 +259,24 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                             {l.product_id && (
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-600">
+                                        <label className="text-xs font-semibold text-muted-foreground">
                                             Quantité *
-                                            <span className="text-gray-400 font-normal ml-1">
+                                            <span className="text-muted-foreground/80 font-normal ml-1">
                                                 ({produitChoisi?.unite})
                                             </span>
                                         </label>
                                         {/* ✅ Entier uniquement — step="1" */}
-                                        <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', Math.max(1, v))} entier videVaut={1} className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                                        <ChampNombre value={l.quantite} onChange={v => mettreAJour(i, 'quantite', Math.max(1, v))} entier videVaut={1} className="w-full px-3 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30" />
                                     </div>
                                     <div className="space-y-1.5 col-span-2">
-                                        <label className="text-xs font-semibold text-gray-600">
+                                        <label className="text-xs font-semibold text-muted-foreground">
                                             Prix unitaire HT (FCFA)
                                         </label>
-                                        <ChampNombre value={l.prix_unitaire} onChange={v => mettreAJour(i, 'prix_unitaire', v)} entier className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                                        <ChampNombre value={l.prix_unitaire} onChange={v => mettreAJour(i, 'prix_unitaire', v)} entier className="w-full px-3 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30" />
                                     </div>
                                     <div className="space-y-1.5">
-                                        <label className="text-xs font-semibold text-gray-600">TVA %</label>
-                                        <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} entier className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                                        <label className="text-xs font-semibold text-muted-foreground">TVA %</label>
+                                        <ChampNombre value={l.tva_pct} onChange={v => mettreAJour(i, 'tva_pct', v)} entier className="w-full px-3 py-2.5 bg-card border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30" />
                                     </div>
                                 </div>
                             )}
@@ -284,7 +284,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                             {/* Sous-total ligne + bouton supprimer */}
                             <div className="flex items-center justify-between">
                                 {l.product_id && l.quantite > 0 && l.prix_unitaire > 0 ? (
-                                    <p className="text-xs font-bold text-[#15335a]">
+                                    <p className="text-xs font-bold text-[var(--primary-strong)]">
                                         Sous-total : {(l.quantite * l.prix_unitaire * (1 + l.tva_pct / 100)).toLocaleString('fr-FR')} FCFA TTC
                                     </p>
                                 ) : (
@@ -305,14 +305,14 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 })}
 
                 {/* Totaux */}
-                <div className="flex justify-end gap-6 pt-3 border-t border-gray-100">
+                <div className="flex justify-end gap-6 pt-3 border-t border-border">
                     <div className="text-right">
-                        <p className="text-xs text-gray-400">Montant HT</p>
-                        <p className="text-sm font-bold text-gray-700">{montantHT.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-xs text-muted-foreground/80">Montant HT</p>
+                        <p className="text-sm font-bold text-foreground">{montantHT.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                     <div className="text-right">
-                        <p className="text-xs text-gray-400">Total TTC</p>
-                        <p className="text-xl font-black text-[#15335a]">{montantTTC.toLocaleString('fr-FR')} FCFA</p>
+                        <p className="text-xs text-muted-foreground/80">Total TTC</p>
+                        <p className="text-xl font-black text-[var(--primary-strong)]">{montantTTC.toLocaleString('fr-FR')} FCFA</p>
                     </div>
                 </div>
             </div>
@@ -322,7 +322,7 @@ export default function FormulaireFactureFournisseurGlobal({ fournisseurs, produ
                 onClick={handleSoumettre}
                 disabled={enAttente || succes || !supplierId}
                 className="w-full flex items-center justify-center gap-2.5 py-3.5 font-bold text-white rounded-xl disabled:opacity-50 transition-all hover:shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
+                style={{ background: 'var(--primary)' }}
             >
                 {enAttente
                     ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>

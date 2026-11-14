@@ -49,7 +49,7 @@ export default function ActionsBonCommande({ poId, statut, dejaRecu }: Props) {
                     <button
                         onClick={() => agir('soumis')}
                         disabled={enAttente !== null}
-                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-[#15335a] rounded-lg hover:bg-[#0f2742] disabled:opacity-50 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-xs font-bold text-white bg-primary rounded-lg hover:opacity-90 disabled:opacity-50 transition-colors"
                     >
                         {enAttente === 'soumis'
                             ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Envoi…</>
@@ -85,7 +85,7 @@ export default function ActionsBonCommande({ poId, statut, dejaRecu }: Props) {
                         </button>
                         <button
                             onClick={() => setConfirmation(false)}
-                            className="px-3 py-1.5 text-xs font-bold text-gray-600 border border-gray-200 rounded-lg hover:bg-white"
+                            className="px-3 py-1.5 text-xs font-bold text-muted-foreground border border-border rounded-lg hover:bg-white"
                         >
                             Revenir
                         </button>

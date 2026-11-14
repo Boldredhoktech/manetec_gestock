@@ -26,7 +26,7 @@ const TYPE_CONFIG: Record<string, {
     retour_fournisseur: { label: 'Retour fournisseur', icone: ArrowUp,        couleur: 'text-amber-600',   sens: 'sortie' },
     transfert_sortie:   { label: 'Transfert sortant',  icone: ArrowLeftRight, couleur: 'text-purple-600',  sens: 'sortie' },
     ajustement_negatif: { label: 'Ajustement −',       icone: ArrowUp,        couleur: 'text-destructive', sens: 'sortie' },
-    inventaire:         { label: 'Écart d\'inventaire', icone: Scale,         couleur: 'text-[#15335a]',   sens: 'neutre' },
+    inventaire:         { label: 'Écart d\'inventaire', icone: Scale,         couleur: 'text-[var(--primary-strong)]',   sens: 'neutre' },
 }
 
 const PAR_PAGE = 50
@@ -112,14 +112,14 @@ export default async function PageMouvements({ searchParams }: Props) {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <h1 className="text-xl font-bold text-foreground">Mouvements de stock</h1>
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Mouvements de stock</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     {total} mouvement(s) — journal complet de toutes les entrées et sorties
                 </p>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 space-y-4">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-4">
 
                 <FiltresMouvements
                     produits={produits ?? []}
@@ -230,13 +230,13 @@ export default async function PageMouvements({ searchParams }: Props) {
                         <div className="flex gap-2">
                             {page > 1 && (
                                 <Link href={query(page - 1)}
-                                      className="px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5">
+                                      className="px-3 py-1.5 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)]">
                                     Précédent
                                 </Link>
                             )}
                             {page < pages && (
                                 <Link href={query(page + 1)}
-                                      className="px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5">
+                                      className="px-3 py-1.5 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)]">
                                     Suivant
                                 </Link>
                             )}

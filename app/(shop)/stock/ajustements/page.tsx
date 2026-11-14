@@ -55,22 +55,22 @@ export default async function PageAjustements() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <h1 className="text-xl font-bold text-foreground">Ajustements de stock</h1>
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Ajustements de stock</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     Corriger une quantité sur quelques produits, sans lancer un inventaire complet
                 </p>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <div className="max-w-4xl mx-auto space-y-5">
 
                     <FormulaireAjustement entrepots={entrepots ?? []} produits={produitsAvecStock} />
 
-                    <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
-                            <SlidersHorizontal className="w-4 h-4 text-[#15335a]" />
-                            <h2 className="text-sm font-bold text-gray-900">Derniers ajustements</h2>
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                        <div className="px-5 py-4 border-b border-border flex items-center gap-2">
+                            <SlidersHorizontal className="w-4 h-4 text-[var(--primary-strong)]" />
+                            <h2 className="text-sm font-bold text-foreground">Derniers ajustements</h2>
                         </div>
 
                         {(ajustements ?? []).length === 0 ? (
@@ -78,18 +78,18 @@ export default async function PageAjustements() {
                                 Aucun ajustement enregistré.
                             </p>
                         ) : (
-                            <ul className="divide-y divide-gray-100">
+                            <ul className="divide-y divide-border">
                                 {(ajustements ?? []).map(a => (
                                     <li key={a.id} className="px-5 py-4">
                                         <div className="flex items-start justify-between gap-3 flex-wrap">
                                             <div>
-                                                <p className="text-sm font-semibold text-gray-900">{a.motif}</p>
-                                                <p className="text-xs font-mono text-gray-400 mt-0.5">
+                                                <p className="text-sm font-semibold text-foreground">{a.motif}</p>
+                                                <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">
                                                     {a.public_id} · {nom(a.warehouses)} · {formatDate(a.created_at)}
                                                 </p>
-                                                {a.note && <p className="text-xs text-gray-500 mt-1">{a.note}</p>}
+                                                {a.note && <p className="text-xs text-muted-foreground mt-1">{a.note}</p>}
                                             </div>
-                                            <ul className="text-xs text-gray-600 text-right">
+                                            <ul className="text-xs text-muted-foreground text-right">
                                                 {(a.stock_adjustment_items ?? []).map((i: {
                                                     quantite_avant: number; quantite_apres: number; ecart: number
                                                     products: { nom: string } | { nom: string }[] | null

@@ -39,44 +39,41 @@ export default async function PageReceptions() {
     const devise = boutique?.devise ?? 'FCFA'
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+        <div className="flex flex-col min-h-screen">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2 rounded-xl">
-                        <PackageCheck className="w-5 h-5 text-white" />
+                    <div className="bg-muted p-2 rounded-xl">
+                        <PackageCheck className="w-5 h-5 text-foreground" />
                     </div>
                     <div>
-                        <h1 className="text-xl font-bold text-white">Réceptions</h1>
-                        <p className="text-sm text-white/70 mt-0.5">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Réceptions</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             {receptions?.length ?? 0} réception(s) enregistrée(s)
                         </p>
                     </div>
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full">
 
                 {!receptions || receptions.length === 0 ? (
-                    <div className="bg-white border border-gray-200 rounded-2xl p-16 shadow-sm text-center space-y-3">
-                        <PackageCheck className="w-10 h-10 mx-auto text-gray-300" />
-                        <p className="text-sm text-gray-500">
+                    <div className="bg-card border border-border rounded-2xl p-16 shadow-sm text-center space-y-3">
+                        <PackageCheck className="w-10 h-10 mx-auto text-muted-foreground/80" />
+                        <p className="text-sm text-muted-foreground">
                             Aucune réception. Les réceptions se créent depuis la fiche d'un fournisseur.
                         </p>
                         <Link href="/stock/fournisseurs"
-                              className="inline-block text-sm text-[#15335a] font-bold hover:underline">
+                              className="inline-block text-sm text-[var(--primary-strong)] font-bold hover:underline">
                             Aller aux fournisseurs →
                         </Link>
                     </div>
                 ) : (
-                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                        <div className="min-w-[720px]">
                         <div
                             className="grid grid-cols-12 gap-2 px-5 py-3 text-xs font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
+                            style={{ background: 'var(--nav)' }}
                         >
                             <div className="col-span-2">Référence</div>
                             <div className="col-span-2">Date</div>
@@ -93,33 +90,33 @@ export default async function PageReceptions() {
                                     <Link
                                         key={r.id}
                                         href={`/stock/receptions/${r.id}`}
-                                        className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}
+                                        className={`grid grid-cols-12 gap-2 items-center px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group ${i % 2 === 0 ? '' : 'bg-[var(--surface2)]/50'}`}
                                     >
                                         <div className="col-span-2">
-                                            <p className="text-xs font-bold font-mono text-gray-800 group-hover:text-[#15335a]">
+                                            <p className="text-xs font-bold font-mono text-foreground group-hover:text-primary">
                                                 {r.public_id}
                                             </p>
                                         </div>
-                                        <div className="col-span-2 flex items-center gap-1 text-xs text-gray-500">
+                                        <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
                                             <Calendar className="w-3 h-3" />
                                             {formatDate(r.date_reception)}
                                         </div>
                                         <div className="col-span-3">
-                                            <p className="text-xs font-medium text-gray-700 truncate">
+                                            <p className="text-xs font-medium text-foreground truncate">
                                                 {(r.suppliers as any)?.nom ?? '—'}
                                             </p>
                                         </div>
-                                        <div className="col-span-2 flex items-center gap-1 text-xs text-gray-500">
+                                        <div className="col-span-2 flex items-center gap-1 text-xs text-muted-foreground">
                                             <Warehouse className="w-3 h-3" />
                                             <span className="truncate">{(r.warehouses as any)?.nom ?? '—'}</span>
                                         </div>
                                         <div className="col-span-2 text-right">
-                                            <p className="text-xs font-bold text-gray-800">
+                                            <p className="text-xs font-bold text-foreground">
                                                 {formatMontant(r.montant_total, devise)}
                                             </p>
                                         </div>
                                         <div className="col-span-1 text-center">
-                                            <span className="text-xs font-bold text-[#15335a]">{nbItems}</span>
+                                            <span className="text-xs font-bold text-[var(--primary-strong)]">{nbItems}</span>
                                         </div>
                                     </Link>
                                 )

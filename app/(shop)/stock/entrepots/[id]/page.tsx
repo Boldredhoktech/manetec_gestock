@@ -101,22 +101,19 @@ export default async function PageFicheEntrepot({ params }: Props) {
     )
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
             {/* HEADER BLEU ROI */}
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <Link href="/stock/entrepots"
-                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-white" />
+                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted hover:bg-border transition-colors">
+                            <ArrowLeft className="w-5 h-5 text-foreground" />
                         </Link>
                         <div>
                             <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold text-white">{entrepot.nom}</h1>
+                                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{entrepot.nom}</h1>
                                 {entrepot.est_defaut && (
                                     <span className="flex items-center gap-1 px-2.5 py-0.5 bg-yellow-400 text-yellow-900 text-xs font-bold rounded-full">
                     <Star className="w-3 h-3" />
@@ -124,20 +121,20 @@ export default async function PageFicheEntrepot({ params }: Props) {
                   </span>
                                 )}
                                 {!entrepot.est_actif && (
-                                    <span className="px-2.5 py-0.5 bg-white/20 text-white text-xs font-bold rounded-full">
+                                    <span className="px-2.5 py-0.5 bg-muted text-foreground text-xs font-bold rounded-full">
                     INACTIF
                   </span>
                                 )}
                             </div>
-                            <p className="text-sm font-mono text-white/70 mt-0.5">{entrepot.public_id}</p>
+                            <p className="text-sm font-mono text-muted-foreground mt-0.5">{entrepot.public_id}</p>
                         </div>
                     </div>
 
                     {/* Stats rapides dans le header */}
                     <div className="hidden sm:flex items-center gap-3">
-                        <div className="text-center px-4 py-2 bg-white/15 rounded-xl">
-                            <p className="text-xs text-white/70">Produits</p>
-                            <p className="text-lg font-black text-white">{totalProduits}</p>
+                        <div className="text-center px-4 py-2 bg-muted rounded-xl">
+                            <p className="text-xs text-muted-foreground">Produits</p>
+                            <p className="text-lg font-black text-foreground">{totalProduits}</p>
                         </div>
                         {enAlerte > 0 && (
                             <div className="text-center px-4 py-2 bg-yellow-400/30 rounded-xl border border-yellow-400/50">
@@ -155,7 +152,7 @@ export default async function PageFicheEntrepot({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                     {/* Colonne gauche — large */}

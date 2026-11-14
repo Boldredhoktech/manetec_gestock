@@ -70,13 +70,13 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2">
-                <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                    <ArrowLeftRight className="w-5 h-5 text-[#15335a]" />
+                <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                    <ArrowLeftRight className="w-5 h-5 text-[var(--primary-strong)]" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">Nouveau transfert</h2>
+                <h2 className="text-sm font-bold text-foreground">Nouveau transfert</h2>
             </div>
 
             {erreur && (
@@ -94,11 +94,11 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">Entrepôt source</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Entrepôt source</label>
                     <select
                         value={source}
                         onChange={e => setSource(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                     >
                         {entrepots.map(e => (
                             <option key={e.id} value={e.id}>{e.nom}{e.est_defaut ? ' (défaut)' : ''}</option>
@@ -106,11 +106,11 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
                     </select>
                 </div>
                 <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">Entrepôt destination</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Entrepôt destination</label>
                     <select
                         value={dest}
                         onChange={e => setDest(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                     >
                         {entrepots.filter(e => e.id !== source).map(e => (
                             <option key={e.id} value={e.id}>{e.nom}</option>
@@ -120,14 +120,14 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600 block">Articles à déplacer</label>
+                <label className="text-xs font-medium text-muted-foreground block">Articles à déplacer</label>
                 {lignes.map((ligne, i) => (
-                    <div key={i} className="flex flex-wrap items-end gap-2 p-3 bg-gray-50 rounded-xl">
+                    <div key={i} className="flex flex-wrap items-end gap-2 p-3 bg-[var(--surface2)] rounded-xl">
                         <div className="flex-1 min-w-[180px]">
                             <select
                                 value={ligne.product_id}
                                 onChange={e => modifier(i, 'product_id', e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                             >
                                 <option value="">Choisir un produit…</option>
                                 {produits.map(p => (
@@ -141,11 +141,11 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
                                 onChange={v => modifier(i, 'quantite', v)}
                                 videVaut={0}
                                 placeholder="Qté"
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 aria-label="Quantité à transférer"
                             />
                         </div>
-                        <p className="text-xs text-gray-500 pb-2.5 min-w-[110px]">
+                        <p className="text-xs text-muted-foreground pb-2.5 min-w-[110px]">
                             {ligne.product_id
                                 ? `Disponible : ${stockSource(ligne.product_id)}`
                                 : '—'}
@@ -161,7 +161,7 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
                 ))}
                 <button
                     onClick={() => setLignes(prev => [...prev, { product_id: '', quantite: 1 }])}
-                    className="flex items-center gap-1.5 text-xs font-bold text-[#15335a] hover:underline"
+                    className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary-strong)] hover:underline"
                 >
                     <Plus className="w-3.5 h-3.5" />
                     Ajouter un article
@@ -169,13 +169,13 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
             </div>
 
             <div>
-                <label className="text-xs font-medium text-gray-600 mb-1.5 block">Note (optionnel)</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Note (optionnel)</label>
                 <input
                     type="text"
                     value={note}
                     onChange={e => setNote(e.target.value)}
                     placeholder="Motif du transfert, transporteur…"
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                    className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                 />
             </div>
 
@@ -186,7 +186,7 @@ export default function FormulaireTransfert({ entrepots, produits }: Props) {
                 }
             </Button>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground/80">
                 Le transfert est appliqué en une seule fois : si une ligne échoue, aucune n&apos;est appliquée.
             </p>
         </div>

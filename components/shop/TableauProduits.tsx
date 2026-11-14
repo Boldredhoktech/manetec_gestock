@@ -103,14 +103,14 @@ export default function TableauProduits({ produits }: Props) {
                                     <tr key={p.id} className="hover:bg-muted/30 transition-colors">
                                         <td className="px-4 py-3">
                                             <Link href={`/stock/produits/${p.id}`} className="group flex items-center gap-2.5 hover:opacity-80 transition-opacity">
-                                                <div className="bg-[#15335a]/10 p-1.5 rounded group-hover:bg-[#15335a]/20 transition-colors">
-                                                    <Package className="w-3.5 h-3.5 text-[#15335a]" />
+                                                <div className="bg-[var(--primary-soft)] p-1.5 rounded group-hover:bg-[var(--primary-soft)] transition-colors">
+                                                    <Package className="w-3.5 h-3.5 text-[var(--primary-strong)]" />
                                                 </div>
                                                 <div>
-                                                    <p className="font-semibold text-gray-900 group-hover:text-[#15335a] transition-colors">
+                                                    <p className="font-semibold text-foreground group-hover:text-primary transition-colors">
                                                         {p.nom}
                                                     </p>
-                                                    <p className="text-xs font-mono text-gray-400 mt-0.5">
+                                                    <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">
                                                         {p.public_id}
                                                         {p.sku && ` · ${p.sku}`}
                                                     </p>

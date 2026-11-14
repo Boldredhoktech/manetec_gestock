@@ -1,85 +1,86 @@
 'use client'
 
+// Régler le solde d'un fournisseur — nouveau design (lot 4) : bouton
+// « Payer » sur la carte du solde, formulaire en modale fermée dès que
+// le paiement est enregistré.
+
 import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
 import { payerFournisseur } from '@/actions/fournisseurs'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle, CheckCircle, Banknote } from 'lucide-react'
+import { Loader2, AlertCircle, Banknote } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 import ChampsReglement from '@/components/shop/compta/ChampsReglement'
+import { BoutonModale, PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 interface Props {
     fournisseur: { id: string; solde_dû: number }
 }
 
-interface EtatAction { erreur?: string; succes?: boolean }
+interface EtatAction { erreur?: string }
 
-export default function CartePaiementFournisseur({ fournisseur }: Props) {
+const champ = 'w-full px-3 py-2.5 bg-background border border-input rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50'
+
+function FormulairePaiementFournisseur({ fournisseur, onSucces }: Props & { onSucces: () => void }) {
+    const router = useRouter()
     const [etat, action, enAttente] = useActionState(
         async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => {
             const res = await payerFournisseur(formData)
             if (res?.erreur) return { erreur: res.erreur }
-            return { succes: true }
+            router.refresh()
+            onSucces()
+            return {}
         },
         {}
     )
 
     return (
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
-            <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-                <Banknote className="w-4 h-4" />
-                Enregistrer un paiement
-            </h2>
+        <form action={action} className="space-y-4">
+            <input type="hidden" name="supplierId" value={fournisseur.id} />
 
             <p className="text-sm text-muted-foreground">
-                Solde dû : <strong className="text-destructive">
-                {formatMontant(fournisseur.solde_dû)}
-            </strong>
+                Solde dû : <strong className="text-[var(--rouge-texte)]">{formatMontant(fournisseur.solde_dû)}</strong>
             </p>
 
             {etat.erreur && (
-                <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-3 py-2 text-xs">
-                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                <div role="alert" className="flex items-start gap-2 bg-[var(--rouge-doux)] border border-[var(--rouge-texte)]/30 text-[var(--rouge-texte)] rounded-xl px-3 py-2.5 text-sm">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     {etat.erreur}
                 </div>
             )}
-            {etat.succes && (
-                <div className="flex items-center gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
-                    <CheckCircle className="w-3.5 h-3.5 shrink-0" />
-                    Paiement enregistré avec succès.
-                </div>
-            )}
 
-            <form action={action} className="space-y-3">
-                <input type="hidden" name="supplierId" value={fournisseur.id} />
+            <div className="space-y-1.5">
+                <label className="text-sm font-medium text-foreground">Montant</label>
+                <input name="montant" type="number" min="0.01" step="0.01"
+                       defaultValue={fournisseur.solde_dû}
+                       required disabled={enAttente} className={champ} />
+            </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-foreground">Montant</label>
-                        <input name="montant" type="number" min="0.01" step="0.01"
-                               defaultValue={fournisseur.solde_dû}
-                               required disabled={enAttente}
-                               className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
-                    </div>
-                </div>
+            <div className="space-y-3">
+                <ChampsReglement compact disabled={enAttente} />
+            </div>
 
-                <div className="space-y-3">
-                    <ChampsReglement compact disabled={enAttente} />
-                </div>
+            <input name="note" type="text" placeholder="Note (facultative)"
+                   disabled={enAttente} className={champ} />
 
-                <div className="grid grid-cols-1 gap-3">
-                    <input name="note" type="text" placeholder="Note"
-                           disabled={enAttente}
-                           className="px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
-                </div>
-
-                <Button type="submit" variant="outline" size="sm"
-                        disabled={enAttente} className="w-full">
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
                     {enAttente
-                        ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Traitement...</>
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement...</>
                         : 'Confirmer le paiement'
                     }
                 </Button>
-            </form>
-        </div>
+            </PiedFormulaire>
+        </form>
+    )
+}
+
+export default function CartePaiementFournisseur({ fournisseur }: Props) {
+    return (
+        <BoutonModale libelle="Payer le fournisseur" icone={Banknote} variante="accent"
+                      titre="Payer le fournisseur"
+                      description="L'argent sort du compte choisi (caisse, banque, Mobile Money…).">
+            {fermer => <FormulairePaiementFournisseur fournisseur={fournisseur} onSucces={fermer} />}
+        </BoutonModale>
     )
 }

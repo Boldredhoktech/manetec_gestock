@@ -74,14 +74,14 @@ export default async function PageRetours() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <h1 className="text-xl font-bold text-foreground">Retours</h1>
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Retours</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     Marchandise rendue par un client ou renvoyée à un fournisseur
                 </p>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <div className="max-w-4xl mx-auto space-y-5">
 
                     <FormulaireRetour
@@ -101,37 +101,37 @@ export default async function PageRetours() {
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
 
-                        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                            <div className="px-5 py-4 border-b border-border flex items-center gap-2">
                                 <Undo2 className="w-4 h-4 text-green-600" />
-                                <h2 className="text-sm font-bold text-gray-900">Retours clients</h2>
+                                <h2 className="text-sm font-bold text-foreground">Retours clients</h2>
                             </div>
                             {(retoursClients ?? []).length === 0 ? (
                                 <p className="px-5 py-10 text-center text-sm text-muted-foreground">
                                     Aucun retour client.
                                 </p>
                             ) : (
-                                <ul className="divide-y divide-gray-100">
+                                <ul className="divide-y divide-border">
                                     {(retoursClients ?? []).map(r => (
                                         <li key={r.id} className="px-5 py-3.5">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
-                                                    <p className="text-sm font-semibold text-gray-900">
+                                                    <p className="text-sm font-semibold text-foreground">
                                                         {nom(r.clients) ?? 'Client de passage'}
                                                     </p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">{r.motif}</p>
-                                                    <p className="text-xs font-mono text-gray-400 mt-0.5">
+                                                    <p className="text-xs text-muted-foreground mt-0.5">{r.motif}</p>
+                                                    <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">
                                                         {r.public_id} · {nom(r.warehouses)} · {formatDate(r.created_at)}
                                                     </p>
                                                 </div>
                                                 <div className="text-right shrink-0">
-                                                    <p className="text-sm font-bold text-gray-900">
+                                                    <p className="text-sm font-bold text-foreground">
                                                         {formatMontant(r.montant, devise)}
                                                     </p>
                                                     <span className={`inline-block mt-1 px-2 py-0.5 text-[11px] font-bold rounded-full ${
                                                         r.reglement === 'a_traiter'
                                                             ? 'bg-amber-100 text-amber-700'
-                                                            : 'bg-gray-100 text-gray-600'
+                                                            : 'bg-muted text-muted-foreground'
                                                     }`}>
                                                         {REGLEMENT_LABELS[r.reglement] ?? r.reglement}
                                                     </span>
@@ -155,30 +155,30 @@ export default async function PageRetours() {
                             )}
                         </div>
 
-                        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                            <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
+                        <div className="bg-card border border-border rounded-2xl overflow-hidden">
+                            <div className="px-5 py-4 border-b border-border flex items-center gap-2">
                                 <Undo2 className="w-4 h-4 text-amber-600" />
-                                <h2 className="text-sm font-bold text-gray-900">Retours fournisseurs</h2>
+                                <h2 className="text-sm font-bold text-foreground">Retours fournisseurs</h2>
                             </div>
                             {(retoursFournisseurs ?? []).length === 0 ? (
                                 <p className="px-5 py-10 text-center text-sm text-muted-foreground">
                                     Aucun retour fournisseur.
                                 </p>
                             ) : (
-                                <ul className="divide-y divide-gray-100">
+                                <ul className="divide-y divide-border">
                                     {(retoursFournisseurs ?? []).map(r => (
                                         <li key={r.id} className="px-5 py-3.5">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div>
-                                                    <p className="text-sm font-semibold text-gray-900">
+                                                    <p className="text-sm font-semibold text-foreground">
                                                         {nom(r.suppliers) ?? 'Fournisseur'}
                                                     </p>
-                                                    <p className="text-xs text-gray-500 mt-0.5">{r.motif}</p>
-                                                    <p className="text-xs font-mono text-gray-400 mt-0.5">
+                                                    <p className="text-xs text-muted-foreground mt-0.5">{r.motif}</p>
+                                                    <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">
                                                         {r.public_id} · {formatDate(r.created_at)}
                                                     </p>
                                                 </div>
-                                                <p className="text-sm font-bold text-gray-900 shrink-0">
+                                                <p className="text-sm font-bold text-foreground shrink-0">
                                                     {formatMontant(r.montant, devise)}
                                                 </p>
                                             </div>

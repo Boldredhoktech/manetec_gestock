@@ -25,13 +25,13 @@ export default function StatutFournisseur({ supplierId, estActif }: Props) {
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 space-y-3">
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <p className="text-sm font-bold text-gray-900">
+                    <p className="text-sm font-bold text-foreground">
                         {estActif ? 'Fournisseur actif' : 'Fournisseur désactivé'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-xs text-muted-foreground mt-0.5">
                         {estActif
                             ? 'Proposé dans les commandes, réceptions et factures'
                             : 'Masqué des écrans de saisie ; son historique reste consultable'}

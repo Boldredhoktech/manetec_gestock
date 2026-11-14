@@ -3,7 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Edit, Power } from 'lucide-react'
+import { Edit, Power } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import CarteInfosProduit from '@/components/shop/produits/CarteInfosProduit'
 import CarteStockProduit from '@/components/shop/produits/CarteStockProduit'
@@ -14,12 +14,17 @@ import CarteHistoriquePrix from '@/components/shop/produits/CarteHistoriquePrix'
 import { toggleActivationProduit } from '@/actions/produits'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import { classeBouton } from '@/components/ui/classe-bouton'
+import FormulaireModifierProduit from '@/components/shop/produits/FormulaireModifierProduit'
+import { imagesAutorisees } from '@/lib/produits/image'
 
 export const metadata: Metadata = { title: 'Fiche produit' }
 
-interface Props { params: Promise<{ id: string }> }
+interface Props { params: Promise<{ id: string }>; searchParams: Promise<{ modifier?: string }> }
 
-export default async function PageFicheProduit({ params }: Props) {
+export default async function PageFicheProduit({ params, searchParams }: Props) {
     const { id } = await params
 
     const supabase = await createClient()
@@ -32,6 +37,17 @@ export default async function PageFicheProduit({ params }: Props) {
     const peutVoirCout = aPermission(user, PERMISSIONS.PRODUITS_COUT_VOIR)
 
     const shopId      = user.user_metadata.shop_id as string
+    const peutModifier = aPermission(user, PERMISSIONS.PRODUITS_MODIFIER)
+    const { modifier } = await searchParams
+    const choixModif = peutModifier && modifier !== undefined ? await (async () => {
+        const db = createAdminClient()
+        const [{ data: categories }, { data: marques }, images] = await Promise.all([
+            db.from('categories').select('id, nom').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+            db.from('brands').select('id, nom').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+            imagesAutorisees(db, shopId),
+        ])
+        return { categories: categories ?? [], marques: marques ?? [], images }
+    })() : null
     const adminClient = createAdminClient()
 
     const { data: produit } = await adminClient
@@ -79,62 +95,41 @@ export default async function PageFicheProduit({ params }: Props) {
         .reduce((acc: number, s: any) => acc + s.quantite, 0)
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen bg-background">
 
             {/* HEADER BLEU ROI */}
-            <header style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                    className="px-6 py-5 shadow-lg">
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/stock/produits"
-                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-white" />
-                        </Link>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold text-white">{produit.nom}</h1>
-                                {!produit.est_actif && (
-                                    <span className="px-2.5 py-0.5 bg-white/20 text-white text-xs font-bold rounded-full">
-                    DÉSACTIVÉ
-                  </span>
-                                )}
-                            </div>
-                            <div className="flex items-center gap-3 mt-1">
-                                <span className="text-sm font-mono text-white/80">{produit.public_id}</span>
-                                <span className="text-white/60">·</span>
-                                <span className="text-sm text-white/80 capitalize">{produit.type_produit}</span>
-                                {produit.sku && (
-                                    <>
-                                        <span className="text-white/60">·</span>
-                                        <span className="text-sm text-white/80">SKU : {produit.sku}</span>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        {/* Badge stock */}
-                        <div className={`px-4 py-2 rounded-xl text-sm font-bold ${
+            <EnTetePage
+                titre={produit.nom}
+                sousTitre={[produit.public_id, produit.type_produit, produit.sku ? `SKU : ${produit.sku}` : null,
+                            produit.est_actif ? null : 'désactivé'].filter(Boolean).join(' · ')}
+                ariane={[{ label: 'Stock' }, { label: 'Produits', href: '/stock/produits' }, { label: produit.nom }]}
+                actions={
+                    <>
+                        <span className={`self-center px-3 py-1.5 rounded-full text-xs font-bold ${
                             stockTotal <= 0
-                                ? 'bg-red-500 text-white'
+                                ? 'bg-[var(--rouge-doux)] text-[var(--rouge-texte)]'
                                 : stockTotal <= produit.seuil_alerte
-                                    ? 'bg-yellow-400 text-yellow-900'
-                                    : 'bg-green-500 text-white'
+                                    ? 'bg-accent text-accent-foreground'
+                                    : 'bg-[var(--primary-soft)] text-[var(--primary-strong)]'
                         }`}>
-                            {stockTotal <= 0 ? 'RUPTURE' : `${stockTotal} ${produit.unite}`}
-                        </div>
-                        <Link href={`/stock/produits/${id}/modifier`}>
-                            <Button size="sm" className="bg-white text-[#15335a] hover:bg-white/90 font-bold">
-                                <Edit className="w-4 h-4 mr-1.5" />
-                                Modifier
-                            </Button>
-                        </Link>
-                    </div>
-                </div>
-            </header>
+                            {stockTotal <= 0 ? 'Rupture' : `${stockTotal} ${produit.unite} en stock`}
+                        </span>
+                        {peutModifier && (
+                            <Link href={`/stock/produits/${id}?modifier=1`} scroll={false} className={classeBouton('secondaire')}>
+                                <Edit className="w-4 h-4" aria-hidden="true" />Modifier
+                            </Link>
+                        )}
+                    </>
+                }
+            />
+            {peutModifier && modifier !== undefined && (
+                <ModaleUrl param="modifier" titre="Modifier le produit" description={`${produit.nom} · ${produit.public_id}`} taille="lg">
+                    <FormulaireModifierProduit produit={produit} categories={choixModif?.categories ?? []}
+                                               marques={choixModif?.marques ?? []} imagesAutorisees={choixModif?.images ?? false} />
+                </ModaleUrl>
+            )}
 
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                     {/* Colonne gauche */}
@@ -163,8 +158,8 @@ export default async function PageFicheProduit({ params }: Props) {
                         )}
 
                         {/* Actions rapides */}
-                        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
-                            <h3 className="text-sm font-bold text-[#15335a]">Actions</h3>
+                        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
+                            <h3 className="text-sm font-bold text-[var(--primary-strong)]">Actions</h3>
                             <form action={async () => {
                                 'use server'
                                 await toggleActivationProduit(id, !produit.est_actif)

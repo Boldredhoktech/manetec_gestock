@@ -36,39 +36,39 @@ export default async function PageNouveauBonCommande({ searchParams }: Props) {
 
         return (
             <div className="flex flex-col min-h-screen">
-                <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+                <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                     <div className="flex items-center gap-3">
                         <Link href="/stock/bons-de-commande" className="text-muted-foreground hover:text-foreground">
                             <ArrowLeft className="w-5 h-5" />
                         </Link>
                         <div>
-                            <h1 className="text-xl font-bold text-foreground">Nouveau bon de commande</h1>
+                            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Nouveau bon de commande</h1>
                             <p className="text-sm text-muted-foreground mt-0.5">Chez quel fournisseur ?</p>
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 p-4 sm:p-6">
+                <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                     <div className="max-w-2xl mx-auto">
                         {(fournisseurs ?? []).length === 0 ? (
-                            <div className="bg-white border border-gray-200 rounded-2xl px-6 py-12 text-center">
-                                <Truck className="w-9 h-9 text-gray-300 mx-auto mb-3" />
-                                <p className="text-sm font-bold text-gray-700">Aucun fournisseur actif</p>
-                                <Link href="/stock/fournisseurs/nouveau" className="text-xs font-bold text-[#15335a] underline mt-2 inline-block">
+                            <div className="bg-card border border-border rounded-2xl px-6 py-12 text-center">
+                                <Truck className="w-9 h-9 text-muted-foreground/80 mx-auto mb-3" />
+                                <p className="text-sm font-bold text-foreground">Aucun fournisseur actif</p>
+                                <Link href="/stock/fournisseurs/nouveau" className="text-xs font-bold text-[var(--primary-strong)] underline mt-2 inline-block">
                                     Créer un fournisseur
                                 </Link>
                             </div>
                         ) : (
-                            <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-100">
+                            <div className="bg-card border border-border rounded-2xl overflow-hidden divide-y divide-border">
                                 {(fournisseurs ?? []).map(f => (
                                     <Link key={f.id}
                                           href={`/stock/bons-de-commande/nouveau?fournisseur=${f.id}`}
-                                          className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-[#15335a]/5 transition-colors group">
+                                          className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-[var(--primary-soft)] transition-colors group">
                                         <div>
-                                            <p className="text-sm font-bold text-gray-900 group-hover:text-[#15335a]">{f.nom}</p>
-                                            {f.telephone && <p className="text-xs text-gray-400 mt-0.5">{f.telephone}</p>}
+                                            <p className="text-sm font-bold text-foreground group-hover:text-primary">{f.nom}</p>
+                                            {f.telephone && <p className="text-xs text-muted-foreground/80 mt-0.5">{f.telephone}</p>}
                                         </div>
-                                        <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-[#15335a]" />
+                                        <ChevronRight className="w-4 h-4 text-muted-foreground/80 group-hover:text-primary" />
                                     </Link>
                                 ))}
                             </div>
@@ -105,7 +105,7 @@ export default async function PageNouveauBonCommande({ searchParams }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <div className="max-w-3xl mx-auto">
                     <FormulaireBonCommande
                         supplierId={fournisseur.id}

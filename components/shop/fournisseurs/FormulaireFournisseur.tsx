@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { creerFournisseur } from '@/actions/fournisseurs'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, Building2, Phone, Mail, MapPin, Globe } from 'lucide-react'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
@@ -23,7 +24,7 @@ export default function FormulaireFournisseur() {
     )
 
     return (
-        <form action={action} className="space-y-5 py-2">
+        <form action={action} className="space-y-5">
 
             {etat.erreur && (
                 <div className="flex items-start gap-3 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm">
@@ -33,14 +34,14 @@ export default function FormulaireFournisseur() {
             )}
 
             {/* Infos générales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a] flex items-center gap-2">
+            <div className="bloc-form bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)] flex items-center gap-2">
                     <Building2 className="w-4 h-4" />
                     Informations générales
                 </h2>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">
+                    <label className="text-sm font-medium text-foreground">
                         Nom du fournisseur <span className="text-red-500">*</span>
                     </label>
                     <input name="nom" type="text" required
@@ -51,14 +52,14 @@ export default function FormulaireFournisseur() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Nom du contact</label>
+                        <label className="text-sm font-medium text-foreground">Nom du contact</label>
                         <input name="nomContact" type="text"
                                placeholder="Personne référente"
                                disabled={enAttente}
                                className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Poste du contact</label>
+                        <label className="text-sm font-medium text-foreground">Poste du contact</label>
                         <input name="posteContact" type="text"
                                placeholder="Ex: Directeur commercial"
                                disabled={enAttente}
@@ -68,17 +69,17 @@ export default function FormulaireFournisseur() {
             </div>
 
             {/* Coordonnées */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a] flex items-center gap-2">
+            <div className="bloc-form bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)] flex items-center gap-2">
                     <Phone className="w-4 h-4" />
                     Coordonnées
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Téléphone</label>
+                        <label className="text-sm font-medium text-foreground">Téléphone</label>
                         <div className="relative">
-                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                             <input name="telephone" type="tel"
                                    placeholder="+229 97 00 00 00"
                                    disabled={enAttente}
@@ -86,9 +87,9 @@ export default function FormulaireFournisseur() {
                         </div>
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Email</label>
+                        <label className="text-sm font-medium text-foreground">Email</label>
                         <div className="relative">
-                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                             <input name="email" type="email"
                                    placeholder="contact@fournisseur.com"
                                    disabled={enAttente}
@@ -98,9 +99,9 @@ export default function FormulaireFournisseur() {
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Adresse</label>
+                    <label className="text-sm font-medium text-foreground">Adresse</label>
                     <div className="relative">
-                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                         <input name="adresse" type="text"
                                placeholder="Adresse complète du fournisseur"
                                disabled={enAttente}
@@ -110,14 +111,14 @@ export default function FormulaireFournisseur() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Ville</label>
+                        <label className="text-sm font-medium text-foreground">Ville</label>
                         <input name="ville" type="text"
                                placeholder="Ex: Lagos"
                                disabled={enAttente}
                                className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Pays</label>
+                        <label className="text-sm font-medium text-foreground">Pays</label>
                         <select name="pays" disabled={enAttente} className={inputClass}>
                             <option value="">— Sélectionner —</option>
                             {PAYS.map(p => (
@@ -129,22 +130,22 @@ export default function FormulaireFournisseur() {
             </div>
 
             {/* Infos légales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <h2 className="text-sm font-bold text-[#15335a] flex items-center gap-2">
+            <div className="bloc-form bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <h2 className="text-sm font-bold text-[var(--primary-strong)] flex items-center gap-2">
                     <Globe className="w-4 h-4" />
                     Informations légales
                 </h2>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">IFU</label>
+                        <label className="text-sm font-medium text-foreground">IFU</label>
                         <input name="ifu" type="text"
                                placeholder="Numéro IFU"
                                disabled={enAttente}
                                className={inputClass} />
                     </div>
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">RCCM</label>
+                        <label className="text-sm font-medium text-foreground">RCCM</label>
                         <input name="rccm" type="text"
                                placeholder="Numéro RCCM"
                                disabled={enAttente}
@@ -153,7 +154,7 @@ export default function FormulaireFournisseur() {
                 </div>
 
                 <div className="space-y-1.5">
-                    <label className="text-sm font-medium text-gray-700">Notes internes</label>
+                    <label className="text-sm font-medium text-foreground">Notes internes</label>
                     <textarea name="notes" rows={3}
                               placeholder="Conditions de paiement, délais, remarques..."
                               disabled={enAttente}
@@ -161,20 +162,20 @@ export default function FormulaireFournisseur() {
                 </div>
             </div>
 
-            <Button type="submit" disabled={enAttente}
-                    className="w-full py-3 font-bold text-base rounded-xl"
-                    style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}>
-                {enAttente
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer le fournisseur'
-                }
-            </Button>
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
+                        : 'Créer le fournisseur'
+                    }
+                </Button>
+            </PiedFormulaire>
         </form>
     )
 }
 
 const inputClass = `
-  w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-  focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40
+  w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm
+  focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40
   transition-colors disabled:opacity-50
 `

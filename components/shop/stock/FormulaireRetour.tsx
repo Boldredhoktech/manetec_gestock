@@ -109,13 +109,13 @@ export default function FormulaireRetour({
     const tiers = sens === 'client' ? clients : fournisseurs
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2">
-                <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                    <Undo2 className="w-5 h-5 text-[#15335a]" />
+                <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                    <Undo2 className="w-5 h-5 text-[var(--primary-strong)]" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">Nouveau retour</h2>
+                <h2 className="text-sm font-bold text-foreground">Nouveau retour</h2>
             </div>
 
             {erreur && (
@@ -138,8 +138,8 @@ export default function FormulaireRetour({
                         onClick={() => changerSens('client')}
                         className={`flex-1 px-3 py-2.5 text-xs font-bold rounded-xl border transition-colors ${
                             sens === 'client'
-                                ? 'bg-[#15335a] text-white border-[#15335a]'
-                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-card text-muted-foreground border-border hover:bg-muted'
                         }`}
                     >
                         Retour d&apos;un client
@@ -151,8 +151,8 @@ export default function FormulaireRetour({
                         onClick={() => changerSens('fournisseur')}
                         className={`flex-1 px-3 py-2.5 text-xs font-bold rounded-xl border transition-colors ${
                             sens === 'fournisseur'
-                                ? 'bg-[#15335a] text-white border-[#15335a]'
-                                : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-card text-muted-foreground border-border hover:bg-muted'
                         }`}
                     >
                         Retour à un fournisseur
@@ -163,11 +163,11 @@ export default function FormulaireRetour({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">Entrepôt concerné</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Entrepôt concerné</label>
                     <select
                         value={warehouseId}
                         onChange={e => setWarehouseId(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                     >
                         {entrepots.map(e => (
                             <option key={e.id} value={e.id}>{e.nom}{e.est_defaut ? ' (défaut)' : ''}</option>
@@ -175,13 +175,13 @@ export default function FormulaireRetour({
                     </select>
                 </div>
                 <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                         {sens === 'client' ? 'Client (optionnel)' : 'Fournisseur'}
                     </label>
                     <select
                         value={tiersId}
                         onChange={e => setTiersId(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                     >
                         <option value="">
                             {sens === 'client' ? 'Client de passage' : 'Choisir un fournisseur…'}
@@ -192,7 +192,7 @@ export default function FormulaireRetour({
             </div>
 
             <div>
-                <label className="text-xs font-medium text-gray-600 mb-1.5 block">Motif du retour</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Motif du retour</label>
                 <input
                     type="text"
                     value={motif}
@@ -200,43 +200,43 @@ export default function FormulaireRetour({
                     placeholder={sens === 'client'
                         ? 'Produit défectueux, erreur de référence, non conforme…'
                         : 'Marchandise non conforme, invendue, défectueuse…'}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                    className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                 />
             </div>
 
             <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-600 block">Articles retournés</label>
+                <label className="text-xs font-medium text-muted-foreground block">Articles retournés</label>
                 {lignes.map((ligne, i) => (
-                    <div key={i} className="flex flex-wrap items-end gap-2 p-3 bg-gray-50 rounded-xl">
+                    <div key={i} className="flex flex-wrap items-end gap-2 p-3 bg-[var(--surface2)] rounded-xl">
                         <div className="flex-1 min-w-[180px]">
                             <select
                                 value={ligne.product_id}
                                 onChange={e => modifier(i, 'product_id', e.target.value)}
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                             >
                                 <option value="">Choisir un produit…</option>
                                 {produits.map(p => <option key={p.id} value={p.id}>{p.nom}</option>)}
                             </select>
                         </div>
                         <div className="w-24">
-                            <p className="text-[11px] text-gray-500 mb-1">Quantité</p>
+                            <p className="text-[11px] text-muted-foreground mb-1">Quantité</p>
                             <ChampNombre
                                 value={ligne.quantite}
                                 onChange={v => modifier(i, 'quantite', v)}
                                 videVaut={0}
                                 placeholder="0"
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 aria-label="Quantité retournée"
                             />
                         </div>
                         <div className="w-32">
-                            <p className="text-[11px] text-gray-500 mb-1">Prix unitaire</p>
+                            <p className="text-[11px] text-muted-foreground mb-1">Prix unitaire</p>
                             <ChampNombre
                                 value={ligne.prix_unitaire}
                                 onChange={v => modifier(i, 'prix_unitaire', v)}
                                 videVaut={0}
                                 placeholder="0"
-                                className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 aria-label="Prix unitaire du retour"
                             />
                         </div>
@@ -252,12 +252,12 @@ export default function FormulaireRetour({
                 <div className="flex items-center justify-between">
                     <button
                         onClick={() => setLignes(prev => [...prev, { product_id: '', quantite: 1, prix_unitaire: 0 }])}
-                        className="flex items-center gap-1.5 text-xs font-bold text-[#15335a] hover:underline"
+                        className="flex items-center gap-1.5 text-xs font-bold text-[var(--primary-strong)] hover:underline"
                     >
                         <Plus className="w-3.5 h-3.5" />
                         Ajouter un article
                     </button>
-                    <p className="text-sm font-black text-[#15335a]">
+                    <p className="text-sm font-black text-[var(--primary-strong)]">
                         Total : {formatMontant(total, devise)}
                     </p>
                 </div>
@@ -265,11 +265,11 @@ export default function FormulaireRetour({
 
             {sens === 'client' && (
                 <div>
-                    <label className="text-xs font-medium text-gray-600 mb-1.5 block">Suite à donner</label>
+                    <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Suite à donner</label>
                     <select
                         value={reglement}
                         onChange={e => setReglement(e.target.value as typeof reglement)}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                        className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                     >
                         {REGLEMENTS.map(r => <option key={r.code} value={r.code}>{r.label}</option>)}
                     </select>
@@ -277,12 +277,12 @@ export default function FormulaireRetour({
             )}
 
             <div>
-                <label className="text-xs font-medium text-gray-600 mb-1.5 block">Note (optionnel)</label>
+                <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Note (optionnel)</label>
                 <input
                     type="text"
                     value={note}
                     onChange={e => setNote(e.target.value)}
-                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                    className="w-full px-3 py-2 bg-card border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                 />
             </div>
 
@@ -293,7 +293,7 @@ export default function FormulaireRetour({
                 }
             </Button>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-muted-foreground/80">
                 Ce retour agit sur le stock uniquement.
                 {sens === 'client'
                     ? ' L\'avoir ou le remboursement du client se traite dans Facturation ; la suite à donner est enregistrée ici comme intention.'

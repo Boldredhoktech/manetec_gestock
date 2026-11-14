@@ -38,25 +38,25 @@ export default function CartePrixProduit({ produit, peutVoirCout = false }: Prop
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                        <TrendingUp className="w-5 h-5 text-[#15335a]" />
+                    <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                        <TrendingUp className="w-5 h-5 text-[var(--primary-strong)]" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">Grille tarifaire</h2>
+                    <h2 className="text-sm font-bold text-foreground">Grille tarifaire</h2>
                 </div>
                 {!editable ? (
                     <button onClick={() => setEditable(true)}
-                            className="flex items-center gap-1.5 text-xs text-[#15335a] font-bold hover:underline">
+                            className="flex items-center gap-1.5 text-xs text-[var(--primary-strong)] font-bold hover:underline">
                         <Edit2 className="w-3.5 h-3.5" />
                         Modifier
                     </button>
                 ) : (
                     <div className="flex gap-2">
                         <button onClick={() => setEditable(false)}
-                                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700">
+                                className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                             <X className="w-3.5 h-3.5" />
                             Annuler
                         </button>
@@ -86,12 +86,12 @@ export default function CartePrixProduit({ produit, peutVoirCout = false }: Prop
                     { label: 'Prix de gros',    val: prixGros,    set: setPrixGros    },
                     { label: 'Prix minimum',    val: prixMin,     set: setPrixMin     },
                 ].map(item => (
-                    <div key={item.label} className="p-3 bg-gray-50 rounded-xl">
-                        <p className="text-xs text-gray-400 mb-1">{item.label}</p>
+                    <div key={item.label} className="p-3 bg-[var(--surface2)] rounded-xl">
+                        <p className="text-xs text-muted-foreground/80 mb-1">{item.label}</p>
                         {editable ? (
-                            <ChampNombre value={item.val} onChange={v => item.set(v)} className="w-full text-sm font-bold text-gray-800 bg-white border border-[#15335a]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                            <ChampNombre value={item.val} onChange={v => item.set(v)} className="w-full text-sm font-bold text-foreground bg-card border border-primary/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-ring/30" />
                         ) : (
-                            <p className="text-sm font-bold text-gray-800">
+                            <p className="text-sm font-bold text-foreground">
                                 {item.val ? formatMontant(Number(item.val)) : '—'}
                             </p>
                         )}
@@ -101,9 +101,9 @@ export default function CartePrixProduit({ produit, peutVoirCout = false }: Prop
 
             {/* Marge */}
             {peutVoirCout && (
-                <div className="flex items-center justify-between p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl">
-                    <span className="text-xs font-bold text-[#15335a]">Marge brute estimée</span>
-                    <span className="text-sm font-black text-[#15335a]">{marge}%</span>
+                <div className="flex items-center justify-between p-3 bg-[var(--primary-soft)] border border-primary/20 rounded-xl">
+                    <span className="text-xs font-bold text-[var(--primary-strong)]">Marge brute estimée</span>
+                    <span className="text-sm font-black text-[var(--primary-strong)]">{marge}%</span>
                 </div>
             )}
         </div>

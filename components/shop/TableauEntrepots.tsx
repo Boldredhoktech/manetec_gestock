@@ -13,10 +13,10 @@ export default function TableauEntrepots({ entrepots }: Props) {
     if (entrepots.length === 0) {
         return (
             <div className="text-center py-16 space-y-3">
-                <div className="w-16 h-16 bg-[#15335a]/10 rounded-2xl flex items-center justify-center mx-auto">
-                    <Warehouse className="w-8 h-8 text-[#15335a]/50" />
+                <div className="w-16 h-16 bg-[var(--primary-soft)] rounded-2xl flex items-center justify-center mx-auto">
+                    <Warehouse className="w-8 h-8 text-[var(--primary-strong)]/50" />
                 </div>
-                <p className="text-sm text-gray-400">Aucun entrepôt. Créez-en un pour commencer.</p>
+                <p className="text-sm text-muted-foreground/80">Aucun entrepôt. Créez-en un pour commencer.</p>
             </div>
         )
     }
@@ -27,16 +27,16 @@ export default function TableauEntrepots({ entrepots }: Props) {
                 <Link
                     key={e.id}
                     href={`/stock/entrepots/${e.id}`}
-                    className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-[#15335a]/40 hover:shadow-lg hover:shadow-[#15335a]/8 transition-all duration-200 space-y-4 block"
+                    className="group bg-card border border-border rounded-2xl p-5 hover:border-primary/40 hover:shadow-lg hover:shadow-black/10 transition-all duration-200 space-y-4 block"
                 >
                     {/* En-tête carte */}
                     <div className="flex items-start justify-between">
                         <div className={`p-2.5 rounded-xl transition-colors ${
                             e.est_actif
-                                ? 'bg-[#15335a]/10 group-hover:bg-[#15335a]/20'
-                                : 'bg-gray-100'
+                                ? 'bg-[var(--primary-soft)] group-hover:bg-[var(--primary-soft)]'
+                                : 'bg-muted'
                         }`}>
-                            <Warehouse className={`w-6 h-6 ${e.est_actif ? 'text-[#15335a]' : 'text-gray-400'}`} />
+                            <Warehouse className={`w-6 h-6 ${e.est_actif ? 'text-[var(--primary-strong)]' : 'text-muted-foreground/80'}`} />
                         </div>
                         <div className="flex items-center gap-1.5">
                             {e.est_defaut && (
@@ -51,35 +51,35 @@ export default function TableauEntrepots({ entrepots }: Props) {
                   Actif
                 </span>
                             ) : (
-                                <span className="text-xs text-gray-400">Inactif</span>
+                                <span className="text-xs text-muted-foreground/80">Inactif</span>
                             )}
                         </div>
                     </div>
 
                     {/* Nom et ID */}
                     <div>
-                        <p className="font-bold text-gray-900 group-hover:text-[#15335a] transition-colors">
+                        <p className="font-bold text-foreground group-hover:text-primary transition-colors">
                             {e.nom}
                         </p>
-                        <p className="text-xs font-mono text-gray-400 mt-0.5">{e.public_id}</p>
+                        <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">{e.public_id}</p>
                     </div>
 
                     {/* Description / Adresse */}
                     {(e.description || e.adresse) && (
                         <div className="space-y-1">
                             {e.description && (
-                                <p className="text-xs text-gray-500 line-clamp-1">{e.description}</p>
+                                <p className="text-xs text-muted-foreground line-clamp-1">{e.description}</p>
                             )}
                             {e.adresse && (
-                                <p className="text-xs text-gray-400 line-clamp-1">{e.adresse}</p>
+                                <p className="text-xs text-muted-foreground/80 line-clamp-1">{e.adresse}</p>
                             )}
                         </div>
                     )}
 
                     {/* Footer carte */}
-                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                        <span className="text-xs text-gray-400">Voir les détails</span>
-                        <ChevronRight className="w-4 h-4 text-[#15335a] group-hover:translate-x-1 transition-transform" />
+                    <div className="flex items-center justify-between pt-2 border-t border-border">
+                        <span className="text-xs text-muted-foreground/80">Voir les détails</span>
+                        <ChevronRight className="w-4 h-4 text-[var(--primary-strong)] group-hover:translate-x-1 transition-transform" />
                     </div>
                 </Link>
             ))}

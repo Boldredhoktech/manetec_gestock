@@ -4,19 +4,26 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import { classeBouton } from '@/components/ui/classe-bouton'
 import TableauProduits from '@/components/shop/TableauProduits'
+import FormulaireProduit from '@/components/shop/FormulaireProduit'
+import { imagesAutorisees } from '@/lib/produits/image'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
 export const metadata: Metadata = { title: 'Produits' }
 
-export default async function PageProduits() {
+export default async function PageProduits({ searchParams }: { searchParams: Promise<{ nouveau?: string }> }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
     if (!user || user.user_metadata?.type_acteur !== 'shop') redirect('/login')
     if (!aPermission(user, PERMISSIONS.PRODUITS_VOIR)) redirect('/admin/dashboard')
+    const peutCreer = aPermission(user, PERMISSIONS.PRODUITS_CREER)
+    const { nouveau } = await searchParams
+    const choixFormulaire = peutCreer && nouveau !== undefined ? await chargerChoixProduit(user.user_metadata.shop_id as string) : null
 
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
@@ -54,25 +61,35 @@ export default async function PageProduits() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">Produits</h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {produits?.length ?? 0} produit(s) au catalogue
-                        </p>
-                    </div>
-                    <Button asChild>
-                        <Link href="/stock/produits/nouveau">
-                            <Plus className="w-4 h-4 mr-2" />
-                            Nouveau produit
-                        </Link>
-                    </Button>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6">
+            <EnTetePage
+                titre="Produits"
+                sousTitre={`${produits?.length ?? 0} produit(s) au catalogue`}
+                ariane={[{ label: 'Stock' }, { label: 'Produits' }]}
+                actions={peutCreer ? (
+                    <Link href="/stock/produits?nouveau=1" scroll={false} className={classeBouton('primaire')}>
+                        <Plus className="w-4 h-4" aria-hidden="true" />Nouveau produit
+                    </Link>
+                ) : undefined}
+            />
+            {peutCreer && (
+                <ModaleUrl param="nouveau" titre="Nouveau produit" description="Seuls le nom et le prix de vente sont obligatoires." taille="lg">
+                    <FormulaireProduit categories={choixFormulaire?.categories ?? []} marques={choixFormulaire?.marques ?? []}
+                                       entrepots={choixFormulaire?.entrepots ?? []} imagesAutorisees={choixFormulaire?.images ?? false} />
+                </ModaleUrl>
+            )}
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <TableauProduits produits={produitsNormalises} />
             </main>
         </div>
     )
+}
+async function chargerChoixProduit(shopId: string) {
+    const db = createAdminClient()
+    const [{ data: categories }, { data: marques }, { data: entrepots }, images] = await Promise.all([
+        db.from('categories').select('id, nom, parent_id').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+        db.from('brands').select('id, nom').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+        db.from('warehouses').select('id, nom, est_defaut').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+        imagesAutorisees(db, shopId),
+    ])
+    return { categories: categories ?? [], marques: marques ?? [], entrepots: entrepots ?? [], images }
 }
