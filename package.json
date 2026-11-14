@@ -6,7 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:start": "supabase start",
+    "db:stop": "supabase stop",
+    "db:reset": "supabase db reset",
+    "db:psql": "psql postgresql://postgres:postgres@127.0.0.1:54322/postgres",
+    "db:schema-prod": "node --env-file=.env -e \"require('child_process').execSync('npx supabase db dump --db-url \"'+process.env.SUPABASE_DB_URL+'\" -f supabase/local/schema_prod.sql',{stdio:'inherit'})\""
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -50,6 +55,7 @@
     "@types/react-dom": "^19.0.3",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.3.8",
+    "supabase": "2.122.0",
     "tailwindcss": "^4.0.15",
     "typescript": "^5.7.3"
   }
