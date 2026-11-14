@@ -6,10 +6,11 @@ import {
     TrendingUp, TrendingDown, Wallet, Package, Info,
 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
 interface LigneVentilation {
-    moyen:          string
+    compteId:       string
+    compte:         string
+    type:           string
     entreesPeriode: number
     sortiesPeriode: number
     netPeriode:     number
@@ -36,8 +37,8 @@ const MOIS_LABELS = [
     'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre',
 ]
 
-function nomMoyen(code: string): string {
-    return MOYENS_PAIEMENT.find(m => m.code === code)?.label ?? code
+const LIBELLE_TYPE: Record<string, string> = {
+    caisse: 'Caisse', mobile_money: 'Mobile Money', banque: 'Banque', tpe: 'TPE',
 }
 
 export default function TableauBordComptable({ donnees }: Props) {
@@ -170,7 +171,7 @@ export default function TableauBordComptable({ donnees }: Props) {
                         Où est l&apos;argent
                     </h2>
                     <p className="text-xs text-muted-foreground mt-1">
-                        Entrées et sorties du mois par moyen de paiement, et solde cumulé
+                        Entrées et sorties du mois par compte de trésorerie, et solde
                         à la fin de {donnees.periode.libelle}.
                     </p>
                 </div>
@@ -184,7 +185,7 @@ export default function TableauBordComptable({ donnees }: Props) {
                         <table className="w-full text-sm">
                             <thead>
                             <tr className="border-b border-border bg-muted/40">
-                                <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">Moyen</th>
+                                <th className="text-left px-5 py-2.5 font-medium text-muted-foreground">Compte</th>
                                 <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Entrées</th>
                                 <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Sorties</th>
                                 <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Net du mois</th>
@@ -193,8 +194,11 @@ export default function TableauBordComptable({ donnees }: Props) {
                             </thead>
                             <tbody className="divide-y divide-border">
                             {donnees.ventilation.map(l => (
-                                <tr key={l.moyen} className="hover:bg-muted/30 transition-colors">
-                                    <td className="px-5 py-3 font-medium text-foreground">{nomMoyen(l.moyen)}</td>
+                                <tr key={l.compteId} className="hover:bg-muted/30 transition-colors">
+                                    <td className="px-5 py-3 font-medium text-foreground">
+                                        <Link href={`/compta/tresorerie/${l.compteId}`} className="hover:underline">{l.compte}</Link>
+                                        <span className="block text-xs font-normal text-muted-foreground">{LIBELLE_TYPE[l.type] ?? l.type}</span>
+                                    </td>
                                     <td className="px-4 py-3 text-right text-green-600 tabular-nums">
                                         {l.entreesPeriode > 0 ? formatMontant(l.entreesPeriode) : '—'}
                                     </td>
@@ -217,7 +221,7 @@ export default function TableauBordComptable({ donnees }: Props) {
                             <tfoot>
                             <tr className="border-t-2 border-border bg-muted/30">
                                 <td colSpan={4} className="px-5 py-3 font-semibold text-foreground">
-                                    Tous moyens confondus
+                                    Tous comptes confondus
                                 </td>
                                 <td className="px-5 py-3 text-right font-bold text-foreground tabular-nums">
                                     {formatMontant(totalSoldes)}
@@ -232,11 +236,10 @@ export default function TableauBordComptable({ donnees }: Props) {
                     <p className="text-xs text-muted-foreground flex items-start gap-2">
                         <Info className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                         <span>
-                            Le solde est <strong className="text-foreground">théorique</strong> : il additionne
-                            tout ce qui est entré et sorti par ce moyen. Les dépôts en banque et les
-                            retraits d&apos;espèces ne sont enregistrés nulle part — un solde bancaire
-                            négatif signifie le plus souvent que de l&apos;argent y a été versé sans être
-                            saisi. Pour le comptage réel du tiroir, ouvrez une session de caisse.
+                            Le solde de chaque compte part de son solde d&apos;ouverture et suit
+                            tous ses mouvements : ventes, règlements, dépenses, salaires, fournisseurs,
+                            virements, retraits et apports. Pour le confronter au réel (relevé, solde
+                            Mobile Money, comptage du tiroir), faites un rapprochement depuis la fiche du compte.
                         </span>
                     </p>
                     {donnees.creditAccorde > 0 && (

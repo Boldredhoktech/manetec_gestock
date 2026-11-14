@@ -8,7 +8,7 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 import { jourBoutique } from '@/lib/dates/periode'
 import { controleIdentifiants } from '@/lib/ventes/identifiants'
-import { moyenDuCompte, referenceRequise } from '@/lib/tresorerie/comptes'
+import { messageTresorerie, moyenDuCompte, referenceRequise } from '@/lib/tresorerie/comptes'
 
 export interface LigneVente {
     product_id:     string
@@ -372,6 +372,7 @@ export async function reglerRetourVente(
     retourId: string,
     mode: 'avance' | 'rembourse' | 'avoir' | 'sans_suite',
     note: string,
+    compteId?: string,
 ): Promise<ResultatVente> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -390,11 +391,14 @@ export async function reglerRetourVente(
         p_mode:      mode,
         p_note:      note ?? '',
         p_user_id:   user.user_metadata.user_id,
+        // Remboursement : le compte choisi ; sans choix, la base prend
+        // la caisse de l'entrepôt du retour (mig 041).
+        p_compte_id: mode === 'rembourse' && compteId ? compteId : null,
     })
 
     if (error) {
         console.error('ERREUR REGLEMENT RETOUR:', error)
-        return { erreur: 'Erreur lors du règlement du retour.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors du règlement du retour.') }
     }
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors du règlement.' }
 

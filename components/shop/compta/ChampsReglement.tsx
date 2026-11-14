@@ -20,11 +20,14 @@ import {
 
 export default function ChampsReglement({
     compteParDefaut,
+    entrepotParDefaut,
     referenceParDefaut = '',
     disabled,
     compact,
 }: {
     compteParDefaut?:    string | null
+    /** Sans compte imposé : proposer la caisse de cet entrepôt. */
+    entrepotParDefaut?:  string | null
     referenceParDefaut?: string
     disabled?:           boolean
     compact?:            boolean
@@ -41,12 +44,13 @@ export default function ChampsReglement({
             if ('erreur' in res) { setErreur(res.erreur); return }
             setComptes(res.comptes)
             const initial = res.comptes.find(c => c.id === compteParDefaut)
+                ?? res.comptes.find(c => c.type === 'caisse' && !!entrepotParDefaut && c.warehouse_id === entrepotParDefaut)
                 ?? res.comptes.find(c => c.type === 'caisse')
                 ?? res.comptes[0]
             if (initial) { setType(initial.type); setCompteId(initial.id) }
         })
         return () => { actif = false }
-    }, [compteParDefaut])
+    }, [compteParDefaut, entrepotParDefaut])
 
     const typesDisponibles = useMemo(
         () => TYPES_COMPTE.filter(t => comptes?.some(c => c.type === t)),

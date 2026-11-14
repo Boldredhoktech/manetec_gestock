@@ -522,11 +522,10 @@ export async function getTableauBordComptable(mois: number, annee: number) {
             .eq('shop_id', shopId)
             .eq('est_annule', false)
             .gte('date_depense', debut).lte('date_depense', fin),
-        // Cinq sources d'argent agrégées par moyen de paiement en une
-        // seule requête, cumul compris (migration 022, reprise en 031).
-        adminClient.rpc('ventilation_caisse', {
+        // Où est l'argent : par COMPTE de trésorerie, depuis le grand
+        // livre (mig 041) — virements, retraits et apports compris.
+        adminClient.rpc('ventilation_comptes', {
             p_shop_id: shopId, p_debut: debut, p_fin: fin,
-            p_decalage: DECALAGE_SQL,
         }),
     ])
 
@@ -547,19 +546,22 @@ export async function getTableauBordComptable(mois: number, annee: number) {
     const gainsStock        = Number(t.stock_gains          ?? 0)
 
     type LigneVentilation = {
-        moyen: string
+        compte_id:       string
+        compte:          string
+        type:            string
         entrees_periode: number
         sorties_periode: number
-        entrees_cumul:   number
-        sorties_cumul:   number
+        solde:           number
     }
 
     const ventilation = ((ventilationBrute ?? []) as LigneVentilation[]).map(l => ({
-        moyen:          l.moyen,
+        compteId:       l.compte_id,
+        compte:         l.compte,
+        type:           l.type,
         entreesPeriode: Number(l.entrees_periode),
         sortiesPeriode: Number(l.sorties_periode),
         netPeriode:     Number(l.entrees_periode) - Number(l.sorties_periode),
-        solde:          Number(l.entrees_cumul) - Number(l.sorties_cumul),
+        solde:          Number(l.solde),
     }))
 
     return {

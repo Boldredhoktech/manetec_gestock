@@ -54,7 +54,7 @@ export default async function PageRetours() {
             .select('id, nom').eq('shop_id', shopId).order('nom'),
         adminClient.from('sale_returns')
             .select(`
-                id, public_id, motif, montant, reglement, created_at, client_id,
+                id, public_id, motif, montant, reglement, created_at, client_id, warehouse_id,
                 clients(nom), warehouses(nom),
                 sale_return_items(quantite, products(nom))
             `)
@@ -146,6 +146,7 @@ export default async function PageRetours() {
                                                     montant={r.montant}
                                                     devise={devise}
                                                     aUnClient={Boolean(r.client_id)}
+                                                    warehouseId={r.warehouse_id}
                                                 />
                                             )}
                                         </li>

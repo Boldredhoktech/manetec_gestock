@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { reglerRetourVente } from '@/actions/ventes'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
+import ChampsReglement from '@/components/shop/compta/ChampsReglement'
 
 // La partie stock d'un retour était traitée depuis le Lot 4 Stock, sa
 // partie financière ne l'était jamais : `reglement` restait à
@@ -23,8 +24,8 @@ const MODES = [
     },
     {
         code: 'rembourse' as const,
-        titre: 'Rembourser en espèces',
-        aide: 'L’argent sort de la caisse : la sortie est enregistrée en dépense.',
+        titre: 'Rembourser le client',
+        aide: 'L’argent sort du compte choisi (la caisse de l’entrepôt par défaut) : la sortie est enregistrée en dépense.',
     },
     {
         code: 'avoir' as const,
@@ -39,9 +40,11 @@ const MODES = [
 ]
 
 export default function ReglerRetour({
-    retourId, montant, devise, aUnClient,
+    retourId, montant, devise, aUnClient, warehouseId,
 }: {
     retourId:  string
+    /** Entrepôt du retour : sa caisse est proposée par défaut. */
+    warehouseId?: string | null
     montant:   number
     devise:    string
     aUnClient: boolean
@@ -53,12 +56,22 @@ export default function ReglerRetour({
     const [note, setNote]           = useState('')
     const [erreur, setErreur]       = useState('')
     const [enAttente, setEnAttente] = useState(false)
+    // ChampsReglement porte le compte choisi dans un champ caché.
+    const zoneCompte = useRef<HTMLDivElement>(null)
 
     async function confirmer() {
         setEnAttente(true)
         setErreur('')
 
-        const res = await reglerRetourVente(retourId, mode, note)
+        const compteId = mode === 'rembourse'
+            ? zoneCompte.current?.querySelector<HTMLInputElement>('input[name=compteId]')?.value ?? ''
+            : undefined
+        if (mode === 'rembourse' && !compteId) {
+            setEnAttente(false)
+            setErreur('Choisissez le compte qui rembourse.')
+            return
+        }
+        const res = await reglerRetourVente(retourId, mode, note, compteId)
         setEnAttente(false)
 
         if (res?.erreur) { setErreur(res.erreur); return }
@@ -126,6 +139,12 @@ export default function ReglerRetour({
                     )
                 })}
             </div>
+
+            {mode === 'rembourse' && (
+                <div ref={zoneCompte} className="space-y-2 p-2 rounded-lg bg-background border border-input">
+                    <ChampsReglement compact entrepotParDefaut={warehouseId} disabled={enAttente} />
+                </div>
+            )}
 
             <input
                 type="text"

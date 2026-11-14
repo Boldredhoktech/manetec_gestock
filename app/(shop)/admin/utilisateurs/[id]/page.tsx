@@ -30,7 +30,7 @@ export default async function PageFicheUtilisateur({ params }: Props) {
         .select(`
       id, public_id, nom_complet, identifiant, role,
       est_actif, created_at,
-      shop_user_permissions(permission, accorde_par, created_at)
+      shop_user_permissions!shop_user_permissions_user_id_fkey(permission, accorde_par, accorde_le)
     `)
         .eq('id', id)
         .eq('shop_id', shopId)

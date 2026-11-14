@@ -1133,8 +1133,9 @@ export async function getDonneesRapportCaisse(
         adminClient.rpc('journees_caisse', {
             p_shop_id: shopId, p_debut: debut, p_fin: fin, p_decalage: DECALAGE_SQL,
         }),
-        adminClient.rpc('mouvements_caisse_jour', {
-            p_shop_id: shopId, p_debut: debut, p_fin: fin, p_decalage: DECALAGE_SQL,
+        // Détail par COMPTE de trésorerie (mig 041), virements compris.
+        adminClient.rpc('mouvements_comptes_jour', {
+            p_shop_id: shopId, p_debut: debut, p_fin: fin,
         }),
     ])
 
@@ -1160,11 +1161,12 @@ export async function getDonneesRapportCaisse(
 
     // Le détail se range sous sa journée : le document se lit du haut
     // vers le bas, jamais en sautant d'une table à l'autre.
-    const detailParJour: Record<string, { moyen: string; entrees: number; sorties: number }[]> = {}
+    const detailParJour: Record<string, { compte: string; type: string; entrees: number; sorties: number }[]> = {}
     ;((mouvements ?? []) as any[]).forEach(m => {
         const jour = m.jour as string
         ;(detailParJour[jour] ??= []).push({
-            moyen:   m.moyen,
+            compte:  m.compte,
+            type:    m.type,
             entrees: Number(m.entrees ?? 0),
             sorties: Number(m.sorties ?? 0),
         })

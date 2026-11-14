@@ -853,3 +853,97 @@ BEGIN
     RETURN jsonb_build_object('succes', true, 'solde_theorique', v_theorique, 'ecart', v_ecart);
 END;
 $$;
+
+-- ── 13. Rapports : par COMPTE, depuis le grand livre ────────────
+-- ventilation_caisse() et mouvements_caisse_jour() regroupaient par
+-- moyen de paiement : deux caisses s'additionnaient, un virement
+-- n'apparaissait nulle part. Elles étaient de plus SECURITY DEFINER
+-- avec l'identifiant de boutique en paramètre. Remplacées par des
+-- fonctions INVOKER qui lisent le grand livre.
+
+CREATE OR REPLACE FUNCTION public.ventilation_comptes(p_shop_id UUID, p_debut DATE, p_fin DATE)
+RETURNS TABLE (compte_id UUID, compte TEXT, type TEXT, est_actif BOOLEAN,
+               entrees_periode NUMERIC, sorties_periode NUMERIC, solde NUMERIC)
+LANGUAGE sql STABLE
+SET search_path = public
+AS $$
+    SELECT c.id, c.nom, c.type, c.est_actif,
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'entree'), 0),
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'sortie'), 0),
+           s.solde
+      FROM comptes_tresorerie c
+      JOIN soldes_comptes(p_shop_id, p_fin) s ON s.compte_id = c.id
+      LEFT JOIN mouvements_tresorerie m
+             ON m.compte_id = c.id AND NOT m.est_annule AND m.jour BETWEEN p_debut AND p_fin
+     WHERE c.shop_id = p_shop_id
+     GROUP BY c.id, c.nom, c.type, c.est_actif, s.solde
+    -- Un compte désactivé, vide et sans mouvement n'encombre pas le tableau.
+    HAVING c.est_actif OR s.solde <> 0 OR COUNT(m.montant) > 0
+     ORDER BY CASE c.type WHEN 'caisse' THEN 1 WHEN 'mobile_money' THEN 2 WHEN 'banque' THEN 3 ELSE 4 END, c.nom
+$$;
+
+CREATE OR REPLACE FUNCTION public.mouvements_comptes_jour(p_shop_id UUID, p_debut DATE, p_fin DATE)
+RETURNS TABLE (jour DATE, compte_id UUID, compte TEXT, type TEXT, entrees NUMERIC, sorties NUMERIC)
+LANGUAGE sql STABLE
+SET search_path = public
+AS $$
+    SELECT m.jour, c.id, c.nom, c.type,
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'entree'), 0),
+           COALESCE(SUM(m.montant) FILTER (WHERE m.sens = 'sortie'), 0)
+      FROM mouvements_tresorerie m
+      JOIN comptes_tresorerie c ON c.id = m.compte_id
+     WHERE m.shop_id = p_shop_id AND NOT m.est_annule
+       AND m.jour BETWEEN p_debut AND p_fin
+     GROUP BY m.jour, c.id, c.nom, c.type
+     ORDER BY m.jour DESC, 5 DESC
+$$;
+
+DROP FUNCTION IF EXISTS public.ventilation_caisse(UUID, DATE, DATE, INTERVAL);
+DROP FUNCTION IF EXISTS public.mouvements_caisse_jour(UUID, DATE, DATE, INTERVAL);
+
+-- Journées de caisse : les espèces sont celles de LA caisse de
+-- l'entrepôt de la session (avant : toutes les sorties en espèces de la
+-- boutique étaient imputées à chaque tiroir).
+CREATE OR REPLACE FUNCTION public.journees_caisse(p_shop_id UUID, p_debut DATE, p_fin DATE, p_decalage INTERVAL DEFAULT '01:00:00'::interval)
+RETURNS TABLE (session_id UUID, public_id TEXT, jour DATE, entrepot TEXT, statut TEXT,
+               fond_initial NUMERIC, attendu_especes NUMERIC, compte_especes NUMERIC, ecart NUMERIC,
+               ouverte_par TEXT, fermee_par TEXT, note_ouverture TEXT, note_fermeture TEXT,
+               encaisse_especes NUMERIC, encaisse_autres NUMERIC, sorties_especes NUMERIC, nb_ventes INTEGER)
+LANGUAGE sql STABLE SECURITY INVOKER
+SET search_path = public
+AS $$
+    SELECT
+        cs.id, cs.public_id, cs.jour, w.nom, cs.statut,
+        cs.fond_initial, cs.attendu_especes, cs.compte_especes, cs.ecart,
+        uo.nom_complet, uf.nom_complet, cs.note_ouverture, cs.note_fermeture,
+        COALESCE(t.entrees, 0),
+        COALESCE(v.autres, 0),
+        COALESCE(t.sorties, 0),
+        COALESCE(v.nb, 0)::INTEGER
+      FROM cash_sessions cs
+      JOIN warehouses w  ON w.id  = cs.warehouse_id
+      LEFT JOIN comptes_tresorerie caisse ON caisse.warehouse_id = cs.warehouse_id AND caisse.type = 'caisse'
+      LEFT JOIN shop_users uo ON uo.id = cs.ouverte_par
+      LEFT JOIN shop_users uf ON uf.id = cs.fermee_par
+      -- Mouvements de la caisse de l'entrepôt ce jour-là (ventes,
+      -- règlements, dépenses, virements, retraits, apports…).
+      LEFT JOIN LATERAL (
+          SELECT SUM(m.montant) FILTER (WHERE m.sens = 'entree') AS entrees,
+                 SUM(m.montant) FILTER (WHERE m.sens = 'sortie') AS sorties
+            FROM mouvements_tresorerie m
+           WHERE m.compte_id = caisse.id AND m.jour = cs.jour AND NOT m.est_annule
+      ) t ON true
+      -- Ventes du comptoir de cet entrepôt réglées sur un AUTRE compte.
+      LEFT JOIN LATERAL (
+          SELECT COALESCE(SUM(sp.montant) FILTER (WHERE sp.compte_id IS DISTINCT FROM caisse.id), 0) AS autres,
+                 count(DISTINCT sa.id) AS nb
+            FROM sale_payments sp
+            JOIN sales sa ON sa.id = sp.sale_id
+           WHERE sa.shop_id = p_shop_id AND sa.warehouse_id = cs.warehouse_id
+             AND sa.statut = 'completee'
+             AND (sa.created_at + p_decalage)::date = cs.jour
+      ) v ON true
+     WHERE cs.shop_id = p_shop_id
+       AND cs.jour BETWEEN p_debut AND p_fin
+     ORDER BY cs.jour DESC, w.nom
+$$;

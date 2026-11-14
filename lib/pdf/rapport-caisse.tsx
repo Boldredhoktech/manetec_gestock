@@ -7,7 +7,6 @@ import {
     DocumentRapport, CartesStats, TableauRapport, SectionTitre, NotePDF,
     type Colonne,
 } from '@/lib/pdf/template'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 
 // ══════════════════════════════════════════════════════════════
 // Rapport de caisse — RAP-06, décision D4.
@@ -21,9 +20,9 @@ import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 // Lot 4 POS, et un rapport qui le lisserait la trahirait.
 // ══════════════════════════════════════════════════════════════
 
-const LIBELLE_MOYEN: Record<string, string> = Object.fromEntries(
-    MOYENS_PAIEMENT.map(m => [m.code, m.label]),
-)
+const LIBELLE_TYPE: Record<string, string> = {
+    caisse: 'Caisse', mobile_money: 'Mobile Money', banque: 'Banque', tpe: 'TPE',
+}
 
 interface JourneeCaisse {
     public_id:        string
@@ -45,7 +44,7 @@ interface JourneeCaisse {
     nb_ventes:        number
 }
 
-interface MouvementJour { moyen: string; entrees: number; sorties: number }
+interface MouvementJour { compte: string; type: string; entrees: number; sorties: number }
 
 interface DonneesRapportCaisse {
     boutique: BoutiqueEntete & { devise: string }
@@ -173,7 +172,7 @@ export function RapportCaissePDF({ donnees }: { donnees: DonneesRapportCaisse })
                         {detail.length > 0 && (
                             <View style={{ flexDirection: 'row', paddingBottom: 2 }}>
                                 <Text style={{ width: '40%', fontSize: 7, color: couleurs.texteFaible }}>
-                                    Moyen de paiement
+                                    Compte
                                 </Text>
                                 <Text style={{ width: '30%', fontSize: 7, textAlign: 'right', color: couleurs.texteFaible }}>
                                     Entrées
@@ -195,7 +194,7 @@ export function RapportCaissePDF({ donnees }: { donnees: DonneesRapportCaisse })
                                     backgroundColor: i % 2 !== 0 ? couleurs.fondClair : undefined,
                                 }}>
                                     <Text style={{ width: '40%', fontSize: 8 }}>
-                                        {LIBELLE_MOYEN[m.moyen] ?? m.moyen}
+                                        {m.compte} ({LIBELLE_TYPE[m.type] ?? m.type})
                                     </Text>
                                     <Text style={{ width: '30%', fontSize: 8, textAlign: 'right', color: couleurs.vert }}>
                                         {m.entrees > 0 ? `+${fmt(m.entrees)}` : '—'}

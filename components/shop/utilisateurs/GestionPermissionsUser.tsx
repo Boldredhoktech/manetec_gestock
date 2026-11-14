@@ -21,12 +21,18 @@ const PERMISSIONS_PAR_ROLE: Record<string, { code: string; label: string; descri
         { code: 'invoices.create',         label: 'Créer des factures A4',    description: 'Peut créer des factures entreprise' },
         { code: 'products.price.edit',     label: 'Modifier les prix',        description: 'Peut changer les prix de vente' },
         { code: 'sales.return',            label: 'Retours de vente',         description: 'Peut enregistrer des retours' },
+        { code: 'treasury.balances.view',  label: 'Voir la trésorerie',       description: 'Soldes et journaux des caisses, banques et Mobile Money' },
+        { code: 'treasury.manage',         label: 'Gérer la trésorerie',      description: 'Comptes, virements, retraits/apports, rapprochements (inclut la vue des soldes)' },
     ],
-    gestionnaire_stock: [
+    // La clé est le rôle tel qu'il est stocké (stock_manager) : sous
+    // « gestionnaire_stock », aucun gestionnaire ne se voyait rien proposer.
+    stock_manager: [
         { code: 'products.price.edit',     label: 'Modifier les prix',        description: 'Peut changer les prix de vente' },
         { code: 'stock.audit.validate',    label: 'Valider les inventaires',  description: 'Peut valider les inventaires physiques' },
         { code: 'reports.generate',        label: 'Générer des rapports',     description: 'Accès aux rapports PDF' },
         { code: 'suppliers.edit',          label: 'Modifier les fournisseurs', description: 'Peut modifier les fiches fournisseurs' },
+        { code: 'treasury.balances.view',  label: 'Voir la trésorerie',       description: 'Soldes et journaux des caisses, banques et Mobile Money' },
+        { code: 'treasury.manage',         label: 'Gérer la trésorerie',      description: 'Comptes, virements, retraits/apports, rapprochements (inclut la vue des soldes)' },
     ],
     comptable: [
         { code: 'users.view',              label: 'Voir les utilisateurs',    description: 'Peut consulter la liste des utilisateurs' },
@@ -44,7 +50,7 @@ const ROLES_LABELS: Record<string, string> = {
     comptable:            'Comptable',
 }
 
-interface Permission { permission: string; accorde_par: string; created_at: string }
+interface Permission { permission: string; accorde_par: string; accorde_le: string }
 
 interface Utilisateur {
     id: string; public_id: string; nom_complet: string
