@@ -8,6 +8,7 @@ import { revalidatePath } from 'next/cache'
 import * as argon2 from 'argon2'
 import { estAdminComplet } from '@/lib/constants/permissions'
 import { motDePasseTemporaire } from '@/lib/auth/mot-de-passe-temporaire'
+import { composerIdentifiant, normaliserNomIdentifiant, suffixeLibre } from '@/lib/auth/identifiant'
 import { estPlan, estPlanVendu, estDuree, prixPeriode, formatMontant, JOURS_ESSAI } from '@/lib/abonnement/catalogue'
 import { refusChangementPlan } from '@/lib/abonnement/quotas'
 
@@ -58,6 +59,7 @@ export async function creerBoutique(formData: FormData) {
         .insert({
             public_id:      shopPublicId,
             nom,
+            suffixe_identifiant: await suffixeLibre(adminClient, nom),
             pays,
             ville:          ville || null,
             telephone_1:    telephone1,
@@ -88,7 +90,7 @@ export async function creerBoutique(formData: FormData) {
     )
 
     // Générer identifiant et mot de passe temporaire du SuperAdmin boutique
-    const identifiantAdmin = `admin.${nom.toLowerCase().replace(/\s+/g, '.').replace(/[^a-z0-9.]/g, '')}`
+    const identifiantAdmin = composerIdentifiant('admin', boutique.suffixe_identifiant)
     const motDePasseTemp   = motDePasseTemporaire()
 
     const { data: userPublicId } = await adminClient
@@ -415,20 +417,23 @@ export async function modifierIdentifiantUserBoutique(
         return { erreur: 'Réservé au Super Admin Plateforme.' }
     }
 
-    const identifiant = (nouvelIdentifiant ?? '').trim().toLowerCase()
-    if (!identifiant) return { erreur: 'L\'identifiant est requis.' }
-
     const adminClient = createAdminClient()
+
+    // Le suffixe reste celui de la boutique (mig 040) : seul le nom change.
+    const { data: boutique } = await adminClient
+        .from('shops').select('suffixe_identifiant').eq('id', shopId).single()
+    const nom = normaliserNomIdentifiant((nouvelIdentifiant ?? '').split('@')[0])
+    if (!nom || !boutique) return { erreur: 'L\'identifiant est requis.' }
+    const identifiant = composerIdentifiant(nom, boutique.suffixe_identifiant)
 
     const { data: existant } = await adminClient
         .from('shop_users')
         .select('id')
-        .eq('shop_id', shopId)
         .eq('identifiant', identifiant)
         .neq('id', userId)
         .maybeSingle()
 
-    if (existant) return { erreur: 'Cet identifiant est déjà utilisé dans cette boutique.' }
+    if (existant) return { erreur: `L'identifiant ${identifiant} est déjà pris.` }
 
     const { error } = await adminClient
         .from('shop_users')

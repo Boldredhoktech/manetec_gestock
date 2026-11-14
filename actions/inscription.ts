@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import * as argon2 from 'argon2'
 import { motDePasseTemporaire } from '@/lib/auth/mot-de-passe-temporaire'
 import { JOURS_ESSAI } from '@/lib/abonnement/catalogue'
+import { composerIdentifiant, suffixeLibre } from '@/lib/auth/identifiant'
 
 // ABO-16 : cette action est appelée par un visiteur ANONYME. Avant, elle
 // lui renvoyait le message, le code et les détails bruts de PostgreSQL,
@@ -53,6 +54,9 @@ export async function creerBoutiquePublic(formData: FormData) {
     }
 
     // ── Création boutique ──────────────────────────────────────
+    // Suffixe des identifiants de la boutique (mig 040)
+    const suffixe = await suffixeLibre(adminClient, nomBoutique)
+
     const expiration = new Date()
     expiration.setDate(expiration.getDate() + JOURS_ESSAI)
 
@@ -61,6 +65,7 @@ export async function creerBoutiquePublic(formData: FormData) {
         .insert({
             public_id:      shopPublicId,
             nom:            nomBoutique,
+            suffixe_identifiant: suffixe,
             pays,
             ville,
             telephone_1:    telephone,
@@ -101,14 +106,8 @@ export async function creerBoutiquePublic(formData: FormData) {
     }
 
     // ── Identifiant SuperAdmin ─────────────────────────────────
-    const base = nomBoutique
-        .toLowerCase()
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .replace(/\s+/g, '.')
-        .replace(/[^a-z0-9.]/g, '')
-        .slice(0, 20)
-    const identifiantAdmin = `admin.${base}`
+    // admin@<suffixe> (mig 040 : plus de ShopId \u00e0 la connexion)
+    const identifiantAdmin = composerIdentifiant('admin', suffixe)
 
     // ── Mot de passe ───────────────────────────────────────────
     const motDePasse = motDePasseTemporaire()
@@ -178,6 +177,5 @@ export async function creerBoutiquePublic(formData: FormData) {
         identifiant:   identifiantAdmin,
         motDePasse,
         shopId:        boutique.id,
-        shopPublicId:  shopPublicId, // ← ID boutique nécessaire pour la connexion
     }
 }

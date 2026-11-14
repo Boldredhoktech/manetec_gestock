@@ -18,7 +18,6 @@ interface Etat {
     succes?:      boolean
     identifiant?: string
     motDePasse?:  string
-    shopPublicId?: string
 }
 
 const inputClass = `
@@ -73,7 +72,6 @@ export default function FormulaireInscription() {
             succes:       true,
             identifiant:  res.identifiant,
             motDePasse:   res.motDePasse,
-            shopPublicId: (res as any).shopPublicId,
         })
     }
 
@@ -103,28 +101,13 @@ export default function FormulaireInscription() {
 
                     <div className="space-y-2">
 
-                        {/* ID Boutique — mis en évidence, obligatoire à la connexion */}
+                        {/* Identifiant — seul nécessaire à la connexion avec le mot de passe (mig 040) */}
                         <div
-                            className="flex items-center justify-between p-3.5 rounded-xl"
+                            className="flex items-center justify-between gap-3 p-3.5 rounded-xl"
                             style={{ background: 'linear-gradient(135deg, #15335a, #0f2742)' }}
                         >
-                            <div>
-                                <p className="text-xs font-bold text-white/80 uppercase tracking-wider">
-                                    ID Boutique
-                                </p>
-                                <p className="text-xs text-white/60 mt-0.5">
-                                    Obligatoire à la connexion
-                                </p>
-                            </div>
-                            <span className="text-xl font-black text-white font-mono tracking-widest">
-                                {etat.shopPublicId}
-                            </span>
-                        </div>
-
-                        {/* Identifiant */}
-                        <div className="flex items-center justify-between p-2.5 bg-white rounded-xl border border-blue-200">
-                            <span className="text-xs font-semibold text-gray-500">Identifiant</span>
-                            <span className="text-sm font-black text-gray-800 font-mono">
+                            <span className="text-xs font-bold text-white/80 uppercase tracking-wider">Identifiant</span>
+                            <span className="text-lg font-black text-white font-mono break-all">
                                 {etat.identifiant}
                             </span>
                         </div>

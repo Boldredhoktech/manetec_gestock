@@ -13,6 +13,7 @@ import {
     estAdminComplet,
 } from '@/lib/constants/permissions'
 import { getPlanLimites } from '@/lib/constants/plans'
+import { composerIdentifiant, normaliserNomIdentifiant } from '@/lib/auth/identifiant'
 
 // Rôles qu'un administrateur (non-propriétaire) peut créer et gérer.
 const ROLES_STANDARDS = [ROLES.VENDEUR, ROLES.STOCK_MANAGER, ROLES.COMPTABLE] as const
@@ -41,7 +42,7 @@ export async function creerUtilisateur(formData: FormData) {
     // Récupérer le plan directement depuis la base (source de vérité)
     const { data: boutique } = await adminClient
         .from('shops')
-        .select('plan')
+        .select('plan, suffixe_identifiant')
         .eq('id', shopId)
         .single()
 
@@ -62,7 +63,14 @@ export async function creerUtilisateur(formData: FormData) {
     }
 
     const nomComplet  = (formData.get('nomComplet') as string)?.trim()
-    const identifiant = (formData.get('identifiant') as string)?.trim().toLowerCase()
+    // L'admin saisit le nom ; le suffixe est TOUJOURS celui de la boutique
+    // (mig 040 — la base le vérifie aussi). Un « @… » collé est ignoré.
+    const nomIdentifiant = normaliserNomIdentifiant(
+        ((formData.get('identifiant') as string) ?? '').split('@')[0]
+    )
+    const identifiant = nomIdentifiant && boutique?.suffixe_identifiant
+        ? composerIdentifiant(nomIdentifiant, boutique.suffixe_identifiant)
+        : ''
     const motDePasse  = formData.get('motDePasse') as string
     const role        = formData.get('role') as string
     const permissionsEtendues = formData.getAll('permissions') as string[]
@@ -92,12 +100,11 @@ export async function creerUtilisateur(formData: FormData) {
     const { data: existant } = await adminClient
         .from('shop_users')
         .select('id')
-        .eq('shop_id', shopId)
         .eq('identifiant', identifiant)
-        .single()
+        .maybeSingle()
 
     if (existant) {
-        return { erreur: 'Cet identifiant est déjà utilisé dans cette boutique.' }
+        return { erreur: `L'identifiant ${identifiant} est déjà pris. Choisissez un autre nom.` }
     }
 
     const { data: publicId } = await adminClient

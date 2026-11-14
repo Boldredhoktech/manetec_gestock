@@ -31,7 +31,6 @@ export default function FormulaireBoutique() {
                     </h2>
                 </div>
                 <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg space-y-1 font-mono text-xs text-amber-800">
-                    <p>ID Boutique : {a.shopPublicId}</p>
                     <p>Identifiant : {a.identifiant}</p>
                     <p>Mot de passe : {a.motDePasse}</p>
                 </div>

@@ -4,6 +4,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import * as argon2 from 'argon2'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import {
+    COOKIE_NOUVEL_IDENTIFIANT,
+    nettoyerSaisieIdentifiant,
+    transitionIdentifiantOuverte,
+} from '@/lib/auth/identifiant'
 import { revalidatePath } from 'next/cache'
 import { ouvrirSessionAuth } from '@/lib/auth/session-auth'
 import { etatAbonnement, peutEntrerBoutiqueExpiree, CHEMIN_ABONNEMENT, MESSAGES_ABONNEMENT } from '@/lib/abonnement/etat'
@@ -103,42 +109,57 @@ export async function connexionPlateforme(formData: FormData) {
 }
 
 // ── Connexion Utilisateur Boutique ─────────────────────────────
+// Plus de ShopId (mig 040) : l'identifiant « nom@boutique » est unique
+// sur la plateforme et désigne à lui seul le compte, donc la boutique.
 export async function connexionBoutique(formData: FormData) {
-    const identifiant = formData.get('identifiant') as string
+    const identifiant = nettoyerSaisieIdentifiant(formData.get('identifiant') as string)
     const motDePasse = formData.get('motDePasse') as string
-    const shopPublicId = formData.get('shopPublicId') as string
 
-    if (!identifiant || !motDePasse || !shopPublicId) {
-        return { erreur: 'Tous les champs sont requis.' }
+    if (!identifiant || !motDePasse) {
+        return { erreur: 'Identifiant et mot de passe requis.' }
     }
 
     const adminClient = createAdminClient()
+    const ERREUR_IDENTIFIANTS = identifiant.includes('@')
+        ? 'Identifiant ou mot de passe incorrect.'
+        : 'Identifiant ou mot de passe incorrect. Votre identifiant contient le nom de votre boutique, par exemple : admin@maboutique.'
 
-    // Trouver la boutique
+    let utilisateur: Record<string, any> | null = null
+    let viaAncienIdentifiant = false
+
+    if (identifiant.includes('@')) {
+        const { data } = await adminClient
+            .from('shop_users')
+            .select('*')
+            .eq('identifiant', identifiant)
+            .maybeSingle()
+        utilisateur = data
+    } else if (transitionIdentifiantOuverte()) {
+        // Transition : l'identifiant d'avant la mig 040, accepté seulement
+        // s'il ne désigne qu'UN compte (deux boutiques pouvaient l'avoir).
+        const { data } = await adminClient
+            .from('shop_users')
+            .select('*')
+            .eq('identifiant_ancien', identifiant)
+            .limit(2)
+        if (data?.length === 1) {
+            utilisateur = data[0]
+            viaAncienIdentifiant = true
+        }
+    }
+
+    if (!utilisateur) {
+        return { erreur: ERREUR_IDENTIFIANTS }
+    }
+
     const { data: shop } = await adminClient
         .from('shops')
-        .select('id, nom, est_active, plan, plan_expire_le')
-        .eq('public_id', shopPublicId.toUpperCase().trim())
+        .select('id, public_id, nom, est_active, plan, plan_expire_le')
+        .eq('id', utilisateur.shop_id)
         .single()
 
     if (!shop) {
-        return { erreur: 'Boutique introuvable.' }
-    }
-
-    if (!shop.est_active) {
-        return { erreur: 'Cette boutique est désactivée.' }
-    }
-
-    // Trouver l'utilisateur dans cette boutique
-    const { data: utilisateur } = await adminClient
-        .from('shop_users')
-        .select('*')
-        .eq('shop_id', shop.id)
-        .eq('identifiant', identifiant.trim())
-        .single()
-
-    if (!utilisateur) {
-        return { erreur: 'Identifiant ou mot de passe incorrect.' }
+        return { erreur: ERREUR_IDENTIFIANTS }
     }
 
     if (utilisateur.est_bloque) {
@@ -217,7 +238,7 @@ export async function connexionBoutique(formData: FormData) {
         public_id:            utilisateur.public_id,
         nom_complet:          utilisateur.nom_complet,
         shop_id:              shop.id,
-        shop_public_id:       shopPublicId,
+        shop_public_id:       shop.public_id,
         shop_nom:             shop.nom,
         shop_plan:            shop.plan,
         permissions_etendues: permissionsEtendues,
@@ -236,8 +257,20 @@ export async function connexionBoutique(formData: FormData) {
         user_nom: utilisateur.nom_complet,
         type_acteur: 'shop',
         event_type: 'AUTH_LOGIN_SUCCESS',
-        details_json: { role: utilisateur.role },
+        details_json: { role: utilisateur.role, via_ancien_identifiant: viaAncienIdentifiant },
     })
+
+    // Bandeau « votre identifiant a changé » : posé tant que la personne
+    // se connecte avec l'ancien, effacé dès qu'elle utilise le nouveau.
+    const magasinCookies = await cookies()
+    if (viaAncienIdentifiant) {
+        magasinCookies.set(COOKIE_NOUVEL_IDENTIFIANT, utilisateur.identifiant, {
+            httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production',
+            path: '/', maxAge: 60 * 60 * 24 * 30,
+        })
+    } else {
+        magasinCookies.delete(COOKIE_NOUVEL_IDENTIFIANT)
+    }
 
     revalidatePath('/admin')
 

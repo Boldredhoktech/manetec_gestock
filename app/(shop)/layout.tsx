@@ -2,6 +2,9 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { COOKIE_NOUVEL_IDENTIFIANT } from '@/lib/auth/identifiant'
+import BandeauNouvelIdentifiant from '@/components/shop/BandeauNouvelIdentifiant'
 import { etatAbonnementBoutique, peutEntrerBoutiqueExpiree } from '@/lib/abonnement/etat'
 
 export default async function LayoutShop({
@@ -29,5 +32,12 @@ export default async function LayoutShop({
         redirect('/login?suspendu=expire')
     }
 
-    return <>{children}</>
+    const nouvelIdentifiant = (await cookies()).get(COOKIE_NOUVEL_IDENTIFIANT)?.value
+
+    return (
+        <>
+            {nouvelIdentifiant && <BandeauNouvelIdentifiant identifiant={nouvelIdentifiant} />}
+            {children}
+        </>
+    )
 }

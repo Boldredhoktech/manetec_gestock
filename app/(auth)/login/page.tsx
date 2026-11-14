@@ -59,7 +59,7 @@ export default async function PageLoginBoutique({
                         </Link>
                         <h1 className="mt-5 text-2xl font-bold text-foreground">Connexion à votre boutique</h1>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Entrez votre identifiant de boutique et vos accès
+                            Entrez votre identifiant et votre mot de passe
                         </p>
                     </div>
 

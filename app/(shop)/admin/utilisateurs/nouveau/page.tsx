@@ -18,6 +18,12 @@ export default async function PageNouvelUtilisateur() {
 
     const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
 
+    const { data: boutique } = await supabase
+        .from('shops')
+        .select('suffixe_identifiant')
+        .eq('id', user.user_metadata.shop_id)
+        .single()
+
     return (
         <div className="flex flex-col min-h-screen">
             <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
@@ -39,7 +45,10 @@ export default async function PageNouvelUtilisateur() {
                 </div>
             </header>
             <main className="flex-1 p-4 sm:p-6 max-w-xl">
-                <FormulaireUtilisateur estProprietaire={estProprietaire} />
+                <FormulaireUtilisateur
+                    estProprietaire={estProprietaire}
+                    suffixe={boutique?.suffixe_identifiant ?? ''}
+                />
             </main>
         </div>
     )

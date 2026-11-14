@@ -3,7 +3,7 @@ import { ENTREPRISE } from '@/lib/config/entreprise'
 
 interface Props {
     nomBoutique:   string
-    shopPublicId:  string
+    shopPublicId?: string // plus affiché : la connexion n'en a plus besoin (mig 040)
     identifiant:   string
     motDePasse:    string
     nomProprietaire: string
@@ -11,7 +11,7 @@ interface Props {
 }
 
 export function EmailBienvenueBoutions({
-                                           nomBoutique, shopPublicId, identifiant,
+                                           nomBoutique, identifiant,
                                            motDePasse, nomProprietaire, urlApp,
                                        }: Props) {
     return (
@@ -94,7 +94,6 @@ export function EmailBienvenueBoutions({
                                             </p>
 
                                             {[
-                                                { label: 'ID Boutique',   val: shopPublicId,  mono: true  },
                                                 { label: 'Identifiant',   val: identifiant,   mono: true  },
                                                 { label: 'Mot de passe',  val: motDePasse,    mono: true  },
                                             ].map(item => (

@@ -5,6 +5,7 @@ import { creerUtilisateur } from '@/actions/users'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
 import { EXTENSIONS_VENDEUR, PERMISSIONS } from '@/lib/constants/permissions'
+import { normaliserNomIdentifiant } from '@/lib/auth/identifiant'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
@@ -15,10 +16,11 @@ const EXTENSIONS_LABELS: Record<string, string> = {
     [PERMISSIONS.PRODUITS_COUT_VOIR]:    'Voir les prix d\'achat et les marges',
 }
 
-interface Props { estProprietaire: boolean }
+interface Props { estProprietaire: boolean; suffixe: string }
 
-export default function FormulaireUtilisateur({ estProprietaire }: Props) {
+export default function FormulaireUtilisateur({ estProprietaire, suffixe }: Props) {
     const [role, setRole] = useState('vendeur')
+    const [nomIdentifiant, setNomIdentifiant] = useState('')
 
     const [etat, action, enAttente] = useActionState(
         async (_prev: typeof etatInitial, formData: FormData) => {
@@ -62,16 +64,25 @@ export default function FormulaireUtilisateur({ estProprietaire }: Props) {
                         <label className="text-sm font-medium text-foreground">
                             Identifiant <span className="text-destructive">*</span>
                         </label>
-                        <input
-                            name="identifiant"
-                            type="text"
-                            required
-                            placeholder="marie.dupont"
-                            disabled={enAttente}
-                            className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
-                        />
+                        <div className="flex items-stretch rounded-lg border border-input bg-background focus-within:ring-2 focus-within:ring-ring overflow-hidden">
+                            <input
+                                name="identifiant"
+                                type="text"
+                                required
+                                placeholder="marie.dupont"
+                                autoCapitalize="none"
+                                spellCheck={false}
+                                disabled={enAttente}
+                                value={nomIdentifiant}
+                                onChange={e => setNomIdentifiant(normaliserNomIdentifiant(e.target.value))}
+                                className="min-w-0 flex-1 px-3 py-2.5 bg-transparent text-sm focus:outline-none disabled:opacity-50"
+                            />
+                            <span className="flex items-center px-3 bg-muted text-muted-foreground text-sm font-mono border-l border-input">
+                                @{suffixe}
+                            </span>
+                        </div>
                         <p className="text-xs text-muted-foreground">
-                            Utilisé pour la connexion
+                            Pour se connecter : <span className="font-mono text-foreground">{nomIdentifiant || 'marie.dupont'}@{suffixe}</span>
                         </p>
                     </div>
                     <div className="space-y-1.5">
