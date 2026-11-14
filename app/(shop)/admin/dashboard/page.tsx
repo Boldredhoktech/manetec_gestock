@@ -73,7 +73,7 @@ export default async function PageTableauDeBord({ searchParams }: { searchParams
         voit.soldes ? db.from('comptes_tresorerie').select('id, nom, type, numero').eq('shop_id', shopId).eq('est_actif', true) : vide,
         voit.soldes ? db.from('mouvements_tresorerie').select('compte_id, sens, montant, origine, libelle, public_id, created_at')
             .eq('shop_id', shopId).eq('est_annule', false).order('created_at', { ascending: false }).limit(6) : vide,
-        voit.caisse ? db.from('cash_sessions').select('statut, ouverte_le, warehouses(nom)').eq('shop_id', shopId).eq('jour', auj) : vide,
+        voit.caisse ? db.from('cash_sessions').select('statut, ouverte_le, caisse:comptes_tresorerie(nom), warehouses(nom)').eq('shop_id', shopId).eq('jour', auj) : vide,
     ])
 
     // ── Chiffres ───────────────────────────────────────────────
@@ -111,8 +111,9 @@ export default async function PageTableauDeBord({ searchParams }: { searchParams
     const totalDispo = listeComptes.reduce((a, x) => a + x.solde, 0)
     const nomCompte = new Map(listeComptes.map(x => [x.id, x.nom]))
 
-    const sessionsJour = (sessions ?? []) as { statut: string; ouverte_le: string; warehouses: { nom: string } | { nom: string }[] | null }[]
+    const sessionsJour = (sessions ?? []) as { statut: string; ouverte_le: string; caisse: { nom: string } | { nom: string }[] | null; warehouses: { nom: string } | { nom: string }[] | null }[]
     const ouverte = sessionsJour.find(s => s.statut === 'ouverte')
+    const nbOuvertes = sessionsJour.filter(s => s.statut === 'ouverte').length
     const nomEntrepot = (w: typeof sessionsJour[number]['warehouses']) => (Array.isArray(w) ? w[0]?.nom : w?.nom) ?? ''
 
     const expireBientot = boutique?.plan_expire_le
@@ -122,7 +123,7 @@ export default async function PageTableauDeBord({ searchParams }: { searchParams
     const sousTitre = [
         `${['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][dateLongue.getUTCDay()]} ${dateLongue.getUTCDate()} ${MOIS_FR[dateLongue.getUTCMonth() + 1]?.toLowerCase() ?? ''}`,
         voit.caisse ? (ouverte
-            ? `caisse du jour ouverte à ${new Date(ouverte.ouverte_le).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Porto-Novo' })} (${nomEntrepot(ouverte.warehouses)})`
+            ? `caisse du jour ouverte à ${new Date(ouverte.ouverte_le).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Porto-Novo' })} (${nomEntrepot(ouverte.caisse) || nomEntrepot(ouverte.warehouses)})${nbOuvertes > 1 ? ` · ${nbOuvertes} caisses ouvertes` : ''}`
             : 'caisse du jour pas encore ouverte') : null,
     ].filter(Boolean).join(' · ')
 

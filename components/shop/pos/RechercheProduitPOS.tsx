@@ -231,7 +231,7 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
                                     </div>
 
                                     {/* Alerte stock faible */}
-                                    {!rupture && stock <= 5 && (
+                                    {!rupture && !ailleurs && stock <= 5 && (
                                         <div className="flex items-center gap-1 mt-2 text-amber-500">
                                             <AlertTriangle className="w-3 h-3" />
                                             <span className="text-[10px] font-bold">Stock faible</span>

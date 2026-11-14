@@ -346,7 +346,7 @@ export async function getDetailVente(saleId: string) {
       shop_users!sales_vendeur_id_fkey(nom_complet),
       sale_items(
         id, quantite, prix_unitaire, remise_pct,
-        montant_ligne, imei, note,
+        montant_ligne, imei, note, warehouse_id, warehouses(nom),
         products(nom, unite, public_id, necessite_imei, necessite_serie)
       ),
       sale_payments(moyen_paiement, montant, reference)

@@ -120,6 +120,9 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
                             <p className="font-bold text-foreground truncate">
                                 {item.products?.nom}
                             </p>
+                            {item.warehouse_id && vente.warehouse_id && item.warehouse_id !== vente.warehouse_id && (
+                                <p className="text-muted-foreground text-xs">Sorti de : {item.warehouses?.nom}</p>
+                            )}
                             <div className="flex justify-between text-muted-foreground">
                 <span>
                   {item.quantite} {item.products?.unite} × {formatMontant(item.prix_unitaire, boutique.devise)}

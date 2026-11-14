@@ -1147,7 +1147,8 @@ export async function getDonneesRapportCaisse(
         public_id:        j.public_id,
         jour:             formatFR(j.jour),
         jour_iso:         j.jour as string,
-        entrepot:         j.entrepot ?? '—',
+        // (mig 044) une journée par CAISSE : son nom porte déjà l'entrepôt.
+        entrepot:         j.caisse ?? j.entrepot ?? '—',
         statut:           j.statut as string,
         fond_initial:     Number(j.fond_initial     ?? 0),
         attendu:          j.attendu_especes === null ? null : Number(j.attendu_especes),
