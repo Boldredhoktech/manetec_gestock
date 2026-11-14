@@ -54,18 +54,18 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
     ]
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+        <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
 
             {/* En-tête */}
-            <div className="p-5 border-b border-gray-100">
+            <div className="p-5 border-b border-border">
                 <div className="flex items-center gap-2 mb-4">
-                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                        <Package className="w-5 h-5 text-[#15335a]" />
+                    <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                        <Package className="w-5 h-5 text-[var(--primary-strong)]" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">
+                    <h2 className="text-sm font-bold text-foreground">
                         Produits dans cet entrepôt
                     </h2>
-                    <span className="ml-auto text-xs text-gray-400">
+                    <span className="ml-auto text-xs text-muted-foreground/80">
             {filtres.length} résultat(s)
           </span>
                 </div>
@@ -78,8 +78,8 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
                             onClick={() => setFiltre(b.key as any)}
                             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                 filtre === b.key
-                                    ? 'bg-[#15335a] text-white shadow-md shadow-[#15335a]/30'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    ? 'bg-primary text-white shadow-md shadow-black/10'
+                                    : 'bg-muted text-muted-foreground hover:bg-gray-200'
                             }`}
                         >
                             {b.label}
@@ -94,20 +94,20 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
 
                 {/* Recherche */}
                 <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                     <input
                         type="text"
                         placeholder="Rechercher un produit, SKU, ID..."
                         value={recherche}
                         onChange={e => setRecherche(e.target.value)}
-                        className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40"
+                        className="w-full pl-9 pr-4 py-2 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40"
                     />
                 </div>
             </div>
 
             {/* Tableau */}
             {filtres.length === 0 ? (
-                <div className="text-center py-12 text-gray-400">
+                <div className="text-center py-12 text-muted-foreground/80">
                     <Package className="w-10 h-10 mx-auto mb-3 opacity-30" />
                     <p className="text-sm">Aucun produit dans cette catégorie.</p>
                 </div>
@@ -121,7 +121,7 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
 
                         return (
                             <div key={p.id}
-                                 className={`flex items-center gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors ${
+                                 className={`flex items-center gap-3 px-5 py-3.5 hover:bg-muted transition-colors ${
                                      enRupture ? 'bg-red-50/40' : enAlerte ? 'bg-yellow-50/40' : ''
                                  }`}
                             >
@@ -140,15 +140,15 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
                                 {/* Infos produit */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <p className="text-sm font-semibold text-gray-900 truncate">{p.nom}</p>
-                                        <span className="shrink-0 text-xs text-gray-400 font-mono">{p.public_id}</span>
+                                        <p className="text-sm font-semibold text-foreground truncate">{p.nom}</p>
+                                        <span className="shrink-0 text-xs text-muted-foreground/80 font-mono">{p.public_id}</span>
                                     </div>
                                     <div className="flex items-center gap-2 mt-0.5">
                                         {p.categories && (
-                                            <span className="text-xs text-gray-400">{p.categories.nom}</span>
+                                            <span className="text-xs text-muted-foreground/80">{p.categories.nom}</span>
                                         )}
                                         {p.sku && (
-                                            <span className="text-xs text-gray-400 font-mono">SKU: {p.sku}</span>
+                                            <span className="text-xs text-muted-foreground/80 font-mono">SKU: {p.sku}</span>
                                         )}
                                     </div>
                                 </div>
@@ -165,14 +165,14 @@ export default function CarteStockEntrepot({ stockLevels }: Props) {
                                     {enAlerte && !enRupture && (
                                         <p className="text-xs text-yellow-500">seuil: {p.seuil_alerte}</p>
                                     )}
-                                    <p className="text-xs text-gray-400 mt-0.5">
+                                    <p className="text-xs text-muted-foreground/80 mt-0.5">
                                         {formatMontant(s.quantite * p.prix_achat)}
                                     </p>
                                 </div>
 
                                 {/* Lien fiche produit */}
                                 <Link href={`/stock/produits/${p.id}`}
-                                      className="shrink-0 p-1.5 rounded-lg hover:bg-[#15335a]/10 text-[#15335a] transition-colors">
+                                      className="shrink-0 p-1.5 rounded-lg hover:bg-[var(--primary-soft)] text-[var(--primary-strong)] transition-colors">
                                     <ChevronRight className="w-4 h-4" />
                                 </Link>
                             </div>

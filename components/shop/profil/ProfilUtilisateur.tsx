@@ -106,21 +106,21 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
         <div className="space-y-5 py-4">
 
             {/* ── Infos boutique ──────────────────────────────── */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                        <Building2 className="w-5 h-5 text-[#15335a]" />
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-border">
+                    <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                        <Building2 className="w-5 h-5 text-[var(--primary-strong)]" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">Ma boutique</h2>
+                    <h2 className="text-sm font-bold text-foreground">Ma boutique</h2>
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                        <p className="text-xs text-gray-400 mb-1">Boutique</p>
-                        <p className="text-sm font-bold text-gray-800 truncate">{boutique.nom}</p>
+                    <div className="p-3 bg-[var(--surface2)] rounded-xl">
+                        <p className="text-xs text-muted-foreground/80 mb-1">Boutique</p>
+                        <p className="text-sm font-bold text-foreground truncate">{boutique.nom}</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-xl">
-                        <p className="text-xs text-gray-400 mb-1">Plan actuel</p>
+                    <div className="p-3 bg-[var(--surface2)] rounded-xl">
+                        <p className="text-xs text-muted-foreground/80 mb-1">Plan actuel</p>
                         <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-bold"
                               style={{ color: planConfig.couleur, background: `${planConfig.couleur}1a` }}>
                             {planConfig.label}
@@ -129,39 +129,39 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                     <div className={`p-3 rounded-xl ${
                         joursRestants !== null && joursRestants <= 7
                             ? 'bg-red-50'
-                            : 'bg-gray-50'
+                            : 'bg-[var(--surface2)]'
                     }`}>
-                        <p className="text-xs text-gray-400 mb-1">Expiration</p>
+                        <p className="text-xs text-muted-foreground/80 mb-1">Expiration</p>
                         {boutique.plan_expire_le ? (
                             <>
                                 <p className={`text-xs font-bold ${
                                     joursRestants !== null && joursRestants <= 7
                                         ? 'text-red-600'
-                                        : 'text-gray-700'
+                                        : 'text-foreground'
                                 }`}>
                                     {joursRestants === 0
                                         ? 'Expiré !'
                                         : `J-${joursRestants}`
                                     }
                                 </p>
-                                <p className="text-xs text-gray-400 mt-0.5">
+                                <p className="text-xs text-muted-foreground/80 mt-0.5">
                                     {formatDate(boutique.plan_expire_le)}
                                 </p>
                             </>
                         ) : (
-                            <p className="text-xs text-gray-500">—</p>
+                            <p className="text-xs text-muted-foreground">—</p>
                         )}
                     </div>
                 </div>
             </div>
 
             {/* ── Informations personnelles ───────────────────── */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                        <User className="w-5 h-5 text-[#15335a]" />
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-border">
+                    <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                        <User className="w-5 h-5 text-[var(--primary-strong)]" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">Informations personnelles</h2>
+                    <h2 className="text-sm font-bold text-foreground">Informations personnelles</h2>
                 </div>
 
                 {msgNom && (
@@ -180,19 +180,19 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="col-span-2 space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Nom complet</label>
+                        <label className="text-sm font-medium text-foreground">Nom complet</label>
                         <div className="flex gap-2">
                             <input
                                 type="text"
                                 value={nom}
                                 onChange={e => setNom(e.target.value)}
                                 disabled={nomEnCours}
-                                className="flex-1 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40 disabled:opacity-50"
+                                className="flex-1 px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40 disabled:opacity-50"
                             />
                             <button
                                 onClick={handleSauvegarderNom}
                                 disabled={nomEnCours || !nom.trim() || nom === utilisateur.nom_complet}
-                                className="px-4 py-2.5 bg-[#15335a] text-white text-sm font-bold rounded-xl hover:bg-[#0f2742] disabled:opacity-40 transition-all shrink-0"
+                                className="px-4 py-2.5 bg-primary text-white text-sm font-bold rounded-xl hover:opacity-90 disabled:opacity-40 transition-all shrink-0"
                             >
                                 {nomEnCours
                                     ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -203,36 +203,36 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Identifiant de connexion</label>
-                        <div className="px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-sm text-gray-500 font-mono">
+                        <label className="text-sm font-medium text-foreground">Identifiant de connexion</label>
+                        <div className="px-3 py-2.5 bg-muted border border-border rounded-xl text-sm text-muted-foreground font-mono">
                             {utilisateur.identifiant}
                         </div>
-                        <p className="text-xs text-gray-400">Non modifiable</p>
+                        <p className="text-xs text-muted-foreground/80">Non modifiable</p>
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Rôle</label>
-                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-100 border border-gray-200 rounded-xl">
-                            <Shield className="w-4 h-4 text-[#15335a]" />
-                            <span className="text-sm text-gray-600 font-medium capitalize">
+                        <label className="text-sm font-medium text-foreground">Rôle</label>
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-muted border border-border rounded-xl">
+                            <Shield className="w-4 h-4 text-[var(--primary-strong)]" />
+                            <span className="text-sm text-muted-foreground font-medium capitalize">
                                 {utilisateur.role.replace(/_/g, ' ')}
                             </span>
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">Membre depuis</label>
-                        <div className="flex items-center gap-2 px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl">
-                            <Calendar className="w-4 h-4 text-gray-400" />
-                            <span className="text-sm text-gray-600">
+                        <label className="text-sm font-medium text-foreground">Membre depuis</label>
+                        <div className="flex items-center gap-2 px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl">
+                            <Calendar className="w-4 h-4 text-muted-foreground/80" />
+                            <span className="text-sm text-muted-foreground">
                                 {formatDate(utilisateur.created_at)}
                             </span>
                         </div>
                     </div>
 
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">ID public</label>
-                        <div className="px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-500 font-mono">
+                        <label className="text-sm font-medium text-foreground">ID public</label>
+                        <div className="px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm text-muted-foreground font-mono">
                             {utilisateur.public_id}
                         </div>
                     </div>
@@ -240,12 +240,12 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
             </div>
 
             {/* ── Changement de mot de passe ──────────────────── */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-border">
                     <div className="bg-amber-100 p-2 rounded-lg">
                         <Lock className="w-5 h-5 text-amber-600" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">Changer mon mot de passe</h2>
+                    <h2 className="text-sm font-bold text-foreground">Changer mon mot de passe</h2>
                 </div>
 
                 {msgMdp && (
@@ -266,7 +266,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
 
                     {/* Mot de passe actuel */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-foreground">
                             Mot de passe actuel <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
@@ -276,11 +276,11 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                 onChange={e => setActuel(e.target.value)}
                                 disabled={mdpEnCours}
                                 placeholder="Votre mot de passe actuel"
-                                className="w-full px-3 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50"
+                                className="w-full px-3 py-2.5 pr-10 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
                             />
                             <button type="button"
                                     onClick={() => setVoirActuel(!voirActuel)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground">
                                 {voirActuel
                                     ? <EyeOff className="w-4 h-4" />
                                     : <Eye className="w-4 h-4" />
@@ -291,7 +291,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
 
                     {/* Nouveau mot de passe */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-foreground">
                             Nouveau mot de passe <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
@@ -301,11 +301,11 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                 onChange={e => setNouveau(e.target.value)}
                                 disabled={mdpEnCours}
                                 placeholder="Au moins 6 caractères"
-                                className="w-full px-3 py-2.5 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 disabled:opacity-50"
+                                className="w-full px-3 py-2.5 pr-10 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
                             />
                             <button type="button"
                                     onClick={() => setVoirNouveau(!voirNouveau)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground">
                                 {voirNouveau
                                     ? <EyeOff className="w-4 h-4" />
                                     : <Eye className="w-4 h-4" />
@@ -342,7 +342,7 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
 
                     {/* Confirmation */}
                     <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-gray-700">
+                        <label className="text-sm font-medium text-foreground">
                             Confirmer le nouveau mot de passe <span className="text-red-500">*</span>
                         </label>
                         <div className="relative">
@@ -352,17 +352,17 @@ export default function ProfilUtilisateur({ utilisateur, boutique }: Props) {
                                 onChange={e => setConfirmation(e.target.value)}
                                 disabled={mdpEnCours}
                                 placeholder="Répétez le nouveau mot de passe"
-                                className={`w-full px-3 py-2.5 pr-10 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 disabled:opacity-50 transition-colors ${
+                                className={`w-full px-3 py-2.5 pr-10 bg-[var(--surface2)] border rounded-xl text-sm focus:outline-none focus:ring-2 disabled:opacity-50 transition-colors ${
                                     confirmation.length > 0
                                         ? confirmation === nouveau
                                             ? 'border-green-300 focus:ring-green-400/30'
                                             : 'border-red-300 focus:ring-red-400/30'
-                                        : 'border-gray-200 focus:ring-[#15335a]/30'
+                                        : 'border-border focus:ring-ring/30'
                                 }`}
                             />
                             <button type="button"
                                     onClick={() => setVoirConfirm(!voirConfirm)}
-                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground">
                                 {voirConfirm
                                     ? <EyeOff className="w-4 h-4" />
                                     : <Eye className="w-4 h-4" />

@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button'
 import ListeEmployes from '@/components/shop/compta/ListeEmployes'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import FormulaireEmploye from '@/components/shop/compta/FormulaireEmploye'
 
 export const metadata: Metadata = { title: 'Salaires' }
 
@@ -27,7 +29,7 @@ function periodeDemandee(mois?: string, annee?: string) {
 export default async function PageSalaires({
     searchParams,
 }: {
-    searchParams: Promise<{ mois?: string; annee?: string }>
+    searchParams: Promise<{ mois?: string; annee?: string; nouveau?: string }>
 }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -35,6 +37,11 @@ export default async function PageSalaires({
     if (!aPermission(user, PERMISSIONS.SALAIRES_GERER)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
+    const peutCreer = true
+    const { nouveau } = await searchParams
+    const { data: comptesEmploye } = nouveau !== undefined
+        ? await createAdminClient().from('shop_users').select('id, nom_complet, identifiant').eq('shop_id', shopId).eq('est_actif', true).order('nom_complet')
+        : { data: null }
     const adminClient = createAdminClient()
 
     const params         = await searchParams
@@ -69,18 +76,23 @@ export default async function PageSalaires({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between gap-3">
-                    <h1 className="text-xl font-bold text-foreground">Salaires</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Salaires</h1>
                     <Button asChild>
-                        <Link href="/compta/salaires/nouvel-employe">
+                        <Link href="/compta/salaires?nouveau=1" scroll={false}>
                             <Plus className="w-4 h-4 mr-2" />
                             Nouvel employé
                         </Link>
                     </Button>
                 </div>
             </header>
-            <main className="flex-1 p-4 sm:p-6">
+            {peutCreer && nouveau !== undefined && (
+                <ModaleUrl param="nouveau" titre="Nouvel employé" description="La fiche de paie peut être reliée à son compte de connexion." taille="lg">
+                    <FormulaireEmploye comptes={comptesEmploye ?? []} />
+                </ModaleUrl>
+            )}
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <ListeEmployes
                     employes={employes ?? []}
                     versementsPeriode={versementsPeriode ?? []}

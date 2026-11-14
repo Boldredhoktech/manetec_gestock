@@ -126,7 +126,7 @@ export default function ParametresBoutique({ boutique }: Props) {
         <div className="space-y-5 py-2">
 
             {/* Onglets */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-1.5 shadow-sm">
+            <div className="bg-card border border-border rounded-2xl p-1.5 shadow-sm">
                 <div className="flex gap-1">
                     {ONGLETS.map(o => {
                         const Icone  = o.icone
@@ -136,8 +136,8 @@ export default function ParametresBoutique({ boutique }: Props) {
                                     onClick={() => setOnglet(o.key)}
                                     className={`flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold transition-all ${
                                         actif
-                                            ? 'bg-[#15335a] text-white shadow-md shadow-[#15335a]/30'
-                                            : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
+                                            ? 'bg-primary text-white shadow-md shadow-black/10'
+                                            : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                                     }`}>
                                 <Icone className="w-4 h-4" />
                                 {o.label}
@@ -166,7 +166,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Champ label="Téléphone principal" requis>
                                 <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                                     <input type="tel" value={telephone1}
                                            onChange={e => setTelephone1(e.target.value)}
                                            placeholder="+229 97 00 00 00"
@@ -175,7 +175,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                             </Champ>
                             <Champ label="Téléphone secondaire">
                                 <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                                     <input type="tel" value={telephone2}
                                            onChange={e => setTelephone2(e.target.value)}
                                            placeholder="+229 96 00 00 00"
@@ -187,7 +187,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <Champ label="Email">
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                                     <input type="email" value={email}
                                            onChange={e => setEmail(e.target.value)}
                                            placeholder="boutique@email.com"
@@ -196,7 +196,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                             </Champ>
                             <Champ label="Site web">
                                 <div className="relative">
-                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                                     <input type="url" value={siteWeb}
                                            onChange={e => setSiteWeb(e.target.value)}
                                            placeholder="https://..."
@@ -207,7 +207,7 @@ export default function ParametresBoutique({ boutique }: Props) {
 
                         <Champ label="Adresse">
                             <div className="relative">
-                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                                 <input type="text" value={adresse}
                                        onChange={e => setAdresse(e.target.value)}
                                        placeholder="Adresse complète"
@@ -289,12 +289,12 @@ export default function ParametresBoutique({ boutique }: Props) {
                                 <input type="range" min="0" max="50" step="0.5"
                                        value={remiseMax}
                                        onChange={e => setRemiseMax(parseFloat(e.target.value))}
-                                       className="flex-1 accent-[#15335a]" />
-                                <div className="w-20 px-3 py-2 bg-[#15335a] text-white text-center font-black rounded-xl text-sm shrink-0">
+                                       className="flex-1 accent-[var(--primary)]" />
+                                <div className="w-20 px-3 py-2 bg-primary text-white text-center font-black rounded-xl text-sm shrink-0">
                                     {remiseMax}%
                                 </div>
                             </div>
-                            <p className="text-xs text-gray-400 mt-1.5">
+                            <p className="text-xs text-muted-foreground/80 mt-1.5">
                                 Au-delà de ce seuil, la vente est bloquée. Applicable sur tout le POS.
                             </p>
                         </Champ>
@@ -323,16 +323,16 @@ export default function ParametresBoutique({ boutique }: Props) {
                             </p>
                         </div>
 
-                        <div className="pt-4 border-t border-gray-100 space-y-2">
+                        <div className="pt-4 border-t border-border space-y-2">
                             <label className="flex items-start gap-3 cursor-pointer">
                                 <input type="checkbox" checked={stockNegatif}
                                        onChange={e => setStockNegatif(e.target.checked)}
-                                       className="mt-1 rounded accent-[#15335a] w-4 h-4" />
+                                       className="mt-1 rounded accent-[var(--primary)] w-4 h-4" />
                                 <span>
-                                    <span className="block text-sm font-medium text-gray-900">
+                                    <span className="block text-sm font-medium text-foreground">
                                         Autoriser la vente au-delà du stock disponible
                                     </span>
-                                    <span className="block text-xs text-gray-500 mt-0.5">
+                                    <span className="block text-xs text-muted-foreground mt-0.5">
                                         {stockNegatif
                                             ? 'La caisse laisse passer une vente même si le stock tombe sous zéro. L’écart devient visible à l’inventaire, et le mouvement porte une note.'
                                             : 'La caisse refuse de vendre un article dont le stock est épuisé. À décocher seulement si votre inventaire de départ est incomplet.'}
@@ -363,25 +363,25 @@ export default function ParametresBoutique({ boutique }: Props) {
                   placeholder="Ex: Merci pour votre achat ! Revenez nous voir bientôt 😊"
                   className={inputClass + ' resize-none'} />
                             <div className="flex justify-between mt-1">
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-muted-foreground/80">
                                     Si vide, le message par défaut sera utilisé : "Merci pour votre achat !"
                                 </p>
-                                <p className="text-xs text-gray-400">{msgRecu.length}/120</p>
+                                <p className="text-xs text-muted-foreground/80">{msgRecu.length}/120</p>
                             </div>
                         </Champ>
 
                         {/* Aperçu reçu */}
-                        <div className="p-4 bg-white border-2 border-dashed border-gray-300 rounded-xl font-mono text-xs text-gray-600 text-center space-y-1">
-                            <p className="font-bold text-gray-800">{boutique.nom}</p>
+                        <div className="p-4 bg-card border-2 border-dashed border-border rounded-xl font-mono text-xs text-muted-foreground text-center space-y-1">
+                            <p className="font-bold text-foreground">{boutique.nom}</p>
                             <p>Tél : {boutique.telephone_1 ?? '—'}</p>
-                            <p className="border-t border-dashed border-gray-300 pt-1 mt-2">
+                            <p className="border-t border-dashed border-border pt-1 mt-2">
                                 *** REÇU ***
                             </p>
-                            <p className="text-gray-400">... articles ...</p>
-                            <p className="border-t border-dashed border-gray-300 pt-1 mt-1 text-[#15335a] font-bold">
+                            <p className="text-muted-foreground/80">... articles ...</p>
+                            <p className="border-t border-dashed border-border pt-1 mt-1 text-[var(--primary-strong)] font-bold">
                                 {msgRecu || 'Merci pour votre achat !'}
                             </p>
-                            <p className="text-gray-400">*** Conservez ce reçu ***</p>
+                            <p className="text-muted-foreground/80">*** Conservez ce reçu ***</p>
                         </div>
                     </Section>
 
@@ -399,29 +399,29 @@ export default function ParametresBoutique({ boutique }: Props) {
                   placeholder="Ex: Merci de votre confiance. Tout litige doit être signalé dans les 48h suivant la réception de la marchandise."
                   className={inputClass + ' resize-none'} />
                             <div className="flex justify-between mt-1">
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-muted-foreground/80">
                                     Visible par vos clients sur chaque facture A4.
                                 </p>
-                                <p className="text-xs text-gray-400">{msgFacture.length}/200</p>
+                                <p className="text-xs text-muted-foreground/80">{msgFacture.length}/200</p>
                             </div>
                         </Champ>
 
                         {/* Aperçu facture */}
-                        <div className="p-4 bg-white border-2 border-dashed border-gray-300 rounded-xl text-xs space-y-2">
-                            <div className="flex justify-between text-gray-400">
+                        <div className="p-4 bg-card border-2 border-dashed border-border rounded-xl text-xs space-y-2">
+                            <div className="flex justify-between text-muted-foreground/80">
                                 <div>
-                                    <p className="font-bold text-gray-700">{boutique.nom}</p>
+                                    <p className="font-bold text-foreground">{boutique.nom}</p>
                                     <p>{boutique.telephone_1}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="font-bold text-gray-700">FACTURE</p>
+                                    <p className="font-bold text-foreground">FACTURE</p>
                                     <p>FACT-00001</p>
                                 </div>
                             </div>
-                            <div className="border-t border-gray-200 my-2" />
-                            <p className="text-gray-300 text-center">... lignes de facture ...</p>
-                            <div className="border-t border-gray-200 my-2" />
-                            <p className="text-[#15335a] italic text-center">
+                            <div className="border-t border-border my-2" />
+                            <p className="text-muted-foreground/80 text-center">... lignes de facture ...</p>
+                            <div className="border-t border-border my-2" />
+                            <p className="text-[var(--primary-strong)] italic text-center">
                                 {msgFacture || 'Aucun message pied de page configuré.'}
                             </p>
                         </div>
@@ -441,7 +441,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                     <div className="flex items-start gap-5">
                         <div className="shrink-0">
                             {logoUrl ? (
-                                <div className="w-32 h-32 rounded-2xl border-2 border-[#15335a]/30 overflow-hidden bg-gray-50 flex items-center justify-center">
+                                <div className="w-32 h-32 rounded-2xl border-2 border-primary/30 overflow-hidden bg-[var(--surface2)] flex items-center justify-center">
                                     <img
                                         src={logoUrl}
                                         alt="Logo boutique"
@@ -449,9 +449,9 @@ export default function ParametresBoutique({ boutique }: Props) {
                                     />
                                 </div>
                             ) : (
-                                <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 flex flex-col items-center justify-center gap-2">
-                                    <Store className="w-10 h-10 text-gray-300" />
-                                    <p className="text-xs text-gray-400 text-center leading-tight">
+                                <div className="w-32 h-32 rounded-2xl border-2 border-dashed border-border bg-[var(--surface2)] flex flex-col items-center justify-center gap-2">
+                                    <Store className="w-10 h-10 text-muted-foreground/80" />
+                                    <p className="text-xs text-muted-foreground/80 text-center leading-tight">
                                         Pas de logo
                                     </p>
                                 </div>
@@ -473,8 +473,8 @@ export default function ParametresBoutique({ boutique }: Props) {
                             )}
 
                             <div className="space-y-2">
-                                <p className="text-sm font-medium text-gray-700">Charger un nouveau logo</p>
-                                <ul className="text-xs text-gray-400 space-y-0.5 list-disc list-inside">
+                                <p className="text-sm font-medium text-foreground">Charger un nouveau logo</p>
+                                <ul className="text-xs text-muted-foreground/80 space-y-0.5 list-disc list-inside">
                                     <li>Formats acceptés : JPG, PNG, WEBP, SVG</li>
                                     <li>Taille maximale : 2 Mo</li>
                                     <li>Dimension recommandée : 200×200px minimum</li>
@@ -494,7 +494,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                                 type="button"
                                 onClick={() => inputLogoRef.current?.click()}
                                 disabled={uploadEnCours}
-                                className="flex items-center gap-2.5 px-5 py-3 bg-[#15335a] text-white font-bold text-sm rounded-xl hover:bg-[#0f2742] transition-all hover:shadow-lg hover:shadow-[#15335a]/30 disabled:opacity-50"
+                                className="flex items-center gap-2.5 px-5 py-3 bg-primary text-white font-bold text-sm rounded-xl hover:opacity-90 transition-all hover:shadow-lg hover:shadow-black/10 disabled:opacity-50"
                             >
                                 {uploadEnCours
                                     ? <><Loader2 className="w-4 h-4 animate-spin" />Upload en cours...</>
@@ -535,7 +535,7 @@ export default function ParametresBoutique({ boutique }: Props) {
                         type="button"
                         onClick={handleSauvegarder}
                         disabled={enAttente}
-                        className="w-full flex items-center justify-center gap-2.5 py-4 bg-[#15335a] text-white font-bold text-base rounded-2xl hover:bg-[#0f2742] transition-all hover:shadow-lg hover:shadow-[#15335a]/30 disabled:opacity-60"
+                        className="w-full flex items-center justify-center gap-2.5 py-4 bg-primary text-white font-bold text-base rounded-2xl hover:opacity-90 transition-all hover:shadow-lg hover:shadow-black/10 disabled:opacity-60"
                     >
                         {enAttente
                             ? <><Loader2 className="w-5 h-5 animate-spin" />Enregistrement...</>
@@ -551,8 +551,8 @@ export default function ParametresBoutique({ boutique }: Props) {
 
 // ── Composants utilitaires ─────────────────────────────────────
 const inputClass = `
-  w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm
-  focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 focus:border-[#15335a]/40
+  w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm
+  focus:outline-none focus:ring-2 focus:ring-ring/30 focus:border-primary/40
   transition-colors
 `
 
@@ -565,15 +565,15 @@ function Section({
     children:    React.ReactNode
 }) {
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="pb-3 border-b border-gray-100">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="pb-3 border-b border-border">
                 <div className="flex items-center gap-2.5 mb-1">
-                    <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                        <Icone className="w-5 h-5 text-[#15335a]" />
+                    <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                        <Icone className="w-5 h-5 text-[var(--primary-strong)]" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">{titre}</h2>
+                    <h2 className="text-sm font-bold text-foreground">{titre}</h2>
                 </div>
-                <p className="text-xs text-gray-400 ml-10">{description}</p>
+                <p className="text-xs text-muted-foreground/80 ml-10">{description}</p>
             </div>
             {children}
         </div>
@@ -589,7 +589,7 @@ function Champ({
 }) {
     return (
         <div className="space-y-1.5">
-            <label className="text-sm font-medium text-gray-700">
+            <label className="text-sm font-medium text-foreground">
                 {label}
                 {requis && <span className="text-red-500 ml-1">*</span>}
             </label>

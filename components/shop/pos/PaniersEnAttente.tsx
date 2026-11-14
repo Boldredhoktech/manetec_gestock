@@ -64,7 +64,7 @@ export default function PaniersEnAttente({
                             </div>
                             <button type="button" onClick={() => onReprendre(p.id)}
                                     aria-label="Reprendre ce panier"
-                                    className="p-1.5 rounded-lg text-[var(--primary-strong)] hover:bg-white transition-colors">
+                                    className="p-1.5 rounded-lg text-[var(--primary-strong)] hover:bg-muted transition-colors">
                                 <Play className="w-4 h-4" />
                             </button>
                             <button type="button" onClick={() => onRetirer(p.id)}

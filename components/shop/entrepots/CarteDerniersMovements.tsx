@@ -21,24 +21,24 @@ const TYPE_CONFIG: Record<string, { label: string; couleur: string; bg: string; 
     transfert_entree:   { label: 'Transfert entrant', couleur: 'text-purple-600', bg: 'bg-purple-100', sens: 'in'    },
     ajustement_positif: { label: 'Ajustement +',      couleur: 'text-green-600',  bg: 'bg-green-100',  sens: 'in'    },
     ajustement_negatif: { label: 'Ajustement -',      couleur: 'text-red-500',    bg: 'bg-red-100',    sens: 'out'   },
-    inventaire:         { label: 'Inventaire',        couleur: 'text-gray-500',   bg: 'bg-gray-100',   sens: 'trans' },
+    inventaire:         { label: 'Inventaire',        couleur: 'text-muted-foreground',   bg: 'bg-muted',   sens: 'trans' },
 }
 
 export default function CarteDerniersMovements({ mouvements }: Props) {
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
             <div className="flex items-center gap-2">
                 <div className="bg-purple-100 p-2 rounded-lg">
                     <Activity className="w-5 h-5 text-purple-600" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">
+                <h2 className="text-sm font-bold text-foreground">
                     10 derniers mouvements
                 </h2>
             </div>
 
             {mouvements.length === 0 ? (
-                <div className="text-center py-8 text-gray-400">
+                <div className="text-center py-8 text-muted-foreground/80">
                     <Activity className="w-8 h-8 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">Aucun mouvement enregistré.</p>
                 </div>
@@ -48,7 +48,7 @@ export default function CarteDerniersMovements({ mouvements }: Props) {
                         const config = TYPE_CONFIG[m.type_mouvement] ?? TYPE_CONFIG.inventaire
                         return (
                             <div key={m.id}
-                                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors">
+                                 className="flex items-center gap-3 p-3 bg-[var(--surface2)] rounded-xl hover:bg-muted transition-colors">
 
                                 {/* Icône sens */}
                                 <div className={`shrink-0 p-2 rounded-lg ${config.bg}`}>
@@ -63,7 +63,7 @@ export default function CarteDerniersMovements({ mouvements }: Props) {
                                 {/* Infos */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center justify-between">
-                                        <p className="text-xs font-bold text-gray-700 truncate">
+                                        <p className="text-xs font-bold text-foreground truncate">
                                             {m.products?.nom ?? 'Produit inconnu'}
                                         </p>
                                         <span className={`text-sm font-black ml-2 shrink-0 ${config.couleur}`}>
@@ -77,16 +77,16 @@ export default function CarteDerniersMovements({ mouvements }: Props) {
                         {config.label}
                       </span>
                                             {m.shop_users && (
-                                                <span className="text-xs text-gray-400">
+                                                <span className="text-xs text-muted-foreground/80">
                           · {m.shop_users.nom_complet}
                         </span>
                                             )}
                                         </div>
-                                        <span className="text-xs text-gray-400 shrink-0 ml-2">
-                      {m.quantite_avant} → <strong className="text-gray-600">{m.quantite_apres}</strong>
+                                        <span className="text-xs text-muted-foreground/80 shrink-0 ml-2">
+                      {m.quantite_avant} → <strong className="text-muted-foreground">{m.quantite_apres}</strong>
                     </span>
                                     </div>
-                                    <p className="text-xs text-gray-400 mt-0.5">
+                                    <p className="text-xs text-muted-foreground/80 mt-0.5">
                                         {formatDateHeure(m.created_at)}
                                     </p>
                                 </div>

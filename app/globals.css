@@ -369,20 +369,12 @@
 .app-manetec .sidebar-royal .sidebar-group-label { color: #8C9BC4; letter-spacing: 0.1em; font-size: 11px; font-weight: 700; }
 .app-manetec .sidebar-royal .sidebar-user-card { background: #14306E; border-radius: 12px; }
 
-/* ── Couche de compatibilité ───────────────────────────────────
-   Les écrans pas encore refaits (lots 2 à 5) portent des couleurs
-   écrites en dur. On les rabat sur la nouvelle palette, et on les rend
-   lisibles en mode sombre. À retirer quand tous les écrans seront
-   refaits. */
-.app-manetec .text-\[\#15335a\], .app-manetec .text-\[\#0f2742\]      { color: var(--primary-strong); }
-.app-manetec .bg-\[\#15335a\], .app-manetec .bg-\[\#0f2742\]          { background-color: var(--primary); }
-.app-manetec .hover\:bg-\[\#0f2742\]:hover                            { background-color: var(--primary-strong); }
-.app-manetec .border-\[\#15335a\]                                    { border-color: var(--primary); }
-.app-manetec .ring-\[\#15335a\]\/30, .app-manetec .focus\:ring-\[\#15335a\]\/30:focus { --tw-ring-color: color-mix(in srgb, var(--primary) 30%, transparent); }
-.app-manetec .text-\[\#ef5e22\]                                      { color: var(--rouge-texte); }
-.app-manetec .bg-\[\#ef5e22\]                                        { background-color: var(--jaune); color: var(--sur-jaune); }
-.app-manetec .bg-\[\#f8fafc\], .app-manetec .bg-\[\#f0f4ff\]          { background-color: var(--background); }
-
+/* ── Adaptation du mode sombre (redesign terminé, 14/11) ──────
+   Les couleurs Manetec écrites en dur ont été remplacées par celles du
+   thème dans tous les écrans. Restent les pastilles d'état (fonds
+   pastel vert / rouge / ambre / bleu) et quelques fonds blancs : en
+   sombre, on les rend lisibles ici plutôt que de doubler chaque classe
+   d'un `dark:`. */
 .app-manetec.dark :is(.bg-white, .bg-card)                         { background-color: var(--card); }
 .app-manetec.dark :is(.bg-gray-50, .bg-slate-50, .bg-muted\/30, .bg-muted\/40) { background-color: var(--surface2); }
 .app-manetec.dark :is(.bg-gray-100, .bg-slate-100)                 { background-color: var(--muted); }
@@ -407,10 +399,15 @@
     border-color: var(--input);
 }
 .app-manetec.dark ::placeholder { color: #7F8DB3; }
-/* Fonds clairs écrits en ligne (style="background: #f0f4ff"…) dans les
-   écrans pas encore refaits : rabattus sur le fond du thème. */
-.app-manetec.dark :is([style*="#f0f4ff"], [style*="#f8fafc"], [style*="#F8FAFC"], [style*="#F0F4FF"]) { background: var(--background) !important; }
 .app-manetec.dark .bg-blue-100 { background-color: #17244A; }
+.app-manetec.dark :is(.bg-green-100, .bg-emerald-100)            { background-color: #123524; }
+.app-manetec.dark :is(.bg-amber-100, .bg-yellow-100, .bg-orange-100) { background-color: #3A300A; }
+.app-manetec.dark :is(.bg-red-100, .bg-rose-100)                 { background-color: #44171C; }
+.app-manetec.dark :is(.bg-purple-100, .bg-violet-100, .bg-indigo-100) { background-color: #261D45; }
+.app-manetec.dark :is(.bg-orange-50, .bg-rose-50, .bg-emerald-50, .bg-indigo-50, .bg-teal-50, .bg-cyan-50) { background-color: var(--surface2); }
+.app-manetec.dark :is(.text-orange-700, .text-orange-800, .text-orange-600, .text-yellow-800, .text-yellow-700) { color: #FCD95C; }
+.app-manetec.dark :is(.text-emerald-700, .text-emerald-600, .text-emerald-800) { color: #6EE7A8; }
+.app-manetec.dark :is(.text-purple-700, .text-purple-600, .text-violet-700, .text-indigo-700) { color: #C4B5FD; }
 
 /* Ascenseur de la barre latérale : le trait reste visible, sans fond
    blanc ni cadre (demande du 14/11). */

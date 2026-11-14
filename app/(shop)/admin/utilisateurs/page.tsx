@@ -9,10 +9,12 @@ import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import TableauUtilisateurs from '@/components/shop/TableauUtilisateurs'
 import { estAdminComplet, ROLES } from '@/lib/constants/permissions'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import FormulaireUtilisateur from '@/components/shop/FormulaireUtilisateur'
 
 export const metadata: Metadata = { title: 'Utilisateurs' }
 
-export default async function PageUtilisateurs() {
+export default async function PageUtilisateurs({ searchParams }: { searchParams: Promise<{ nouveau?: string }> }) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
 
@@ -22,6 +24,11 @@ export default async function PageUtilisateurs() {
 
     const estProprietaire = user.user_metadata.role === ROLES.SUPER_ADMIN_BOUTIQUE
     const shopId = user.user_metadata.shop_id as string
+    const peutCreer = true
+    const { nouveau } = await searchParams
+    const suffixeBoutique = nouveau !== undefined
+        ? (await createAdminClient().from('shops').select('suffixe_identifiant').eq('id', shopId).single()).data?.suffixe_identifiant
+        : null
     const adminClient = createAdminClient()
 
     const { data: utilisateurs } = await adminClient
@@ -36,23 +43,28 @@ export default async function PageUtilisateurs() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between">
                     <div>
-                        <h1 className="text-xl font-bold text-foreground">Utilisateurs</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Utilisateurs</h1>
                         <p className="text-sm text-muted-foreground mt-0.5">
                             {utilisateurs?.length ?? 0} utilisateur(s) dans cette boutique
                         </p>
                     </div>
                     <Button asChild>
-                        <Link href="/admin/utilisateurs/nouveau">
+                        <Link href="/admin/utilisateurs?nouveau=1" scroll={false}>
                             <Plus className="w-4 h-4 mr-2" />
                             Nouvel utilisateur
                         </Link>
                     </Button>
                 </div>
             </header>
-            <main className="flex-1 p-4 sm:p-6">
+            {peutCreer && nouveau !== undefined && (
+                <ModaleUrl param="nouveau" titre="Nouvel utilisateur" description="Un compte pour un membre de votre équipe." taille="lg">
+                    <FormulaireUtilisateur estProprietaire={estProprietaire} suffixe={suffixeBoutique ?? ''} />
+                </ModaleUrl>
+            )}
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <TableauUtilisateurs
                     utilisateurs={utilisateurs ?? []}
                     estProprietaire={estProprietaire}

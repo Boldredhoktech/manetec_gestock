@@ -116,7 +116,7 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
 
             <div className={cn('sidebar-logo-zone py-4', replie ? 'px-4 lg:px-3' : 'px-4')}>
                 <div className={cn('flex items-center gap-2.5', replie && 'lg:flex-col lg:gap-3')}>
-                    <div className="bg-white p-1 rounded-lg shrink-0">
+                    <div className="bg-card p-1 rounded-lg shrink-0">
                         <Image src="/logo/app_logo.png" alt="Manetec Gestock" width={32} height={32}
                                className="object-contain w-8 h-8" />
                     </div>

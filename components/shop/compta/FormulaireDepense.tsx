@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import ChampNombre from '@/components/ui/ChampNombre'
 import ChampsReglement from './ChampsReglement'
 import { Loader2, AlertCircle } from 'lucide-react'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 interface Props { categories: { id: string; nom: string }[] }
 const etatInitial = { erreur: undefined as string | undefined }
@@ -31,7 +32,7 @@ export default function FormulaireDepense({ categories }: Props) {
                 </div>
             )}
 
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Détails de la dépense</h2>
 
                 <div className="space-y-1.5">
@@ -85,12 +86,14 @@ export default function FormulaireDepense({ categories }: Props) {
                 </div>
             </div>
 
-            <Button type="submit" disabled={enAttente} className="w-full">
-                {enAttente
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement...</>
-                    : 'Enregistrer la dépense'
-                }
-            </Button>
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Enregistrement...</>
+                        : 'Enregistrer la dépense'
+                    }
+                    </Button>
+            </PiedFormulaire>
         </form>
     )
 }

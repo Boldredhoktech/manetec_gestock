@@ -50,19 +50,16 @@ export default async function PageInventaire() {
         ])
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
-                <h1 className="text-xl font-bold text-white">Inventaire physique</h1>
-                <p className="text-sm text-white/70 mt-0.5">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Inventaire physique</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">
                     Comptage physique et ajustement automatique du stock
                 </p>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-5xl mx-auto w-full">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl mx-auto w-full">
                 <GestionInventaire
                     entrepots={entrepots ?? []}
                     inventaires={inventaires ?? []}

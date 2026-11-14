@@ -12,12 +12,15 @@ import FiltresDepenses from '@/components/shop/compta/FiltresDepenses'
 import GestionCategoriesDepense from '@/components/shop/compta/GestionCategoriesDepense'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import FormulaireDepense from '@/components/shop/compta/FormulaireDepense'
 
 export const metadata: Metadata = { title: 'Dépenses' }
 
 const PAR_PAGE = 25
 
 type Filtres = {
+    nouveau?:   string
     debut?:     string
     fin?:       string
     categorie?: string
@@ -41,6 +44,11 @@ export default async function PageDepenses({
     if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) redirect('/admin/dashboard')
 
     const shopId      = user.user_metadata.shop_id as string
+    const peutCreer = aPermission(user, PERMISSIONS.DEPENSES_CREER)
+    const { nouveau } = await searchParams
+    const { data: categoriesDepense } = peutCreer && nouveau !== undefined
+        ? await createAdminClient().from('expense_categories').select('id, nom').eq('shop_id', shopId).eq('est_actif', true).order('nom')
+        : { data: null }
     const adminClient = createAdminClient()
 
     const f         = await searchParams
@@ -99,18 +107,23 @@ export default async function PageDepenses({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center justify-between gap-3">
-                    <h1 className="text-xl font-bold text-foreground">Dépenses</h1>
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dépenses</h1>
                     <Button asChild>
-                        <Link href="/compta/depenses/nouvelle">
+                        <Link href="/compta/depenses?nouveau=1" scroll={false}>
                             <Plus className="w-4 h-4 mr-2" />
                             Nouvelle dépense
                         </Link>
                     </Button>
                 </div>
             </header>
-            <main className="flex-1 p-4 sm:p-6 space-y-6">
+            {peutCreer && nouveau !== undefined && (
+                <ModaleUrl param="nouveau" titre="Nouvelle dépense" description="L'argent sort du compte choisi." taille="lg">
+                    <FormulaireDepense categories={categoriesDepense ?? []} />
+                </ModaleUrl>
+            )}
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-6">
                 <GestionCategoriesDepense categories={categories ?? []} />
                 <FiltresDepenses categories={categories ?? []} />
                 <ListeDepenses

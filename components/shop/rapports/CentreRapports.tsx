@@ -59,8 +59,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Rapport de ventes',
         description: 'Facturé et encaissé, top produits, par vendeur, par moyen de paiement',
         icone:       ShoppingCart,
-        couleur:     'text-blue-600',
-        fond:        'bg-blue-50 border-blue-200',
+        couleur:     'text-[var(--primary-strong)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.VENTES_VOIR,
         csv:         'ventes',
         getUrl:      (p) => `/api/v1/pdf/rapport-ventes?debut=${p.debut}&fin=${p.fin}`,
@@ -74,8 +74,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Rapport de caisse',
         description: 'Journées, écarts constatés, et le détail de chacune par moyen de paiement',
         icone:       Wallet,
-        couleur:     'text-cyan-700',
-        fond:        'bg-cyan-50 border-cyan-200',
+        couleur:     'text-accent-foreground',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.COMPTABILITE_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-caisse?debut=${p.debut}&fin=${p.fin}`,
         params: [
@@ -88,8 +88,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Retours et avoirs',
         description: 'Retours de marchandise, avoirs émis et ventes annulées avec leur motif',
         icone:       Undo2,
-        couleur:     'text-rose-600',
-        fond:        'bg-rose-50 border-rose-200',
+        couleur:     'text-[var(--rouge-texte)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.VENTES_VOIR,
         csv:         'retours',
         getUrl:      (p) => `/api/v1/pdf/rapport-retours?debut=${p.debut}&fin=${p.fin}`,
@@ -103,8 +103,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Rapport clients',
         description: 'Crédit dû face au plafond, avances, historique des achats',
         icone:       Users,
-        couleur:     'text-purple-600',
-        fond:        'bg-purple-50 border-purple-200',
+        couleur:     'text-[var(--primary-strong)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.CLIENTS_VOIR,
         csv:         'clients',
         getUrl:      () => `/api/v1/pdf/rapport-clients`,
@@ -115,8 +115,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'État du stock',
         description: 'Stock et alertes, valorisés au dernier prix réellement payé',
         icone:       Package,
-        couleur:     'text-teal-600',
-        fond:        'bg-teal-50 border-teal-200',
+        couleur:     'text-[var(--primary-strong)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.STOCK_VOIR,
         entrepot:    true,
         getUrl:      (p) => p.warehouse
@@ -128,8 +128,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Mouvements de stock',
         description: 'Entrées, sorties, transferts par période',
         icone:       ArrowLeftRight,
-        couleur:     'text-orange-600',
-        fond:        'bg-orange-50 border-orange-200',
+        couleur:     'text-accent-foreground',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.STOCK_VOIR,
         csv:         'mouvements',
         getUrl:      (p) => `/api/v1/pdf/rapport-mouvements?debut=${p.debut}&fin=${p.fin}`,
@@ -143,8 +143,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Rapport fournisseurs',
         description: 'Achats, règlements et dette par fournisseur sur une période',
         icone:       Truck,
-        couleur:     'text-amber-600',
-        fond:        'bg-amber-50 border-amber-200',
+        couleur:     'text-accent-foreground',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.FOURNISSEURS_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-fournisseurs?debut=${p.debut}&fin=${p.fin}`,
         params: [
@@ -159,8 +159,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Compte de résultat',
         description: 'Entrées, sorties et résultat du mois, avec l’évolution sur 6 mois',
         icone:       TrendingUp,
-        couleur:     'text-green-600',
-        fond:        'bg-green-50 border-green-200',
+        couleur:     'text-[var(--primary-strong)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.COMPTABILITE_VOIR,
         getUrl:      (p) => `/api/v1/pdf/rapport-pp?mois=${p.mois}&annee=${p.annee}`,
         params: [
@@ -173,8 +173,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Rapport de paie',
         description: 'Détail des salaires versés sur la période',
         icone:       Users,
-        couleur:     'text-indigo-600',
-        fond:        'bg-indigo-50 border-indigo-200',
+        couleur:     'text-[var(--primary-strong)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.SALAIRES_GERER,
         getUrl:      (p) => `/api/v1/pdf/rapport-salaires?mois=${p.mois}&annee=${p.annee}`,
         params: [
@@ -187,8 +187,8 @@ const RAPPORTS: Rapport[] = [
         titre:       'Factures impayées',
         description: 'Factures en retard et non échues, avoirs déduits',
         icone:       AlertCircle,
-        couleur:     'text-red-600',
-        fond:        'bg-red-50 border-red-200',
+        couleur:     'text-[var(--rouge-texte)]',
+        fond:        'bg-card border-border',
         permission:  PERMISSIONS.FACTURES_VOIR,
         csv:         'impayees',
         getUrl:      () => `/api/v1/pdf/factures-impayees`,
@@ -332,13 +332,13 @@ export default function CentreRapports({ entrepots = [] }: Props) {
                     const loading = enAttente === rapport.id
                     return (
                         <div key={rapport.id}
-                             className={`border rounded-xl p-5 space-y-4 ${rapport.fond}`}>
+                             className={`border rounded-2xl p-5 space-y-4 ${rapport.fond}`}>
                             <div className="flex items-start gap-3">
-                                <div className="bg-white border rounded-lg p-2 shrink-0">
+                                <div className="bg-muted rounded-xl p-2.5 shrink-0">
                                     <Icone className={`w-5 h-5 ${rapport.couleur}`} />
                                 </div>
                                 <div>
-                                    <p className={`text-sm font-semibold ${rapport.couleur}`}>
+                                    <p className="text-sm font-semibold text-foreground">
                                         {rapport.titre}
                                     </p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
@@ -360,7 +360,7 @@ export default function CentreRapports({ entrepots = [] }: Props) {
                                                 type={param.type}
                                                 value={getParam(rapport.id, param.key)}
                                                 onChange={e => setParam(rapport.id, param.key, e.target.value)}
-                                                className="w-full px-2 py-1.5 bg-white border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                                                className="w-full px-2 py-1.5 bg-card border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-ring"
                                             />
                                         </div>
                                     ))}
@@ -377,7 +377,7 @@ export default function CentreRapports({ entrepots = [] }: Props) {
                                                 id={`${rapport.id}-warehouse`}
                                                 value={getParam(rapport.id, 'warehouse')}
                                                 onChange={e => setParam(rapport.id, 'warehouse', e.target.value)}
-                                                className="w-full px-2 py-1.5 bg-white border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+                                                className="w-full px-2 py-1.5 bg-card border border-input rounded text-xs focus:outline-none focus:ring-2 focus:ring-ring"
                                             >
                                                 <option value="">Tous les entrepôts</option>
                                                 {entrepots.map(e => (
@@ -424,7 +424,7 @@ export default function CentreRapports({ entrepots = [] }: Props) {
 
                             {erreur?.rapport === rapport.id && (
                                 <p role="alert"
-                                   className="flex items-start gap-2 text-xs text-red-700 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                                   className="flex items-start gap-2 text-xs text-[var(--rouge-texte)] bg-[var(--rouge-doux)] border border-[var(--rouge-texte)]/30 rounded-lg px-3 py-2">
                                     <AlertCircle className="w-3.5 h-3.5 shrink-0 mt-px" />
                                     <span>{erreur.message}</span>
                                 </p>
@@ -437,7 +437,7 @@ export default function CentreRapports({ entrepots = [] }: Props) {
             {/* Lien rapide depuis une facture */}
             <div className="bg-card border border-border rounded-xl p-5 space-y-2">
                 <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-teal-600" />
+                    <FileText className="w-4 h-4 text-[var(--primary-strong)]" />
                     <p className="text-sm font-semibold text-foreground">
                         Factures PDF individuelles
                     </p>

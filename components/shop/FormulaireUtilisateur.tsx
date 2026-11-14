@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
 import { EXTENSIONS_VENDEUR, PERMISSIONS } from '@/lib/constants/permissions'
 import { normaliserNomIdentifiant } from '@/lib/auth/identifiant'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
@@ -40,7 +41,7 @@ export default function FormulaireUtilisateur({ estProprietaire, suffixe }: Prop
                 </div>
             )}
 
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">
                     Informations du compte
                 </h2>
@@ -143,7 +144,7 @@ export default function FormulaireUtilisateur({ estProprietaire, suffixe }: Prop
 
             {/* Extensions vendeur */}
             {role === 'vendeur' && (
-                <div className="bg-card border border-border rounded-xl p-5 space-y-3">
+                <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-3">
                     <h2 className="text-sm font-semibold text-foreground">
                         Permissions étendues (optionnel)
                     </h2>
@@ -172,16 +173,18 @@ export default function FormulaireUtilisateur({ estProprietaire, suffixe }: Prop
                 </div>
             )}
 
-            <Button type="submit" disabled={enAttente} className="w-full">
-                {enAttente ? (
-                    <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Création en cours...
-                    </>
-                ) : (
-                    'Créer l\'utilisateur'
-                )}
-            </Button>
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente ? (
+                        <>
+                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                            Création en cours...
+                        </>
+                    ) : (
+                        'Créer l\'utilisateur'
+                    )}
+                    </Button>
+            </PiedFormulaire>
 
         </form>
     )

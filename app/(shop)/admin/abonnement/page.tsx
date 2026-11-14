@@ -38,9 +38,9 @@ const STYLE_PLAN: Record<string, { bgHeader: string; icone: LucideIcon }> = {
 
 const STATUTS: Record<string, { label: string; classe: string }> = {
     reussi:     { label: 'Payé',        classe: 'bg-green-100 text-green-700' },
-    en_attente: { label: 'Non abouti',  classe: 'bg-gray-100 text-gray-600'   },
+    en_attente: { label: 'Non abouti',  classe: 'bg-muted text-muted-foreground'   },
     echoue:     { label: 'Échoué',      classe: 'bg-red-100 text-red-700'     },
-    abandonne:  { label: 'Abandonné',   classe: 'bg-gray-100 text-gray-600'   },
+    abandonne:  { label: 'Abandonné',   classe: 'bg-muted text-muted-foreground'   },
     rembourse:  { label: 'Remboursé',   classe: 'bg-amber-100 text-amber-700' },
 }
 
@@ -89,22 +89,22 @@ export default async function PageAbonnement() {
         }))
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header className={`px-6 py-5 shadow-lg bg-gradient-to-r ${style.bgHeader}`}>
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center gap-4">
-                    <PlanIcone className="w-9 h-9 text-white shrink-0" />
+                    <PlanIcone className="w-9 h-9 text-foreground shrink-0" />
                     <div>
-                        <h1 className="text-xl font-bold text-white">Mon abonnement</h1>
-                        <p className="text-sm text-white/70 mt-0.5">{boutique?.nom}</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Mon abonnement</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">{boutique?.nom}</p>
                     </div>
-                    <span className="ml-auto px-4 py-1.5 rounded-full text-sm font-black bg-white/20 text-white border border-white/30">
+                    <span className="ml-auto px-4 py-1.5 rounded-full text-sm font-black bg-muted text-foreground border border-border">
                         Plan {fiche.label}
                     </span>
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-3xl mx-auto w-full space-y-5">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full space-y-5">
 
                 {(estExpire || bientot) && (
                     <div className={`flex items-start gap-3 p-4 rounded-2xl border-2 ${
@@ -128,7 +128,7 @@ export default async function PageAbonnement() {
                 )}
 
                 {/* Plan actuel */}
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
                     <div className={`p-5 bg-gradient-to-r ${style.bgHeader} flex items-center justify-between`}>
                         <div>
                             <p className="text-xs text-white/70 uppercase tracking-wider font-bold">
@@ -150,7 +150,7 @@ export default async function PageAbonnement() {
                         {fonctionnalitesPlan(plan).map(f => (
                             <div key={f} className="flex items-center gap-2">
                                 <CheckCircle className="w-4 h-4 text-green-500 shrink-0" />
-                                <span className="text-sm text-gray-700">{f}</span>
+                                <span className="text-sm text-foreground">{f}</span>
                             </div>
                         ))}
                     </div>
@@ -160,41 +160,41 @@ export default async function PageAbonnement() {
                 {widget && offres.length > 0 ? (
                     <PaiementAbonnement offres={offres} planActuel={plan} sandbox={widget.sandbox} />
                 ) : (
-                    <div className="p-4 rounded-2xl border border-gray-200 bg-white text-sm text-gray-600">
+                    <div className="p-4 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
                         Le paiement en ligne est momentanément indisponible. Contactez-nous ci-dessous.
                     </div>
                 )}
 
                 {/* Historique et reçus */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
                     <div className="flex items-center gap-2">
-                        <Clock className="w-4 h-4 text-[#15335a]" />
-                        <h2 className="text-sm font-bold text-gray-900">Historique des paiements</h2>
+                        <Clock className="w-4 h-4 text-[var(--primary-strong)]" />
+                        <h2 className="text-sm font-bold text-foreground">Historique des paiements</h2>
                     </div>
                     {historique.length === 0 ? (
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                             Aucun paiement pour l&apos;instant. Boutique créée le {boutique?.created_at ? formatDate(boutique.created_at) : '—'}.
                         </p>
                     ) : (
-                        <ul className="divide-y divide-gray-100">
+                        <ul className="divide-y divide-border">
                             {historique.map(p => {
                                 const st = STATUTS[p.statut] ?? STATUTS.en_attente
                                 return (
                                     <li key={p.id} className="py-2.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-                                        <span className="font-mono text-xs text-gray-500">{p.public_id}</span>
-                                        <span className="font-semibold text-gray-800">
+                                        <span className="font-mono text-xs text-muted-foreground">{p.public_id}</span>
+                                        <span className="font-semibold text-foreground">
                                             {labelPlan(p.plan)} · {estDuree(p.duree) ? DUREES[p.duree].label : p.duree}
                                         </span>
-                                        <span className="text-gray-600">{formatMontant(Number(p.montant))}</span>
+                                        <span className="text-muted-foreground">{formatMontant(Number(p.montant))}</span>
                                         <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold ${st.classe}`}>{st.label}</span>
                                         {p.statut === 'reussi' && p.periode_fin && (
-                                            <span className="text-xs text-gray-500">
+                                            <span className="text-xs text-muted-foreground">
                                                 du {formatDate(p.periode_debut)} au {formatDate(p.periode_fin)}
                                             </span>
                                         )}
                                         {p.statut === 'reussi' && (
                                             <a href={`/api/v1/pdf/recu-abonnement/${p.id}`} target="_blank" rel="noopener noreferrer"
-                                               className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-[#15335a] hover:underline">
+                                               className="ml-auto inline-flex items-center gap-1 text-xs font-semibold text-[var(--primary-strong)] hover:underline">
                                                 <FileText className="w-3.5 h-3.5" /> Reçu
                                             </a>
                                         )}
@@ -206,9 +206,9 @@ export default async function PageAbonnement() {
                 </div>
 
                 {/* Contact (Enterprise sur devis, aide) */}
-                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
-                    <h2 className="text-sm font-bold text-gray-900">Contacter {ENTREPRISE.nom}</h2>
-                    <p className="text-sm text-gray-500">
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                    <h2 className="text-sm font-bold text-foreground">Contacter {ENTREPRISE.nom}</h2>
+                    <p className="text-sm text-muted-foreground">
                         Le plan Enterprise s&apos;active sur devis. Pour lui, pour une facture ou pour toute aide, contactez notre équipe.
                     </p>
                     <div className="space-y-2.5">
@@ -225,7 +225,7 @@ export default async function PageAbonnement() {
                         </a>
                         <a href={`tel:${ENTREPRISE.telephone_1}`}
                            className="flex items-center gap-3 p-3.5 bg-blue-50 border border-blue-200 rounded-xl hover:bg-blue-100 transition-colors">
-                            <div className="w-9 h-9 bg-[#15335a] rounded-xl flex items-center justify-center shrink-0">
+                            <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center shrink-0">
                                 <Phone className="w-4 h-4 text-white" />
                             </div>
                             <div className="flex-1">
@@ -235,15 +235,15 @@ export default async function PageAbonnement() {
                             <ChevronRight className="w-4 h-4 text-blue-500" />
                         </a>
                         <a href={`mailto:${ENTREPRISE.email_commercial}`}
-                           className="flex items-center gap-3 p-3.5 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 transition-colors">
+                           className="flex items-center gap-3 p-3.5 bg-[var(--surface2)] border border-border rounded-xl hover:bg-muted transition-colors">
                             <div className="w-9 h-9 bg-gray-600 rounded-xl flex items-center justify-center shrink-0">
                                 <Mail className="w-4 h-4 text-white" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-sm font-bold text-gray-800">E-mail</p>
-                                <p className="text-xs text-gray-500">{ENTREPRISE.email_commercial}</p>
+                                <p className="text-sm font-bold text-foreground">E-mail</p>
+                                <p className="text-xs text-muted-foreground">{ENTREPRISE.email_commercial}</p>
                             </div>
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/80" />
                         </a>
                     </div>
                 </div>

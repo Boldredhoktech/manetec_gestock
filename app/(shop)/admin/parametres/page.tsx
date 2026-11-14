@@ -24,22 +24,19 @@ export default async function PageParametres() {
     if (!boutique) redirect('/admin/dashboard')
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
             {/* HEADER BLEU ROI */}
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div>
-                    <h1 className="text-xl font-bold text-white">Paramètres de la boutique</h1>
-                    <p className="text-sm text-white/70 mt-0.5">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Paramètres de la boutique</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">
                         {boutique.nom} · Réservé au SuperAdmin
                     </p>
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full">
                 <ParametresBoutique boutique={boutique} />
             </main>
         </div>

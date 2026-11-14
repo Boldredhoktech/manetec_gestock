@@ -46,20 +46,17 @@ export default async function PageFicheUtilisateur({ params }: Props) {
     }
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center gap-4">
                     <Link href="/admin/utilisateurs"
-                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-white" />
+                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-muted hover:bg-border transition-colors">
+                        <ArrowLeft className="w-5 h-5 text-foreground" />
                     </Link>
                     <div>
-                        <h1 className="text-xl font-bold text-white">{utilisateur.nom_complet}</h1>
-                        <p className="text-sm text-white/70 mt-0.5">
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{utilisateur.nom_complet}</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             {utilisateur.public_id} · {utilisateur.identifiant}
                         </p>
                     </div>
@@ -75,7 +72,7 @@ export default async function PageFicheUtilisateur({ params }: Props) {
                 </div>
             </header>
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full">
                 <GestionPermissionsUser
                     utilisateur={utilisateur as any}
                     shopId={shopId}

@@ -55,13 +55,13 @@ export default async function PageCaisse() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <h1 className="text-xl font-bold text-foreground">Caisse</h1>
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Caisse</h1>
                 <p className="text-sm text-muted-foreground mt-0.5">
                     Ouverture, comptage et écart du tiroir
                 </p>
             </header>
-            <main className="flex-1 p-4 sm:p-6">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <GestionCaisse
                     entrepots={entrepots ?? []}
                     sessions={(sessions ?? []) as never[]}

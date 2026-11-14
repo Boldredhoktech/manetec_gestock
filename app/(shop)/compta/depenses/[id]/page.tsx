@@ -50,18 +50,18 @@ export default async function PageDepense({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
+            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
                 <div className="flex items-center gap-3">
                     <Link href="/compta/depenses" className="text-muted-foreground hover:text-foreground">
                         <ArrowLeft className="w-5 h-5" />
                     </Link>
                     <div>
-                        <h1 className="text-xl font-bold text-foreground">{depense.libelle}</h1>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">{depense.libelle}</h1>
                         <p className="text-xs font-mono text-muted-foreground mt-0.5">{depense.public_id}</p>
                     </div>
                 </div>
             </header>
-            <main className="flex-1 p-4 sm:p-6 max-w-2xl">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-2xl">
                 <FicheDepense
                     depense={depense as unknown as React.ComponentProps<typeof FicheDepense>["depense"]}
                     // La catégorie retirée d'une dépense passée reste

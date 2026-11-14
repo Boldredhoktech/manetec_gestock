@@ -100,20 +100,20 @@ export default function PaiementAbonnement({
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
             <Script src="https://cdn.kkiapay.me/k.js" strategy="afterInteractive" onReady={() => setPret(true)} />
 
             <div className="flex items-center gap-2">
-                <CreditCard className="w-4 h-4 text-[#15335a]" />
-                <h2 className="text-sm font-bold text-gray-900">Payer ou renouveler en ligne</h2>
+                <CreditCard className="w-4 h-4 text-[var(--primary-strong)]" />
+                <h2 className="text-sm font-bold text-foreground">Payer ou renouveler en ligne</h2>
                 {sandbox && <span className="ml-auto text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">Mode test</span>}
             </div>
 
             {/* Durée */}
-            <div className="inline-flex p-1 bg-gray-100 rounded-xl text-sm">
+            <div className="inline-flex p-1 bg-muted rounded-xl text-sm">
                 {(['mensuel', 'annuel'] as Duree[]).map(d => (
                     <button key={d} type="button" onClick={() => setDuree(d)}
-                            className={`px-4 py-1.5 rounded-lg font-semibold transition-colors ${duree === d ? 'bg-white shadow text-[#15335a]' : 'text-gray-500'}`}>
+                            className={`px-4 py-1.5 rounded-lg font-semibold transition-colors ${duree === d ? 'bg-card shadow text-[var(--primary-strong)]' : 'text-muted-foreground'}`}>
                         {d === 'mensuel' ? '1 mois' : `12 mois (−${REMISE_ANNUELLE_PCT} %)`}
                     </button>
                 ))}
@@ -125,18 +125,18 @@ export default function PaiementAbonnement({
                     const choisi = o.id === plan
                     return (
                         <button key={o.id} type="button" onClick={() => setPlan(o.id)}
-                                className={`text-left p-4 rounded-xl border-2 transition-colors ${choisi ? 'border-[#15335a] bg-[#15335a]/5' : 'border-gray-200 hover:border-gray-300'}`}>
+                                className={`text-left p-4 rounded-xl border-2 transition-colors ${choisi ? 'border-primary bg-[var(--primary-soft)]' : 'border-border hover:border-border'}`}>
                             <div className="flex items-center justify-between">
                                 <span className="font-bold" style={{ color: o.couleur }}>{o.label}</span>
-                                {o.id === planActuel && <span className="text-[10px] font-bold uppercase text-gray-500">Plan actuel</span>}
+                                {o.id === planActuel && <span className="text-[10px] font-bold uppercase text-muted-foreground">Plan actuel</span>}
                             </div>
-                            <p className="text-lg font-black text-gray-900 mt-1">{formatMontant(o.prix[duree])}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-lg font-black text-foreground mt-1">{formatMontant(o.prix[duree])}</p>
+                            <p className="text-xs text-muted-foreground">
                                 {duree === 'mensuel' ? 'pour 1 mois' : `pour 12 mois, soit ${formatMontant(Math.round(o.prix.annuel / 12))} / mois`}
                             </p>
                             <ul className="mt-2 space-y-0.5">
                                 {o.fonctionnalites.slice(0, 4).map(f => (
-                                    <li key={f} className="text-xs text-gray-600 flex items-center gap-1.5">
+                                    <li key={f} className="text-xs text-muted-foreground flex items-center gap-1.5">
                                         <CheckCircle className="w-3 h-3 text-green-500 shrink-0" />{f}
                                     </li>
                                 ))}
@@ -147,17 +147,17 @@ export default function PaiementAbonnement({
             </div>
 
             {offre && planActuel === 'essai' && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                     La période payée commence à la fin de votre essai (ou aujourd&apos;hui s&apos;il est terminé) : aucun jour gratuit n&apos;est perdu.
                 </p>
             )}
             {offre && planActuel !== 'essai' && offre.id !== planActuel && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                     Changer de plan ouvre une nouvelle période qui commence aujourd&apos;hui ; les jours restants du plan actuel ne sont pas reportés.
                 </p>
             )}
             {offre && offre.id === planActuel && (
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                     Le renouvellement s&apos;ajoute à la date d&apos;échéance actuelle : aucun jour n&apos;est perdu.
                 </p>
             )}
@@ -175,11 +175,11 @@ export default function PaiementAbonnement({
             )}
 
             <button type="button" onClick={payer} disabled={!pret || enCours || !offre}
-                    className="w-full py-3 rounded-xl bg-[#15335a] text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+                    className="w-full py-3 rounded-xl bg-primary text-white font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2">
                 {enCours ? <Loader2 className="w-4 h-4 animate-spin" /> : <CreditCard className="w-4 h-4" />}
                 {!pret ? 'Chargement du paiement…' : offre ? `Payer ${formatMontant(offre.prix[duree])}` : 'Choisissez un plan'}
             </button>
-            <p className="text-[11px] text-gray-400 text-center">
+            <p className="text-[11px] text-muted-foreground/80 text-center">
                 Mobile Money (MTN, Moov) ou carte bancaire, via KkiaPay. Le prix est recalculé et le paiement revérifié par nos serveurs.
             </p>
         </div>

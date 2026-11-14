@@ -21,8 +21,8 @@ export default async function PageCommunications() {
     if (boutique?.plan !== 'enterprise') {
         return (
             <div className="flex flex-col min-h-screen">
-                <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                    <h1 className="text-xl font-bold text-foreground">Communications</h1>
+                <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
+                    <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Communications</h1>
                 </header>
                 <main className="flex-1 flex items-center justify-center p-6">
                     <div className="text-center space-y-3 max-w-sm">
@@ -55,7 +55,7 @@ export default async function PageCommunications() {
                     Envoyez des emails promotionnels à vos clients
                 </p>
             </header>
-            <main className="flex-1 p-4 sm:p-6 max-w-2xl">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-2xl">
                 <FormulairePromo
                     clients={(clients ?? []) as { id: string; nom: string; email: string }[]}
                     nomBoutique={user.user_metadata.shop_nom ?? 'Boutique'}

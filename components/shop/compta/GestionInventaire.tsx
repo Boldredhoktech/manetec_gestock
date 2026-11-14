@@ -212,7 +212,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                             <a
                                 href={`/api/v1/pdf/inventaire-rapport/${inventaireValideId}`}
                                 target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-[#15335a] rounded-lg hover:bg-[#0f2742] transition-colors"
+                                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-white bg-primary rounded-lg hover:opacity-90 transition-colors"
                             >
                                 <FileText className="w-3.5 h-3.5" />
                                 Télécharger le rapport
@@ -248,8 +248,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                             </div>
                         )}
                         {(resultatVal.valeurPertes > 0 || resultatVal.valeurGains > 0) && (
-                            <div className="p-3 bg-[#15335a]/5 border border-[#15335a]/20 rounded-xl col-span-full flex items-center justify-between">
-                                <span className="text-xs font-bold text-[#15335a]">Variation nette de la valeur du stock</span>
+                            <div className="p-3 bg-[var(--primary-soft)] border border-primary/20 rounded-xl col-span-full flex items-center justify-between">
+                                <span className="text-xs font-bold text-[var(--primary-strong)]">Variation nette de la valeur du stock</span>
                                 <span className={`text-base font-black ${
                                     resultatVal.valeurNette < 0 ? 'text-red-600' : 'text-green-700'
                                 }`}>
@@ -284,17 +284,17 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
             {/* ── CRÉER UN INVENTAIRE ─────────────────────────────── */}
             {!inventaireEnCours && (
-                <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center gap-2">
-                        <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                            <ClipboardCheck className="w-5 h-5 text-[#15335a]" />
+                        <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                            <ClipboardCheck className="w-5 h-5 text-[var(--primary-strong)]" />
                         </div>
-                        <h2 className="text-sm font-bold text-gray-900">Démarrer un inventaire</h2>
+                        <h2 className="text-sm font-bold text-foreground">Démarrer un inventaire</h2>
                     </div>
 
                     <div className="space-y-3">
                         <div>
-                            <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                                 Entrepôt à inventorier
                             </label>
                             <select value={warehouseId}
@@ -302,7 +302,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         setWarehouseId(e.target.value)
                                         setNomPerso('') // reset nom perso quand entrepôt change
                                     }}
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30">
+                                    className="w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30">
                                 {entrepots.map(e => (
                                     <option key={e.id} value={e.id}>
                                         {e.nom}{e.est_defaut ? ' (défaut)' : ''}
@@ -312,7 +312,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                         </div>
 
                         <div>
-                            <label className="text-xs font-medium text-gray-600 mb-1.5 block">
+                            <label className="text-xs font-medium text-muted-foreground mb-1.5 block">
                                 Nom de l'inventaire
                             </label>
                             <input
@@ -320,9 +320,9 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 value={nomPerso}
                                 onChange={e => setNomPerso(e.target.value)}
                                 placeholder={nomAuto}
-                                className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                             />
-                            <p className="text-xs text-gray-400 mt-1.5">
+                            <p className="text-xs text-muted-foreground/80 mt-1.5">
                                 Si vide, le nom automatique sera utilisé : <em>{nomAuto}</em>
                             </p>
                         </div>
@@ -331,7 +331,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                     <button
                         onClick={handleCreer}
                         disabled={enAttente || !warehouseId}
-                        className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-[#15335a] text-white font-bold rounded-xl hover:bg-[#0f2742] disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-[#15335a]/30"
+                        className="w-full flex items-center justify-center gap-2.5 py-3.5 bg-primary text-white font-bold rounded-xl hover:opacity-90 disabled:opacity-50 transition-all hover:shadow-lg hover:shadow-black/10"
                     >
                         {enAttente
                             ? <><Loader2 className="w-4 h-4 animate-spin" />Création en cours...</>
@@ -346,16 +346,16 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                 <div className="space-y-4">
 
                     {/* En-tête inventaire */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
                         <div className="flex items-start justify-between gap-3">
                             <div>
                                 <div className="flex items-center gap-2 mb-1">
                                     <div className="w-2.5 h-2.5 bg-amber-400 rounded-full animate-pulse" />
-                                    <h2 className="text-sm font-bold text-gray-900">
+                                    <h2 className="text-sm font-bold text-foreground">
                                         {inventaireEnCours.nom ?? inventaireEnCours.public_id}
                                     </h2>
                                 </div>
-                                <p className="text-xs font-mono text-gray-400">
+                                <p className="text-xs font-mono text-muted-foreground/80">
                                     {inventaireEnCours.public_id} · {Array.isArray(inventaireEnCours.warehouses) ? inventaireEnCours.warehouses[0]?.nom : inventaireEnCours.warehouses?.nom}
                                     · Démarré le {formatDate(inventaireEnCours.created_at)}
                                 </p>
@@ -364,7 +364,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 <a
                                     href={`/api/v1/pdf/inventaire-feuille/${inventaireEnCours.id}`}
                                     target="_blank" rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors"
+                                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)] transition-colors"
                                 >
                                     <Printer className="w-3.5 h-3.5" />
                                     Feuille de comptage
@@ -390,12 +390,12 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                         {stats && (
                             <div className="space-y-2">
                                 <div className="flex items-center justify-between text-xs">
-                                    <span className="font-medium text-gray-600">Progression du comptage</span>
-                                    <span className="font-black text-[#15335a]">
+                                    <span className="font-medium text-muted-foreground">Progression du comptage</span>
+                                    <span className="font-black text-[var(--primary-strong)]">
                     {stats.comptes}/{stats.total} articles
                   </span>
                                 </div>
-                                <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                                <div className="w-full h-3 bg-muted rounded-full overflow-hidden">
                                     <div
                                         className="h-full rounded-full transition-all duration-500"
                                         style={{
@@ -405,7 +405,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         }}
                                     />
                                 </div>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-muted-foreground/80">
                                     {stats.total - stats.comptes} article(s) restant(s) à compter
                                 </p>
                             </div>
@@ -418,29 +418,29 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     {
                                         label: 'Comptés',
                                         val:   stats.comptes,
-                                        couleur: 'text-[#15335a]',
+                                        couleur: 'text-[var(--primary-strong)]',
                                         bg:    'bg-blue-50',
                                         icone: CheckCircle,
                                     },
                                     {
                                         label: 'Avec écart',
                                         val:   stats.avecEcart,
-                                        couleur: stats.avecEcart > 0 ? 'text-amber-600' : 'text-gray-400',
-                                        bg:    stats.avecEcart > 0 ? 'bg-amber-50' : 'bg-gray-50',
+                                        couleur: stats.avecEcart > 0 ? 'text-amber-600' : 'text-muted-foreground/80',
+                                        bg:    stats.avecEcart > 0 ? 'bg-amber-50' : 'bg-[var(--surface2)]',
                                         icone: AlertTriangle,
                                     },
                                     {
                                         label: 'Pertes',
                                         val:   `−${formatMontant(stats.valPertes, devise)}`,
-                                        couleur: stats.valPertes > 0 ? 'text-red-600' : 'text-gray-400',
-                                        bg:    stats.valPertes > 0 ? 'bg-red-50' : 'bg-gray-50',
+                                        couleur: stats.valPertes > 0 ? 'text-red-600' : 'text-muted-foreground/80',
+                                        bg:    stats.valPertes > 0 ? 'bg-red-50' : 'bg-[var(--surface2)]',
                                         icone: TrendingDown,
                                     },
                                     {
                                         label: 'Gains',
                                         val:   `+${formatMontant(stats.valGains, devise)}`,
-                                        couleur: stats.valGains > 0 ? 'text-green-600' : 'text-gray-400',
-                                        bg:    stats.valGains > 0 ? 'bg-green-50' : 'bg-gray-50',
+                                        couleur: stats.valGains > 0 ? 'text-green-600' : 'text-muted-foreground/80',
+                                        bg:    stats.valGains > 0 ? 'bg-green-50' : 'bg-[var(--surface2)]',
                                         icone: TrendingUp,
                                     },
                                 ].map(stat => {
@@ -449,7 +449,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         <div key={stat.label} className={`${stat.bg} rounded-xl p-3 text-center`}>
                                             <Icone className={`w-4 h-4 mx-auto mb-1 ${stat.couleur}`} />
                                             <p className={`text-xs font-black ${stat.couleur}`}>{stat.val}</p>
-                                            <p className="text-xs text-gray-400 mt-0.5">{stat.label}</p>
+                                            <p className="text-xs text-muted-foreground/80 mt-0.5">{stat.label}</p>
                                         </div>
                                     )
                                 })}
@@ -458,7 +458,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                     </div>
 
                     {/* Filtres et recherche */}
-                    <div className="bg-white border border-gray-200 rounded-2xl p-4 shadow-sm space-y-3">
+                    <div className="bg-card border border-border rounded-2xl p-4 shadow-sm space-y-3">
                         <div className="flex flex-wrap gap-2">
                             {[
                                 { key: 'tous',        label: 'Tous',        count: inventaireEnCours.inventory_items.length },
@@ -470,8 +470,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         onClick={() => setFiltre(f.key as any)}
                                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                             filtre === f.key
-                                                ? 'bg-[#15335a] text-white shadow-md shadow-[#15335a]/30'
-                                                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                                ? 'bg-primary text-white shadow-md shadow-black/10'
+                                                : 'bg-muted text-muted-foreground hover:bg-gray-200'
                                         }`}>
                                     {f.label}
                                     <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-black ${
@@ -484,22 +484,22 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                         </div>
 
                         <div className="relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/80" />
                             <input type="text" placeholder="Rechercher un produit ou catégorie..."
                                    value={recherche} onChange={e => setRecherche(e.target.value)}
-                                   className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30" />
+                                   className="w-full pl-9 pr-4 py-2 bg-[var(--surface2)] border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30" />
                         </div>
                     </div>
 
                     {/* Tableau des articles */}
-                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                    <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
                       <div className="overflow-x-auto">
                        <div className="min-w-[640px]">
 
                         {/* En-tête tableau */}
                         <div
                             className="grid grid-cols-12 gap-2 px-4 py-3 text-xs font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
+                            style={{ background: 'var(--nav)' }}
                         >
                             <div className="col-span-4">Produit</div>
                             <div className="col-span-2">Catégorie</div>
@@ -510,7 +510,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
                         {/* Lignes */}
                         {articlesFiltres.length === 0 ? (
-                            <div className="text-center py-12 text-gray-400">
+                            <div className="text-center py-12 text-muted-foreground/80">
                                 <Package className="w-8 h-8 mx-auto mb-2 opacity-30" />
                                 <p className="text-sm">Aucun article dans ce filtre.</p>
                             </div>
@@ -534,28 +534,28 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                                          ? (ecartAffiche ?? 0) < 0
                                                              ? 'bg-red-50/40 hover:bg-red-50/70'
                                                              : 'bg-green-50/40 hover:bg-green-50/70'
-                                                         : 'bg-gray-50/30 hover:bg-gray-50/60'
+                                                         : 'bg-[var(--surface2)]/30 hover:bg-muted/60'
                                                      : 'hover:bg-blue-50/30'
                                              }`}
                                         >
                                             {/* Produit */}
                                             <div className="col-span-4 min-w-0">
-                                                <p className="text-sm font-semibold text-gray-800 truncate">{p.nom}</p>
-                                                <p className="text-xs text-gray-400">
+                                                <p className="text-sm font-semibold text-foreground truncate">{p.nom}</p>
+                                                <p className="text-xs text-muted-foreground/80">
                                                     {p.prix_achat > 0 && formatMontant(p.prix_achat, '')} /unité
                                                 </p>
                                             </div>
 
                                             {/* Catégorie */}
                                             <div className="col-span-2">
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-muted-foreground">
                           {(Array.isArray(p.categories) ? p.categories[0]?.nom : p.categories?.nom) ?? '—'}
                         </span>
                                             </div>
 
                                             {/* Théorique */}
                                             <div className="col-span-2 text-center">
-                                                <p className="text-sm font-bold text-gray-700">
+                                                <p className="text-sm font-bold text-foreground">
                                                     {item.quantite_theorique} <span className="text-xs font-normal">{p.unite}</span>
                                                 </p>
                                             </div>
@@ -563,7 +563,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                             {/* Réel — saisie ou valeur */}
                                             <div className="col-span-2 text-center">
                                                 {estCompte ? (
-                                                    <p className="text-sm font-bold text-[#15335a]">
+                                                    <p className="text-sm font-bold text-[var(--primary-strong)]">
                                                         {item.quantite_reelle} <span className="text-xs font-normal">{p.unite}</span>
                                                     </p>
                                                 ) : (
@@ -585,10 +585,10 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                                                 if (e.key === 'Enter') handleSaisir(item.id)
                                                             }}
                                                             placeholder="0"
-                                                            className="w-16 px-2 py-1.5 text-center bg-white border-2 border-[#15335a]/30 rounded-lg text-xs font-bold focus:outline-none focus:border-[#15335a] focus:ring-2 focus:ring-[#15335a]/20"
+                                                            className="w-16 px-2 py-1.5 text-center bg-card border-2 border-primary/30 rounded-lg text-xs font-bold focus:outline-none focus:border-primary focus:ring-2 focus:ring-ring/30"
                                                         />
                                                         {saisieEnCours === item.id && (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[#15335a] shrink-0" />
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin text-[var(--primary-strong)] shrink-0" />
                                                         )}
                                                     </div>
                                                 )}
@@ -619,7 +619,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                                         )}
                                                     </div>
                                                 ) : (
-                                                    <span className="text-xs text-gray-300 italic">—</span>
+                                                    <span className="text-xs text-muted-foreground/80 italic">—</span>
                                                 )}
                                             </div>
                                         </div>
@@ -633,19 +633,19 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
                     {/* Résumé avant validation */}
                     {stats && stats.comptes === stats.total && (
-                        <div className="bg-white border-2 border-[#15335a]/30 rounded-2xl p-5 shadow-sm space-y-4">
+                        <div className="bg-card border-2 border-primary/30 rounded-2xl p-5 shadow-sm space-y-4">
                             <div className="flex items-center gap-2">
-                                <BarChart3 className="w-5 h-5 text-[#15335a]" />
-                                <h3 className="text-sm font-bold text-[#15335a]">
+                                <BarChart3 className="w-5 h-5 text-[var(--primary-strong)]" />
+                                <h3 className="text-sm font-bold text-[var(--primary-strong)]">
                                     Résumé avant validation
                                 </h3>
                             </div>
 
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div className="p-4 bg-gray-50 rounded-xl">
-                                    <p className="text-xs text-gray-500 mb-2">Articles comptés</p>
-                                    <p className="text-2xl font-black text-gray-800">{stats.comptes}</p>
-                                    <p className="text-xs text-gray-400">sur {stats.total} produits</p>
+                                <div className="p-4 bg-[var(--surface2)] rounded-xl">
+                                    <p className="text-xs text-muted-foreground mb-2">Articles comptés</p>
+                                    <p className="text-2xl font-black text-foreground">{stats.comptes}</p>
+                                    <p className="text-xs text-muted-foreground/80">sur {stats.total} produits</p>
                                 </div>
                                 <div className={`p-4 rounded-xl ${
                                     stats.avecEcart > 0 ? 'bg-amber-50' : 'bg-green-50'
@@ -704,8 +704,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                 l'écart, ce qui préserve les ventes faites
                                 pendant le comptage. */}
                             <div className="space-y-2">
-                                <p className="text-xs font-bold text-gray-600">Comment appliquer le comptage ?</p>
-                                <label className="flex items-start gap-2.5 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                                <p className="text-xs font-bold text-muted-foreground">Comment appliquer le comptage ?</p>
+                                <label className="flex items-start gap-2.5 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted">
                                     <input
                                         type="radio" name="modeValidation" value="ecart"
                                         checked={modeValidation === 'ecart'}
@@ -713,14 +713,14 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         className="mt-0.5"
                                     />
                                     <span className="text-xs">
-                                        <span className="font-bold text-gray-800 block">Appliquer l'écart constaté (recommandé)</span>
-                                        <span className="text-gray-500">
+                                        <span className="font-bold text-foreground block">Appliquer l'écart constaté (recommandé)</span>
+                                        <span className="text-muted-foreground">
                                             La différence entre le stock théorique et votre comptage est ajoutée au stock actuel.
                                             Les ventes et réceptions faites pendant le comptage restent prises en compte.
                                         </span>
                                     </span>
                                 </label>
-                                <label className="flex items-start gap-2.5 p-3 border border-gray-200 rounded-xl cursor-pointer hover:bg-gray-50">
+                                <label className="flex items-start gap-2.5 p-3 border border-border rounded-xl cursor-pointer hover:bg-muted">
                                     <input
                                         type="radio" name="modeValidation" value="absolu"
                                         checked={modeValidation === 'absolu'}
@@ -728,8 +728,8 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         className="mt-0.5"
                                     />
                                     <span className="text-xs">
-                                        <span className="font-bold text-gray-800 block">Imposer la quantité comptée</span>
-                                        <span className="text-gray-500">
+                                        <span className="font-bold text-foreground block">Imposer la quantité comptée</span>
+                                        <span className="text-muted-foreground">
                                             Le stock devient exactement la quantité comptée. Tout mouvement survenu
                                             pendant le comptage est écrasé — à réserver aux comptages faits boutique fermée.
                                         </span>
@@ -771,29 +771,29 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
 
             {/* ── HISTORIQUE DES INVENTAIRES ──────────────────────── */}
             {historique.length > 0 && (
-                <div className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-                    <div className="flex items-center gap-2 p-5 border-b border-gray-100">
-                        <div className="bg-gray-100 p-2 rounded-lg">
-                            <History className="w-5 h-5 text-gray-500" />
+                <div className="bg-card border border-border rounded-2xl shadow-sm overflow-hidden">
+                    <div className="flex items-center gap-2 p-5 border-b border-border">
+                        <div className="bg-muted p-2 rounded-lg">
+                            <History className="w-5 h-5 text-muted-foreground" />
                         </div>
-                        <h2 className="text-sm font-bold text-gray-900">
+                        <h2 className="text-sm font-bold text-foreground">
                             Historique ({historique.length})
                         </h2>
                     </div>
                     <div className="divide-y divide-gray-50">
                         {historique.map(inv => (
                             <div key={inv.id}
-                                 className="flex items-center justify-between px-5 py-3.5 hover:bg-gray-50 transition-colors">
+                                 className="flex items-center justify-between px-5 py-3.5 hover:bg-muted transition-colors">
                                 <div className="min-w-0">
-                                    <p className="text-sm font-semibold text-gray-800 truncate">
+                                    <p className="text-sm font-semibold text-foreground truncate">
                                         {inv.nom ?? inv.public_id}
                                     </p>
                                     <div className="flex items-center gap-2 mt-0.5">
-                                        <p className="text-xs font-mono text-gray-400">{inv.public_id}</p>
-                                        <span className="text-gray-300">·</span>
-                                        <p className="text-xs text-gray-400">{Array.isArray(inv.warehouses) ? inv.warehouses[0]?.nom : inv.warehouses?.nom}</p>
-                                        <span className="text-gray-300">·</span>
-                                        <p className="text-xs text-gray-400">{formatDate(inv.created_at)}</p>
+                                        <p className="text-xs font-mono text-muted-foreground/80">{inv.public_id}</p>
+                                        <span className="text-muted-foreground/80">·</span>
+                                        <p className="text-xs text-muted-foreground/80">{Array.isArray(inv.warehouses) ? inv.warehouses[0]?.nom : inv.warehouses?.nom}</p>
+                                        <span className="text-muted-foreground/80">·</span>
+                                        <p className="text-xs text-muted-foreground/80">{formatDate(inv.created_at)}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 shrink-0 ml-3">
@@ -810,7 +810,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                     <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${
                                         inv.statut === 'valide'
                                             ? 'bg-green-50 text-green-700 border-green-200'
-                                            : 'bg-gray-50 text-gray-500 border-gray-200'
+                                            : 'bg-[var(--surface2)] text-muted-foreground border-border'
                                     }`}>
                     {inv.statut === 'valide' ? 'Validé' : 'Annulé'}
                   </span>
@@ -818,7 +818,7 @@ export default function GestionInventaire({ entrepots, inventaires, devise }: Pr
                                         <a
                                             href={`/api/v1/pdf/inventaire-rapport/${inv.id}`}
                                             target="_blank" rel="noopener noreferrer"
-                                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-[#15335a] border border-[#15335a]/30 rounded-lg hover:bg-[#15335a]/5 transition-colors"
+                                            className="flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-[var(--primary-strong)] border border-primary/30 rounded-lg hover:bg-[var(--primary-soft)] transition-colors"
                                         >
                                             <FileText className="w-3.5 h-3.5" />
                                             Rapport

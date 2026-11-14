@@ -53,7 +53,7 @@ export default function SidebarDrawer({ title, children, replie = false }: Props
                 >
                     <Menu className="w-5 h-5" />
                 </button>
-                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white shrink-0">
+                <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-card shrink-0">
                     <Image src="/logo/app_logo.png" alt="Manetec Gestock" width={28} height={28}
                            className="object-contain" />
                 </span>
