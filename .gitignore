@@ -42,3 +42,4 @@ next-env.d.ts
 
 # Sauvegardes DB locales (contiennent des données sensibles)
 backups/
+/avis-identifiants-apercu/
