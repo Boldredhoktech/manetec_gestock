@@ -16,6 +16,7 @@ import {
 } from '@/lib/tresorerie/comptes'
 import { BoutonAnnulerMouvement, BoutonEtatCompte } from '@/components/shop/tresorerie/FormulairesTresorerie'
 import { ActionsCompteTresorerie } from '@/components/shop/tresorerie/ActionsTresorerie'
+import { BoutonCaissieres } from '@/components/shop/tresorerie/CaissesPOS'
 import EnTetePage from '@/components/shop/EnTetePage'
 
 export const metadata: Metadata = { title: 'Compte de trésorerie' }
@@ -109,10 +110,30 @@ export default async function PageCompteTresorerie({
         if (l.m) l.solde = courant
     }
 
-    const choix: CompteChoix[] = (autres ?? []).map(c => ({ ...c, type: c.type as TypeCompte, solde: soldesMap.get(c.id) ?? 0 }))
-    const operateur = OPERATEURS_MM.find(o => o.code === compte.operateur)?.label
     // Une jointure PostgREST peut revenir en objet ou en tableau.
     const un = (v: unknown) => (Array.isArray(v) ? v[0] : v) as { nom?: string } | null | undefined
+    // (mig 044) caisse POS : ses caissières, et tous les utilisateurs à proposer.
+    const estCaissePOS = compte.type === 'caisse' && !!compte.warehouse_id && compte.est_actif
+    const ROLES_FR: Record<string, string> = {
+        super_admin_boutique: 'Propriétaire', admin_boutique: 'Administrateur', vendeur: 'Vendeur',
+        stock_manager: 'Gestionnaire stock', comptable: 'Comptable',
+    }
+    const [{ data: equipe }, { data: affectations }] = estCaissePOS
+        ? await Promise.all([
+            adminClient.from('shop_users').select('id, nom_complet, role').eq('shop_id', shopId).eq('est_actif', true).order('nom_complet'),
+            adminClient.from('caisse_utilisateurs').select('user_id, compte_id, caisse:comptes_tresorerie(nom)').eq('shop_id', shopId),
+        ])
+        : [{ data: [] }, { data: [] }]
+    const caisseDe = new Map((affectations ?? []).map(a => [a.user_id, a]))
+    const utilisateursCaisse = (equipe ?? []).map(u => {
+        const a = caisseDe.get(u.id)
+        return { id: u.id, nom: u.nom_complet, role: ROLES_FR[u.role] ?? u.role,
+                 caisseActuelle: a ? (un(a.caisse)?.nom ?? null) : null, ici: a?.compte_id === id }
+    })
+    const caissieresIci = utilisateursCaisse.filter(u => u.ici)
+
+    const choix: CompteChoix[] = (autres ?? []).map(c => ({ ...c, type: c.type as TypeCompte, solde: soldesMap.get(c.id) ?? 0 }))
+    const operateur = OPERATEURS_MM.find(o => o.code === compte.operateur)?.label
     const w = un(compte.warehouse)?.nom ? un(compte.warehouse) : null
     const rev = un(compte.reversement)?.nom ? un(compte.reversement) : null
 
@@ -123,16 +144,20 @@ export default async function PageCompteTresorerie({
                 sousTitre={[
                     `${LIBELLES_TYPE[compte.type as TypeCompte]} · ${compte.public_id}`,
                     operateur, compte.banque, compte.numero,
-                    w ? `entrepôt ${w.nom}` : null, rev ? `reversé sur ${rev.nom}` : null,
+                    compte.est_principale ? 'caisse principale (le coffre)' : null,
+                    w ? `caisse POS · entrepôt ${w.nom}` : null, rev ? `reversé sur ${rev.nom}` : null,
                     compte.est_actif ? null : 'désactivé',
                 ].filter(Boolean).join(' · ')}
                 ariane={[{ label: 'Finances' }, { label: 'Trésorerie', href: '/compta/tresorerie' }, { label: compte.nom }]}
                 actions={peutGerer ? (
+                    <>
+                    {estCaissePOS && <BoutonCaissieres compteId={id} nomCaisse={compte.nom} utilisateurs={utilisateursCaisse} />}
                     <ActionsCompteTresorerie comptes={choix} compte={{
                         id, type: compte.type, nom: compte.nom, operateur: compte.operateur, banque: compte.banque,
                         numero: compte.numero, solde_ouverture: Number(compte.solde_ouverture),
-                        date_ouverture: compte.date_ouverture, note: compte.note, est_actif: compte.est_actif,
+                        date_ouverture: compte.date_ouverture, note: compte.note, est_actif: compte.est_actif, est_principale: compte.est_principale,
                     }} />
+                    </>
                 ) : undefined}
             />
 
@@ -236,11 +261,20 @@ export default async function PageCompteTresorerie({
                     </section>
 
                     <aside className="w-full xl:w-[380px] space-y-3">
-                        {peutGerer && compte.est_actif && compte.type !== 'caisse' && (
+                        {peutGerer && compte.est_actif && !compte.est_principale && (
                             <section className="bg-card border border-border rounded-xl p-4 space-y-2" aria-labelledby="zone">
                                 <h2 id="zone" className="font-semibold text-sm">Désactiver ce compte</h2>
                                 <p className="text-xs text-muted-foreground">Possible seulement quand son solde est nul ; son journal reste consultable.</p>
                                 <BoutonEtatCompte id={id} actif={compte.est_actif} />
+                            </section>
+                        )}
+
+                        {estCaissePOS && (
+                            <section className="bg-card border border-border rounded-xl p-4 space-y-2" aria-labelledby="caissieres">
+                                <h2 id="caissieres" className="font-semibold text-sm">Caissières ({caissieresIci.length})</h2>
+                                {caissieresIci.length === 0
+                                    ? <p className="text-sm text-muted-foreground">Personne n&apos;est affecté à cette caisse ; seuls les administrateurs peuvent y vendre.</p>
+                                    : <ul className="text-sm space-y-1">{caissieresIci.map(u => <li key={u.id}>{u.nom} <span className="text-xs text-muted-foreground">· {u.role}</span></li>)}</ul>}
                             </section>
                         )}
 

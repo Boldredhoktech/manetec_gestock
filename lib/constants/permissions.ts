@@ -50,6 +50,11 @@ export const PERMISSIONS = {
     VENTES_VOIR: 'sales.view',
     VENTES_RETOUR: 'sales.return',
     VENTES_REMISE: 'sales.discount',
+    // Caisses POS (mig 044). Choisir sa caisse au POS (sinon : celle qui
+    // lui est affectée) ; vendre une ligne depuis un autre entrepôt que
+    // celui de sa caisse. Les administrateurs ont les deux.
+    POS_CHOISIR_CAISSE: 'pos.choose_register',
+    POS_AUTRES_ENTREPOTS: 'pos.other_warehouses',
     // Facturation
     FACTURES_CREER: 'invoices.create',
     FACTURES_VOIR: 'invoices.view',
@@ -145,6 +150,8 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
 }
 
 export const EXTENSIONS_VENDEUR: string[] = [
+    PERMISSIONS.POS_CHOISIR_CAISSE,
+    PERMISSIONS.POS_AUTRES_ENTREPOTS,
     PERMISSIONS.FOURNISSEURS_CREER,
     PERMISSIONS.RAPPORTS_GENERER,
     PERMISSIONS.CLIENTS_ACCES_COMPLET,

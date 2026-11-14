@@ -34,6 +34,10 @@ interface Props {
     onModifierLigne:     (id: string, champ: keyof LigneVente, val: number | string) => void
     onRetirerLigne:      (id: string) => void
     onValider:           () => void
+    /** (mig 044) entrepôt de la caisse, et changement d'entrepôt d'une ligne. */
+    warehouseCaisse?:    string
+    entrepots?:          { id: string; nom: string }[]
+    onChangerEntrepot?:  (id: string, warehouseId: string) => void
 }
 
 export default function PanierPOS({
@@ -42,6 +46,7 @@ export default function PanierPOS({
                                       noteVente, onNoteChange,
                                       montantBrut, montantNet, montantTVA, montantTotal,
                                       devise, erreur, onModifierLigne, onRetirerLigne, onValider,
+                                      warehouseCaisse, entrepots = [], onChangerEntrepot,
                                   }: Props) {
     const [ligneOuverte, setLigneOuverte] = useState<string | null>(null)
 
@@ -104,6 +109,25 @@ export default function PanierPOS({
                                         <p className="text-xs text-muted-foreground/80 mt-0.5">
                                             {formatMontant(ligne.prix_unitaire, devise)} × {ligne.quantite} {ligne.unite}
                                         </p>
+                                        {/* (mig 044) la ligne sort d'un autre entrepôt que celui de la caisse */}
+                                        {onChangerEntrepot && (ligne.stocks?.filter(st => st.quantite > 0).length ?? 0) > 1 ? (
+                                            <select
+                                                value={ligne.warehouse_id ?? warehouseCaisse}
+                                                onChange={e => onChangerEntrepot(ligne.product_id, e.target.value)}
+                                                aria-label={`Entrepôt d'où sort ${ligne.nom}`}
+                                                className="mt-1 max-w-full px-1.5 py-0.5 text-[11px] font-semibold rounded-md border border-border bg-[var(--surface2)] text-foreground"
+                                            >
+                                                {ligne.stocks!.filter(st => st.quantite > 0).map(st => (
+                                                    <option key={st.warehouse_id} value={st.warehouse_id}>
+                                                        Sort de : {entrepots.find(e => e.id === st.warehouse_id)?.nom ?? 'entrepôt'} ({st.quantite})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        ) : ligne.warehouse_id && warehouseCaisse && ligne.warehouse_id !== warehouseCaisse ? (
+                                            <p className="mt-1 inline-block px-1.5 py-0.5 rounded-md text-[11px] font-semibold bg-blue-100 text-blue-700">
+                                                Sort de : {ligne.entrepot_nom}
+                                            </p>
+                                        ) : null}
                                     </div>
 
                                     <div className="flex items-center gap-1 shrink-0">

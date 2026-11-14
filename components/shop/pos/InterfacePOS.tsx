@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { enregistrerVente } from '@/actions/ventes'
 import type { LigneVente, PaiementVente } from '@/actions/ventes'
 import PanierPOS from '@/components/shop/pos/PanierPOS'
@@ -20,6 +20,9 @@ import { controleIdentifiants } from '@/lib/ventes/identifiants'
 import OuvertureCaissePOS, { etatCaisse, type SessionCaissePOS } from '@/components/shop/pos/OuvertureCaissePOS'
 import type { ClientChoisi } from '@/lib/clients/client-choisi'
 import { getPlanLimites } from '@/lib/constants/plans'
+import type { CaissePOS } from '@/lib/caisses/acces'
+import Modale from '@/components/ui/Modale'
+import FermetureCaisse from '@/components/shop/compta/FermetureCaisse'
 
 type Client = ClientChoisi
 
@@ -29,7 +32,10 @@ interface Props {
     vendeurNom:       string
     boutique:         { nom: string; devise: string; remise_max_pct: number; plan: string }
     entrepots:        { id: string; nom: string; est_defaut: boolean }[]
-    entrepotDefautId: string
+    /** (mig 044) caisses utilisables par cette personne, et sa caisse. */
+    caisses:          CaissePOS[]
+    caisseInitialeId: string
+    peutAutresEntrepots: boolean
     peutCreerClient:  boolean
     sessionsCaisse:   SessionCaissePOS[]
     jourCaisse:       string
@@ -40,11 +46,21 @@ export type EtapePOS = 'caisse' | 'paiement' | 'recu'
 
 export default function InterfacePOS({
                                          shopId, vendeurId, vendeurNom,
-                                         boutique, entrepots, entrepotDefautId, peutCreerClient,
+                                         boutique, entrepots, caisses, caisseInitialeId, peutAutresEntrepots, peutCreerClient,
                                          sessionsCaisse, jourCaisse, peutFermerCaisse,
                                      }: Props) {
     const [etape,             setEtape]             = useState<EtapePOS>('caisse')
-    const [warehouseId,       setWarehouseId]        = useState(entrepotDefautId)
+    // La caisse choisie est retenue sur l'appareil (le comptoir garde sa caisse).
+    const [caisseId,          setCaisseIdBrut]      = useState(caisseInitialeId)
+    useEffect(() => {
+        try {
+            const memo = localStorage.getItem(`manetec:pos:caisse:${shopId}`)
+            if (memo && memo !== caisseInitialeId && caisses.some(c => c.id === memo)) setCaisseIdBrut(memo)
+        } catch { /* indisponible */ }
+    }, [shopId, caisseInitialeId, caisses])
+    const caisseActuelle = caisses.find(c => c.id === caisseId) ?? caisses[0]
+    const warehouseId    = caisseActuelle.warehouse_id
+    const nomEntrepot    = (id: string) => entrepots.find(e => e.id === id)?.nom ?? ''
 
     // Decision D4 : le panier vit dans le navigateur, jamais en base —
     // il n'engage rien tant qu'il n'est pas encaisse. Une coupure de
@@ -58,12 +74,21 @@ export default function InterfacePOS({
     const [noteVente, setNoteVente] =
         useEtatPersistant<string>(`manetec:pos:note:${shopId}`, '')
 
+    function changerCaisse(id: string) {
+        const nouvelle = caisses.find(c => c.id === id)
+        if (!nouvelle) return
+        if (nouvelle.warehouse_id !== warehouseId) setPanier([])
+        setCaisseIdBrut(id)
+        try { localStorage.setItem(`manetec:pos:caisse:${shopId}`, id) } catch { /* indisponible */ }
+    }
+
     const enAttenteStore = usePaniersEnAttente<LigneVente>(shopId)
     const [erreur,            setErreur]             = useState<string>()
     const [venteResultat,     setVenteResultat]      = useState<{
         sale_id: string; public_id: string
     } | null>(null)
     const [enAttente,         setEnAttente]          = useState(false)
+    const [fermetureVisible,  setFermetureVisible]   = useState(false)
     // Le plafond de credit avertit sans bloquer (decision D2 du module
     // Facturation) : la fonction SQL renvoyait deja ces messages, le
     // comptoir ne les lisait pas.
@@ -94,7 +119,18 @@ export default function InterfacePOS({
                 return [...prev.slice(0, existant), nouvelleLigne, ...prev.slice(existant + 1)]
             }
 
-            const stockDispo = produit.stock_levels[0]?.quantite ?? 0
+            // (mig 044) le stock d'ici ; à défaut, avec la permission, le
+            // mieux fourni des autres entrepôts.
+            const niveaux = (produit.stock_levels ?? []) as { quantite: number; warehouse_id?: string }[]
+            const ici = niveaux.find(l => !l.warehouse_id || l.warehouse_id === warehouseId)?.quantite ?? 0
+            let whLigne = warehouseId
+            let stockDispo = ici
+            if (ici <= 0 && peutAutresEntrepots) {
+                const meilleur = niveaux
+                    .filter(l => l.warehouse_id && l.warehouse_id !== warehouseId && l.quantite > 0)
+                    .sort((a, b) => b.quantite - a.quantite)[0]
+                if (meilleur?.warehouse_id) { whLigne = meilleur.warehouse_id; stockDispo = meilleur.quantite }
+            }
             if (stockDispo <= 0) return prev // Règle S1
 
             const nouvelleLigne: LigneVente = {
@@ -114,10 +150,30 @@ export default function InterfacePOS({
                 unite:             produit.unite,
                 necessite_imei:    produit.necessite_imei ?? false,
                 necessite_serie:   produit.necessite_serie ?? false,
+                warehouse_id:      whLigne,
+                entrepot_nom:      nomEntrepot(whLigne),
+                stocks:            peutAutresEntrepots
+                    ? niveaux.filter(l => l.warehouse_id).map(l => ({ warehouse_id: l.warehouse_id!, quantite: Number(l.quantite) }))
+                    : undefined,
             }
             return [...prev, nouvelleLigne]
         })
-    }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [warehouseId, peutAutresEntrepots, entrepots])
+
+    // (mig 044) la ligne sort d'un autre entrepôt.
+    const changerEntrepotLigne = useCallback((productId: string, whId: string) => {
+        setPanier(prev => prev.map(l => {
+            if (l.product_id !== productId) return l
+            const dispo = l.stocks?.find(st => st.warehouse_id === whId)?.quantite ?? 0
+            const qte = Math.min(l.quantite, Math.max(dispo, 1))
+            const remVal = l.prix_unitaire * qte * l.remise_pct / 100
+            const montant = l.prix_unitaire * qte - remVal
+            return { ...l, warehouse_id: whId, entrepot_nom: nomEntrepot(whId), stock_disponible: dispo,
+                     quantite: qte, remise_val: remVal, montant_ligne: montant, montant_tva: montant * l.tva_pct / 100 }
+        }))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [entrepots])
 
     const retirerDuPanier = useCallback((productId: string) => {
         setPanier(prev => prev.filter(l => l.product_id !== productId))
@@ -158,6 +214,7 @@ export default function InterfacePOS({
 
         const res = await enregistrerVente({
             shop_id:            shopId,
+            caisse_id:          caisseActuelle.id,
             warehouse_id:       warehouseId,
             vendeur_id:         vendeurId,
             client_id:          clientSelectionne?.id ?? '',
@@ -249,8 +306,8 @@ export default function InterfacePOS({
         setEtape('caisse')
     }
 
-    const entrepotActuel = entrepots.find(e => e.id === warehouseId)
-    const caisse = etatCaisse(sessionsCaisse, warehouseId, jourCaisse)
+    const caisse = etatCaisse(sessionsCaisse, caisseActuelle.id, jourCaisse)
+    const sessionOuverte = sessionsCaisse.find(s => s.compte_id === caisseActuelle.id && s.statut === 'ouverte')
 
     return (
         <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
@@ -274,7 +331,7 @@ export default function InterfacePOS({
                         <div>
                             <p className="text-sm font-bold text-white leading-none">{boutique.nom}</p>
                             <p className="text-xs text-white/65 mt-0.5">
-                                {vendeurNom} · {entrepotActuel?.nom}
+                                {vendeurNom} · {caisseActuelle.nom}
                             </p>
                         </div>
                     </div>
@@ -320,26 +377,45 @@ export default function InterfacePOS({
               </span>
                         </div>
                     )}
-                    {entrepots.length > 1 && etape === 'caisse' && (
+                    {/* (mig 044) la caissière ferme sa caisse et verse à la principale */}
+                    {caisse.etat === 'ouverte' && sessionOuverte && etape === 'caisse' && panier.length === 0 && (
+                        <button type="button" onClick={() => setFermetureVisible(true)}
+                                className="px-2.5 py-1.5 bg-white/15 border border-white/20 text-white text-xs font-semibold rounded-lg hover:bg-white/25">
+                            Fermer la caisse
+                        </button>
+                    )}
+                    {caisses.length > 1 && etape === 'caisse' && (
                         <select
-                            value={warehouseId}
-                            onChange={e => { setWarehouseId(e.target.value); setPanier([]) }}
-                            className="px-2.5 py-1.5 bg-white/15 border border-white/20 text-white text-xs font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30"
+                            value={caisseActuelle.id}
+                            onChange={e => changerCaisse(e.target.value)}
+                            aria-label="Caisse"
+                            className="max-w-[46vw] px-2.5 py-1.5 bg-white/15 border border-white/20 text-white text-xs font-medium rounded-lg focus:outline-none focus:ring-2 focus:ring-white/30"
                         >
-                            {entrepots.map(e => (
-                                <option key={e.id} value={e.id} style={{ color: '#1a1a1a' }}>{e.nom}</option>
+                            {caisses.map(c => (
+                                <option key={c.id} value={c.id} style={{ color: '#1a1a1a' }}>{c.nom}</option>
                             ))}
                         </select>
                     )}
                 </div>
             </header>
 
+            {sessionOuverte && (
+                <Modale ouvert={fermetureVisible} onFermer={() => setFermetureVisible(false)}
+                        titre={`Fermer ${caisseActuelle.nom}`}
+                        description="Comptez le tiroir ; l'argent peut être versé à la caisse principale.">
+                    {fermetureVisible && (
+                        <FermetureCaisse sessionId={sessionOuverte.id} devise={boutique.devise}
+                                         onFini={() => setFermetureVisible(false)} />
+                    )}
+                </Modale>
+            )}
+
             {/* ── CONTENU SELON ÉTAPE ──────────────────────────── */}
             {etape === 'caisse' && caisse.etat !== 'ouverte' && (
                 <OuvertureCaissePOS
                     etat={caisse}
-                    warehouseId={warehouseId}
-                    entrepotNom={entrepotActuel?.nom ?? ''}
+                    caisseId={caisseActuelle.id}
+                    entrepotNom={`${caisseActuelle.nom} · ${caisseActuelle.entrepot}`}
                     devise={boutique.devise}
                     peutFermerCaisse={peutFermerCaisse}
                 />
@@ -362,6 +438,8 @@ export default function InterfacePOS({
                         />
                         <RechercheProduitPOS
                             warehouseId={warehouseId}
+                            tousEntrepots={peutAutresEntrepots && entrepots.length > 1}
+                            entrepots={entrepots}
                             afficherImages={getPlanLimites(boutique.plan).images_produits}
                             onAjouter={ajouterAuPanier}
                         />
@@ -388,6 +466,9 @@ export default function InterfacePOS({
                             onModifierLigne={modifierLigne}
                             onRetirerLigne={retirerDuPanier}
                             onValider={allerAuPaiement}
+                            warehouseCaisse={warehouseId}
+                            entrepots={entrepots}
+                            onChangerEntrepot={peutAutresEntrepots ? changerEntrepotLigne : undefined}
                         />
                     </div>
                 </div>
@@ -396,7 +477,7 @@ export default function InterfacePOS({
             {etape === 'paiement' && (
                 <PaiementPOS
                     montantTotal={montantTotal}
-                    warehouseId={warehouseId}
+                    caisseId={caisseActuelle.id}
                     devise={boutique.devise}
                     client={clientSelectionne}
                     enAttente={enAttente}

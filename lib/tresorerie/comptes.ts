@@ -69,6 +69,9 @@ export const ORIGINES_MOUVEMENT: Record<string, string> = {
 const MESSAGES_METIER = [
     'Solde insuffisant', 'Le compte', 'Choisissez le compte', 'Compte de trésorerie introuvable',
     'Impossible :', 'Choisissez deux comptes',
+    // Caisses POS (mig 044)
+    'Le versement', 'Votre forfait permet', 'Cette caisse', 'La caisse', 'Seule une caisse POS', 'Montant compté', 'Fond de caisse',
+    'Caisse POS introuvable', 'Entrepôt introuvable', 'Donnez un nom', 'Un compte porte',
 ]
 
 export function messageTresorerie(brut: string | null | undefined, repli: string): string {

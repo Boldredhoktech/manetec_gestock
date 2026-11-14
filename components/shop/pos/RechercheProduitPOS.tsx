@@ -16,18 +16,21 @@ interface Produit {
     sku: string | null; type_produit: string
     necessite_imei: boolean; necessite_serie: boolean
     photo_url?: string | null
-    stock_levels: { quantite: number }[]
+    stock_levels: { quantite: number; warehouse_id?: string }[]
 }
 
 interface Props {
     warehouseId: string
+    /** (mig 044) stock de tous les entrepôts : un article absent ici peut sortir d'ailleurs. */
+    tousEntrepots?: boolean
+    entrepots?:     { id: string; nom: string }[]
     onAjouter:   (produit: Produit) => void
     /** Forfait Pro et au-dessus : la photo du produit est affichée. Sinon,
      *  aucune zone image (14/11). */
     afficherImages?: boolean
 }
 
-export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherImages = false }: Props) {
+export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherImages = false, tousEntrepots = false, entrepots = [] }: Props) {
     const [terme,       setTerme]       = useState('')
     const [resultats,   setResultats]   = useState<Produit[]>([])
     const [chargement,  setChargement]  = useState(false)
@@ -38,10 +41,10 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
         if (valeur.trim().length < 2) { setResultats([]); return }
         setChargement(true)
         // shopId n'est plus un argument : il vient de la session.
-        const data = await rechercherProduitsPOS(valeur, warehouseId)
+        const data = await rechercherProduitsPOS(valeur, warehouseId, tousEntrepots)
         setResultats(data as Produit[])
         setChargement(false)
-    }, [warehouseId])
+    }, [warehouseId, tousEntrepots])
 
     useDebounce(terme, 250, rechercher)
 
@@ -133,8 +136,12 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
                 ) : (
                     <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                         {resultats.map(p => {
-                            const stock    = p.stock_levels[0]?.quantite ?? 0
-                            const rupture  = stock <= 0
+                            const stock    = p.stock_levels.find(l => !l.warehouse_id || l.warehouse_id === warehouseId)?.quantite ?? 0
+                            const ailleurs = stock > 0 ? undefined : p.stock_levels
+                                .filter(l => l.warehouse_id && l.warehouse_id !== warehouseId && l.quantite > 0)
+                                .sort((a, b) => b.quantite - a.quantite)[0]
+                            const nomAilleurs = ailleurs ? (entrepots.find(e => e.id === ailleurs.warehouse_id)?.nom ?? 'autre entrepôt') : ''
+                            const rupture  = stock <= 0 && !ailleurs
                             const vientAjout = dejaAjoutes.has(p.id)
 
                             return (
@@ -152,14 +159,17 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
                                     }`}
                                 >
                                     {/* Badge stock */}
-                                    <div className={`absolute top-2.5 right-2.5 px-2 py-0.5 rounded-full text-[10px] font-black ${
+                                    <div title={ailleurs ? `Absent ici : sortira de ${nomAilleurs}` : undefined}
+                                         className={`absolute top-2.5 right-2.5 max-w-[70%] truncate px-2 py-0.5 rounded-full text-[10px] font-black ${
                                         rupture
                                             ? 'bg-red-100 text-red-600'
-                                            : stock <= 5
-                                                ? 'bg-amber-100 text-amber-600'
-                                                : 'bg-green-100 text-green-600'
+                                            : ailleurs
+                                                ? 'bg-blue-100 text-blue-700'
+                                                : stock <= 5
+                                                    ? 'bg-amber-100 text-amber-600'
+                                                    : 'bg-green-100 text-green-600'
                                     }`}>
-                                        {rupture ? 'RUPTURE' : `${stock}`}
+                                        {rupture ? 'RUPTURE' : ailleurs ? `${ailleurs.quantite} · ${nomAilleurs}` : `${stock}`}
                                     </div>
 
                                     {/* Badge IMEI */}

@@ -13,6 +13,8 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { LIBELLES_TYPE, TYPES_COMPTE, formatF, type CompteChoix, type TypeCompte } from '@/lib/tresorerie/comptes'
 import EnTetePage from '@/components/shop/EnTetePage'
 import { ActionsListeTresorerie } from '@/components/shop/tresorerie/ActionsTresorerie'
+import { BoutonNouvelleCaissePOS } from '@/components/shop/tresorerie/CaissesPOS'
+import { getPlanLimites } from '@/lib/constants/plans'
 
 export const metadata: Metadata = { title: 'Trésorerie' }
 
@@ -36,20 +38,31 @@ export default async function PageTresorerie() {
     const shopId = user.user_metadata.shop_id as string
     const db = createAdminClient()
 
-    const [{ data: comptes }, { data: soldes }, { data: rappro }, { data: sessions }] = await Promise.all([
+    const [{ data: comptes }, { data: soldes }, { data: rappro }, { data: sessions }, { data: boutique }, { data: entrepotsActifs }, { data: caissieres }] = await Promise.all([
         db.from('comptes_tresorerie')
-            .select('id, public_id, type, nom, operateur, numero, warehouse_id, est_actif')
-            .eq('shop_id', shopId).order('nom'),
+            .select('id, public_id, type, nom, operateur, numero, warehouse_id, est_actif, est_principale, warehouse:warehouses(nom)')
+            .eq('shop_id', shopId).order('est_principale', { ascending: false }).order('nom'),
         db.rpc('soldes_comptes', { p_shop_id: shopId }),
         db.from('rapprochements_tresorerie').select('compte_id, date_rapprochement, ecart')
             .eq('shop_id', shopId).order('date_rapprochement', { ascending: false }),
-        db.from('cash_sessions').select('warehouse_id, statut').eq('shop_id', shopId).eq('statut', 'ouverte'),
+        db.from('cash_sessions').select('compte_id, statut').eq('shop_id', shopId).eq('statut', 'ouverte'),
+        db.from('shops').select('plan').eq('id', shopId).single(),
+        db.from('warehouses').select('id, nom').eq('shop_id', shopId).eq('est_actif', true).order('nom'),
+        db.from('caisse_utilisateurs').select('compte_id').eq('shop_id', shopId),
     ])
 
     const soldeDe = new Map<string, number>(((soldes ?? []) as { compte_id: string; solde: number }[]).map(s => [s.compte_id, Number(s.solde)]))
     const dernierRappro = new Map<string, { date_rapprochement: string; ecart: number }>()
     for (const r of rappro ?? []) if (!dernierRappro.has(r.compte_id)) dernierRappro.set(r.compte_id, r)
-    const entrepotsOuverts = new Set((sessions ?? []).map(s => s.warehouse_id))
+    const caissesOuvertes = new Set((sessions ?? []).map(s => s.compte_id))
+    const nbCaissieres = new Map<string, number>()
+    for (const c of caissieres ?? []) nbCaissieres.set(c.compte_id, (nbCaissieres.get(c.compte_id) ?? 0) + 1)
+    const quotaCaisses = getPlanLimites(boutique?.plan ?? 'starter').max_caisses_pos
+    const caissesPOSActives = (comptes ?? []).filter(c => c.type === 'caisse' && c.warehouse_id && c.est_actif).length
+    const nomEntrepotDe = (c: { warehouse: unknown }) => {
+        const w = c.warehouse as { nom: string } | { nom: string }[] | null
+        return (Array.isArray(w) ? w[0]?.nom : w?.nom) ?? ''
+    }
 
     const actifs = (comptes ?? []).filter(c => c.est_actif)
     const total  = actifs.reduce((a, c) => a + (soldeDe.get(c.id) ?? 0), 0)
@@ -57,7 +70,7 @@ export default async function PageTresorerie() {
 
     const etatDe = (c: { id: string; type: string; warehouse_id: string | null }) => {
         const r = dernierRappro.get(c.id)
-        if (c.type === 'caisse' && c.warehouse_id && entrepotsOuverts.has(c.warehouse_id)) return { texte: 'Session ouverte', classe: 'bg-accent text-accent-foreground' }
+        if (c.type === 'caisse' && caissesOuvertes.has(c.id)) return { texte: 'Session ouverte', classe: 'bg-accent text-accent-foreground' }
         if (r && Number(r.ecart) !== 0) return { texte: `Écart ${formatF(Number(r.ecart))}`, classe: 'bg-[var(--rouge-doux)] text-[var(--rouge-texte)]' }
         if (r) return { texte: `Rapproché le ${new Date(r.date_rapprochement + 'T12:00:00').toLocaleDateString('fr-FR')}`, classe: 'bg-[var(--primary-soft)] text-[var(--primary-strong)]' }
         return null
@@ -69,7 +82,12 @@ export default async function PageTresorerie() {
                 titre="Comptes de trésorerie"
                 sousTitre="Caisses, banques, Mobile Money et TPE : le solde de chaque compte et son journal."
                 ariane={[{ label: 'Finances' }, { label: 'Trésorerie' }]}
-                actions={peutGerer ? <ActionsListeTresorerie comptes={choix} /> : undefined}
+                actions={peutGerer ? (
+                    <>
+                        <BoutonNouvelleCaissePOS entrepots={entrepotsActifs ?? []} utilisees={caissesPOSActives} quota={quotaCaisses} />
+                        <ActionsListeTresorerie comptes={choix} />
+                    </>
+                ) : undefined}
             />
 
             <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-5">
@@ -117,9 +135,14 @@ export default async function PageTresorerie() {
                                                     </span>
                                                     <span className="flex-1 min-w-[180px]">
                                                         <span className="block font-semibold text-[15px]">
-                                                            {c.nom}{!c.est_actif && <span className="ml-2 text-xs font-medium text-muted-foreground">(désactivé)</span>}
+                                                            {c.nom}
+                                                            {c.est_principale && <span className="ml-2 px-2 py-0.5 rounded-full text-[11px] font-bold bg-[var(--primary-soft)] text-[var(--primary-strong)]">Principale</span>}
+                                                            {!c.est_actif && <span className="ml-2 text-xs font-medium text-muted-foreground">(désactivé)</span>}
                                                         </span>
-                                                        <span className="block text-xs text-muted-foreground">{c.public_id}{c.numero ? ` · ${c.numero}` : ''}</span>
+                                                        <span className="block text-xs text-muted-foreground">
+                                                            {c.public_id}{c.numero ? ` · ${c.numero}` : ''}
+                                                            {c.type === 'caisse' && c.warehouse_id ? ` · POS ${nomEntrepotDe(c)} · ${nbCaissieres.get(c.id) ?? 0} caissière(s)` : ''}
+                                                        </span>
                                                     </span>
                                                     {etat && <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${etat.classe}`}>{etat.texte}</span>}
                                                     <span className={`titre-design text-lg font-bold tabular-nums ${solde < 0 ? 'text-[var(--rouge-texte)]' : ''}`}>{formatF(solde)}</span>

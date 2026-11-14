@@ -85,7 +85,7 @@ export function FormulaireNouveauCompte({ banques, modale }: { modale?: EnModale
     const [type, setType] = useState<'mobile_money' | 'banque' | 'tpe'>('mobile_money')
 
     return (
-        <Cadre modale={modale} titre="Nouveau compte de trésorerie" description="Les caisses sont créées avec chaque entrepôt." idForm={idForm} enAttente={enAttente} libelle={'Créer le compte'} etat={etat}>
+        <Cadre modale={modale} titre="Nouveau compte de trésorerie" description="Banque, Mobile Money ou TPE. Les caisses POS ont leur propre bouton." idForm={idForm} enAttente={enAttente} libelle={'Créer le compte'} etat={etat}>
         <form id={idForm} action={action} className="space-y-4">
             <Message etat={etat} />
             <div className="space-y-1.5">
@@ -99,7 +99,7 @@ export function FormulaireNouveauCompte({ banques, modale }: { modale?: EnModale
                     ))}
                 </div>
                 <input type="hidden" name="type" value={type} />
-                <p className="text-xs text-muted-foreground">Les caisses sont créées automatiquement, une par entrepôt.</p>
+                <p className="text-xs text-muted-foreground">Pour une caisse de vente, utilisez « Nouvelle caisse POS ».</p>
             </div>
 
             {type === 'mobile_money' && (

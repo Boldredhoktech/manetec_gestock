@@ -7,12 +7,13 @@ import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { redirect } from 'next/navigation'
 import GestionCaisse from '@/components/shop/compta/GestionCaisse'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { accesCaisses } from '@/lib/caisses/acces'
 
 export const metadata: Metadata = { title: 'Caisse' }
 
-// Décision D1 : une session par journée et par entrepôt — pas par
-// caissier. Sans comptage du tiroir, le solde de la ventilation livrée
-// au Lot 4 Finances reste théorique.
+// Une session par journée et par CAISSE POS (mig 044 ; avant : par
+// entrepôt). À la fermeture, versement proposé vers la caisse principale.
 export default async function PageCaisse() {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
@@ -22,18 +23,14 @@ export default async function PageCaisse() {
     const shopId      = user.user_metadata.shop_id as string
     const adminClient = createAdminClient()
 
-    const [{ data: entrepots }, { data: sessions }, { data: boutique }] = await Promise.all([
-        adminClient.from('warehouses')
-            .select('id, nom, est_defaut')
-            .eq('shop_id', shopId)
-            .eq('est_actif', true)
-            .order('est_defaut', { ascending: false }),
+    const [acces, { data: sessions }, { data: boutique }] = await Promise.all([
+        accesCaisses(adminClient, shopId, user),
         adminClient.from('cash_sessions')
             .select(`
                 id, public_id, jour, statut, fond_initial,
                 compte_especes, attendu_especes, ecart,
-                note_ouverture, note_fermeture, ouverte_le, fermee_le,
-                warehouses(nom)
+                note_ouverture, note_fermeture, ouverte_le, fermee_le, compte_id,
+                caisse:comptes_tresorerie(nom), warehouses(nom)
             `)
             .eq('shop_id', shopId)
             .order('ouverte_le', { ascending: false })
@@ -55,15 +52,14 @@ export default async function PageCaisse() {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="px-4 sm:px-6 lg:px-8 pt-5 pb-4">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Caisse</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">
-                    Ouverture, comptage et écart du tiroir
-                </p>
-            </header>
+            <EnTetePage
+                titre="Caisses du jour"
+                sousTitre="Ouverture, comptage et écart de chaque caisse POS ; versement vers la caisse principale."
+                ariane={[{ label: 'Finances' }, { label: 'Caisse' }]}
+            />
             <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
                 <GestionCaisse
-                    entrepots={entrepots ?? []}
+                    caisses={acces.caisses}
                     sessions={(sessions ?? []) as never[]}
                     attendus={attendus}
                     devise={boutique?.devise ?? 'FCFA'}

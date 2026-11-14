@@ -15,6 +15,8 @@ import { estAdminComplet } from '@/lib/constants/permissions'
 // Permissions disponibles par rôle (issues du document Flutter)
 const PERMISSIONS_PAR_ROLE: Record<string, { code: string; label: string; description: string }[]> = {
     vendeur: [
+        { code: 'pos.choose_register',     label: 'Choisir sa caisse',        description: 'Au POS, peut vendre sur n’importe quelle caisse, pas seulement la sienne' },
+        { code: 'pos.other_warehouses',    label: 'Vendre depuis d’autres entrepôts', description: 'Au POS, une ligne peut sortir d’un autre entrepôt que celui de sa caisse' },
         { code: 'suppliers.create',        label: 'Créer des fournisseurs',   description: 'Peut ajouter de nouveaux fournisseurs' },
         { code: 'reports.generate',        label: 'Générer des rapports',     description: 'Accès aux rapports PDF' },
         { code: 'clients.full_access',     label: 'Accès complet clients',    description: 'Voir les soldes et l\'historique complet' },

@@ -43,7 +43,7 @@ export function ActionsListeTresorerie({ comptes }: { comptes: CompteChoix[] }) 
 
 export function ActionsCompteTresorerie({ compte, comptes }: {
     compte: { id: string; type: string; nom: string; operateur: string | null; banque: string | null; numero: string | null
-              solde_ouverture: number; date_ouverture: string; note: string | null; est_actif: boolean }
+              solde_ouverture: number; date_ouverture: string; note: string | null; est_actif: boolean; est_principale?: boolean }
     comptes: CompteChoix[]
 }) {
     const [ouverte, setOuverte] = useState<Ouverte>(null)
@@ -68,7 +68,7 @@ export function ActionsCompteTresorerie({ compte, comptes }: {
                     </button>
                 </>
             )}
-            {!compte.est_actif && compte.type !== 'caisse' && <BoutonEtatCompte id={compte.id} actif={false} />}
+            {!compte.est_actif && !compte.est_principale && <BoutonEtatCompte id={compte.id} actif={false} />}
 
             {ouverte === 'modifier' && (
                 <FormulaireModifierCompte compte={compte} modale={fermer} />

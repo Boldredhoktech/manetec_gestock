@@ -100,7 +100,7 @@ export async function creerCompte(formData: FormData): Promise<Resultat> {
     const note          = nettoyer(formData.get('note')) || null
 
     if (!TYPES_COMPTE.includes(type)) return { erreur: 'Type de compte invalide.' }
-    if (type === 'caisse') return { erreur: 'Les caisses sont créées avec leur entrepôt (Stock › Entrepôts).' }
+    if (type === 'caisse') return { erreur: 'Une caisse POS se crée avec le bouton « Nouvelle caisse POS ».' }
     if (nom.length < 2) return { erreur: 'Donnez un nom au compte.' }
     if (type === 'mobile_money' && !OPERATEURS_MM.some(o => o.code === operateur)) {
         return { erreur: 'Choisissez l\'opérateur Mobile Money.' }
@@ -201,11 +201,16 @@ export async function changerEtatCompte(id: string, actif: boolean, motif: strin
     const adminClient = createAdminClient()
 
     const { data: compte } = await adminClient.from('comptes_tresorerie')
-        .select('id, public_id, type, est_actif, warehouse_id').eq('id', id).eq('shop_id', s.shopId).maybeSingle()
+        .select('id, public_id, type, est_actif, warehouse_id, est_principale').eq('id', id).eq('shop_id', s.shopId).maybeSingle()
     if (!compte) return { erreur: 'Compte introuvable.' }
     if (compte.est_actif === actif) return { succes: true }
+    // (mig 044) une caisse POS se désactive (ses caissières sont libérées) ;
+    // la caisse principale, jamais.
+    if (!actif && compte.est_principale) return { erreur: 'La caisse principale ne se désactive pas.' }
     if (!actif && compte.type === 'caisse') {
-        return { erreur: 'La caisse d\'un entrepôt ne se désactive pas : désactivez l\'entrepôt.' }
+        const { data: ouverte } = await adminClient.from('cash_sessions').select('id')
+            .eq('compte_id', id).eq('statut', 'ouverte').maybeSingle()
+        if (ouverte) return { erreur: 'Comptez et fermez d’abord la session ouverte de cette caisse.' }
     }
     if (!actif && (motif ?? '').trim().length < 3) return { erreur: 'Indiquez le motif.' }
 
@@ -217,7 +222,7 @@ export async function changerEtatCompte(id: string, actif: boolean, motif: strin
     }
 
     const { error } = await adminClient.from('comptes_tresorerie').update({ est_actif: actif }).eq('id', id)
-    if (error) return { erreur: 'Erreur lors de la mise à jour.' }
+    if (error) return { erreur: messageTresorerie(error.message, 'Erreur lors de la mise à jour.') }
     await journaliserCorrection({
         user: s.user, eventType: actif ? 'TRESORERIE_COMPTE_REACTIVE' : 'TRESORERIE_COMPTE_DESACTIVE',
         referenceType: 'compte_tresorerie', referenceId: id, referencePublicId: compte.public_id,
@@ -323,4 +328,54 @@ export async function enregistrerRapprochement(formData: FormData): Promise<Resu
         succes: true,
         message: ecart === 0 ? 'Aucun écart : le compte est juste.' : `Écart constaté : ${ecart > 0 ? '+' : ''}${ecart.toLocaleString('fr-FR')} F.`,
     }
+}
+
+// ══════════════════════════════════════════════════════════════
+// Caisses POS (mig 044) : création dans la limite du forfait, et
+// affectation des caissières (une caisse par personne).
+// ══════════════════════════════════════════════════════════════
+
+export async function creerCaissePOS(formData: FormData): Promise<Resultat> {
+    const s = await sessionBoutique(PERMISSIONS.TRESORERIE_GERER)
+    if ('erreur' in s) return { erreur: s.erreur ?? 'Non autorisé.' }
+    const { data, error } = await createAdminClient().rpc('creer_caisse_pos', {
+        p_shop_id:      s.shopId,
+        p_warehouse_id: nettoyer(formData.get('warehouseId')),
+        p_nom:          nettoyer(formData.get('nom')),
+        p_user_id:      s.userId,
+    })
+    if (error) { console.error('ERREUR CAISSE POS:', error); return { erreur: 'La caisse n’a pas pu être créée.' } }
+    if (!data?.succes) return { erreur: messageTresorerie(data?.erreur, 'La caisse n’a pas pu être créée.') }
+    rafraichir()
+    revalidatePath('/pos')
+    return { succes: true, id: data.id, message: 'Caisse créée.' }
+}
+
+/** Les caissières de cette caisse : les cochées y sont affectées (et
+ *  quittent leur ancienne caisse), les décochées n'ont plus de caisse. */
+export async function affecterCaissieres(compteId: string, userIds: string[]): Promise<Resultat> {
+    const s = await sessionBoutique(PERMISSIONS.TRESORERIE_GERER)
+    if ('erreur' in s) return { erreur: s.erreur ?? 'Non autorisé.' }
+    const db = createAdminClient()
+    const { data: caisse } = await db.from('comptes_tresorerie').select('id, nom')
+        .eq('id', compteId).eq('shop_id', s.shopId).eq('type', 'caisse').eq('est_actif', true)
+        .not('warehouse_id', 'is', null).maybeSingle()
+    if (!caisse) return { erreur: 'Seule une caisse POS active peut recevoir des caissières.' }
+    const ids = [...new Set(userIds)]
+    if (ids.length) {
+        const { data: membres } = await db.from('shop_users').select('id').eq('shop_id', s.shopId).in('id', ids)
+        if ((membres ?? []).length !== ids.length) return { erreur: 'Utilisateur introuvable dans cette boutique.' }
+    }
+    const { error: e1 } = await db.from('caisse_utilisateurs').delete().eq('compte_id', compteId)
+        .not('user_id', 'in', `(${ids.length ? ids.join(',') : '00000000-0000-0000-0000-000000000000'})`)
+    if (e1) { console.error('ERREUR CAISSIERES:', e1); return { erreur: 'Enregistrement impossible.' } }
+    if (ids.length) {
+        const { error: e2 } = await db.from('caisse_utilisateurs').upsert(
+            ids.map(user_id => ({ user_id, shop_id: s.shopId, compte_id: compteId, affecte_par: s.userId, affecte_le: new Date().toISOString() })),
+            { onConflict: 'user_id' })
+        if (e2) { console.error('ERREUR CAISSIERES:', e2); return { erreur: messageTresorerie(e2.message, 'Enregistrement impossible.') } }
+    }
+    rafraichir(compteId)
+    revalidatePath('/pos')
+    return { succes: true, message: `${ids.length} caissière(s) sur ${caisse.nom}.` }
 }

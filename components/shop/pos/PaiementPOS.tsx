@@ -22,8 +22,8 @@ interface Client {
 
 interface Props {
     montantTotal:  number
-    /** Entrepôt de la vente : les espèces vont dans SA caisse (mig 041). */
-    warehouseId:   string
+    /** Caisse POS de la vente : les espèces y entrent (mig 044). */
+    caisseId:      string
     devise:        string
     client:        Client | null
     enAttente:     boolean
@@ -42,14 +42,14 @@ interface Props {
 }
 
 export default function PaiementPOS({
-                                        montantTotal, warehouseId, devise, client,
+                                        montantTotal, caisseId, devise, client,
                                         enAttente, erreur, onValider, onRetour,
                                     }: Props) {
     // Comptes de trésorerie de la boutique. Espèces = la caisse de
     // l'entrepôt, sans choix ; les autres types : le compte exact.
     const [comptes, setComptes] = useState<CompteChoix[]>([])
     const [erreurComptes, setErreurComptes] = useState<string | null>(null)
-    const caisse = comptes.find(c => c.type === 'caisse' && c.warehouse_id === warehouseId)
+    const caisse = comptes.find(c => c.id === caisseId)
 
     const [paiements, setPaiements]         = useState<PaiementVente[]>([
         { compte_id: '', moyen_paiement: 'cash', montant: montantTotal, reference: '' },
@@ -61,12 +61,12 @@ export default function PaiementPOS({
             if (!actif) return
             if ('erreur' in res) { setErreurComptes(res.erreur); return }
             setComptes(res.comptes)
-            const c = res.comptes.find(x => x.type === 'caisse' && x.warehouse_id === warehouseId)
-            if (!c) setErreurComptes('La caisse de cet entrepôt est introuvable.')
+            const c = res.comptes.find(x => x.id === caisseId)
+            if (!c) setErreurComptes('Cette caisse est introuvable ou désactivée.')
             else setPaiements(prev => prev.map(p => p.compte_id ? p : { ...p, compte_id: c.id }))
         })
         return () => { actif = false }
-    }, [warehouseId])
+    }, [caisseId])
 
     const typesDisponibles = TYPES_COMPTE.filter(t =>
         t === 'caisse' ? !!caisse : comptes.some(c => c.type === t))

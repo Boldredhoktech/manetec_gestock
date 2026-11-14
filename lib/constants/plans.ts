@@ -10,6 +10,8 @@ export interface PlanLimites {
     rapports:         boolean
     communications:   boolean
     multi_entrepots:  boolean
+    /** Caisses POS actives (la caisse principale ne compte pas) — mig 044. */
+    max_caisses_pos:  number
     /** Photo des produits (fiche + POS) : réservée au Pro et au-dessus (14/11). */
     images_produits:  boolean
     label:            string
@@ -24,6 +26,7 @@ const STARTER: PlanLimites = {
     rapports:         false,
     communications:   false,
     multi_entrepots:  false,
+    max_caisses_pos:  1,
     images_produits:  false,
     label:            'Starter',
 }
@@ -51,6 +54,7 @@ const PLANS: Record<PlanId, PlanLimites> = {
         rapports:         true,
         communications:   false,
         multi_entrepots:  true,
+        max_caisses_pos:  3,
         images_produits:  true,
         label:            'Pro',
     },
@@ -63,6 +67,7 @@ const PLANS: Record<PlanId, PlanLimites> = {
         rapports:         true,
         communications:   true,
         multi_entrepots:  true,
+        max_caisses_pos:  999999,
         images_produits:  true,
         label:            'Enterprise',
     },

@@ -9,6 +9,7 @@ import { revalidatePath } from 'next/cache'
 import { jourBoutique } from '@/lib/dates/periode'
 import { controleIdentifiants } from '@/lib/ventes/identifiants'
 import { messageTresorerie, moyenDuCompte, referenceRequise } from '@/lib/tresorerie/comptes'
+import { caisseAutorisee, MESSAGE_SANS_CAISSE } from '@/lib/caisses/acces'
 
 export interface LigneVente {
     product_id:     string
@@ -27,6 +28,11 @@ export interface LigneVente {
     unite:          string
     necessite_imei: boolean
     necessite_serie: boolean
+    /** Entrepôt d'où sort la ligne (mig 044) ; par défaut celui de la caisse. */
+    warehouse_id?:  string
+    entrepot_nom?:  string
+    /** Stocks connus par entrepôt (choix de l'entrepôt de la ligne au POS). */
+    stocks?:        { warehouse_id: string; quantite: number }[]
 }
 
 export interface PaiementVente {
@@ -40,6 +46,8 @@ export interface PaiementVente {
 
 export interface DonneesVente {
     shop_id:             string
+    /** Caisse POS de la vente (mig 044) : elle fixe l'entrepôt de la vente. */
+    caisse_id:           string
     warehouse_id:        string
     vendeur_id:          string
     client_id:           string
@@ -84,7 +92,20 @@ export async function enregistrerVente(donnees: DonneesVente) {
     // Pas de vente sans la caisse du jour ouverte : le rapport de caisse
     // se construit sur les sessions, et une boutique qui vendait sans en
     // ouvrir avait un rapport vide (FAVEUR INFORMATIQUE, 14/10).
-    const refusCaisse = await refusCaisseFermee(adminClient, shopId, donnees.warehouse_id)
+    // La caisse : celle de la vendeuse, ou une autre si elle peut choisir.
+    const caisse = await caisseAutorisee(adminClient, shopId, user, donnees.caisse_id)
+    if (!caisse) return { erreur: donnees.caisse_id ? "Vous ne pouvez pas vendre sur cette caisse." : MESSAGE_SANS_CAISSE }
+    donnees.warehouse_id = caisse.warehouse_id
+
+    // Une ligne sortie d'un autre entrepôt : permission dédiée.
+    for (const item of donnees.items) {
+        item.warehouse_id = item.warehouse_id || caisse.warehouse_id
+        if (item.warehouse_id !== caisse.warehouse_id && !aPermission(user, PERMISSIONS.POS_AUTRES_ENTREPOTS)) {
+            return { erreur: `Vous ne pouvez vendre que depuis l'entrepôt de votre caisse (${caisse.entrepot}).` }
+        }
+    }
+
+    const refusCaisse = await refusCaisseFermee(adminClient, shopId, caisse.id)
     if (refusCaisse) return { erreur: refusCaisse }
 
     // La licence est contrôlée plus haut par `refusAbonnement`, comme
@@ -116,12 +137,18 @@ export async function enregistrerVente(donnees: DonneesVente) {
     // laisser le refus tomber apres l'encaissement.
     const { data: stocks } = await adminClient
         .from('stock_levels')
-        .select('product_id, quantite')
+        .select('product_id, warehouse_id, quantite')
         .eq('shop_id', shopId)
-        .eq('warehouse_id', donnees.warehouse_id)
+        .in('warehouse_id', [...new Set(donnees.items.map(i => i.warehouse_id as string))])
         .in('product_id', donnees.items.map(i => i.product_id))
 
-    const stockParProduit = new Map((stocks ?? []).map(s => [s.product_id, Number(s.quantite)]))
+    const stockParLigne = new Map((stocks ?? []).map(s => [`${s.product_id}|${s.warehouse_id}`, Number(s.quantite)]))
+    // Deux lignes du même produit et du même entrepôt puisent dans le même stock.
+    const demande = new Map<string, number>()
+    for (const item of donnees.items) {
+        const cle = `${item.product_id}|${item.warehouse_id}`
+        demande.set(cle, (demande.get(cle) ?? 0) + item.quantite)
+    }
 
     // Le stock negatif est un parametre par boutique (decision D3) : la
     // vente n'est refusee que si la boutique l'a choisi.
@@ -133,13 +160,16 @@ export async function enregistrerVente(donnees: DonneesVente) {
 
     if (!reglages?.autoriser_stock_negatif) {
         for (const item of donnees.items) {
-            const dispo = stockParProduit.get(item.product_id) ?? 0
-            if (item.quantite > dispo) {
+            const cle = `${item.product_id}|${item.warehouse_id}`
+            const dispo = stockParLigne.get(cle) ?? 0
+            const voulu = demande.get(cle) ?? item.quantite
+            if (voulu > dispo) {
                 const nom = parId.get(item.product_id)?.nom ?? item.nom
+                const ou = item.warehouse_id === caisse.warehouse_id ? 'cet entrepôt' : (item.entrepot_nom || 'l’entrepôt choisi')
                 return {
                     erreur: dispo <= 0
-                        ? `"${nom}" n'est plus en stock dans cet entrepôt.`
-                        : `Il ne reste que ${dispo} "${nom}" en stock (${item.quantite} demandés).`,
+                        ? `"${nom}" n'est plus en stock dans ${ou}.`
+                        : `Il ne reste que ${dispo} "${nom}" dans ${ou} (${voulu} demandés).`,
                 }
             }
         }
@@ -190,8 +220,8 @@ export async function enregistrerVente(donnees: DonneesVente) {
     for (const p of donnees.paiements) {
         const compte = comptesVente?.find(c => c.id === p.compte_id)
         if (!compte || !compte.est_actif) return { erreur: 'Compte de paiement invalide : choisissez-le à nouveau.' }
-        if (compte.type === 'caisse' && compte.warehouse_id !== donnees.warehouse_id) {
-            return { erreur: 'Les espèces doivent entrer dans la caisse de cet entrepôt.' }
+        if (compte.type === 'caisse' && compte.id !== caisse.id) {
+            return { erreur: `Les espèces doivent entrer dans votre caisse (${caisse.nom}).` }
         }
         if (referenceRequise(compte.type) && !p.reference?.trim()) {
             return { erreur: `Une référence de transaction est obligatoire pour ${compte.nom}.` }
@@ -240,7 +270,7 @@ export async function enregistrerVente(donnees: DonneesVente) {
 // `shopId` était un paramètre et qu'aucune vérification n'était faite,
 // le catalogue, les prix de vente et les niveaux de stock d'une boutique
 // se lisaient depuis une autre.
-export async function rechercherProduitsPOS(terme: string, warehouseId: string) {
+export async function rechercherProduitsPOS(terme: string, warehouseId: string, tousEntrepots = false) {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return []
@@ -268,21 +298,30 @@ export async function rechercherProduitsPOS(terme: string, warehouseId: string) 
     const propre = terme.replace(/[%_,().*:"'\\]/g, '').trim()
     if (propre.length < 2) return []
 
-    const { data } = await adminClient
-        .from('products')
-        .select(`
+    // (mig 044) avec « Vendre depuis d'autres entrepôts », on lit le stock
+    // de TOUS les entrepôts : un article absent ici peut sortir d'ailleurs.
+    const tous = tousEntrepots && aPermission(user, PERMISSIONS.POS_AUTRES_ENTREPOTS)
+    const colonnes = `
       id, public_id, nom, type_produit, sku, code_barres,
       prix_vente, prix_gros, prix_minimum, unite,
       tva_pct, remise_max_pct, necessite_imei, necessite_serie, photo_url,
-      stock_levels!inner(quantite, warehouse_id)
-    `)
+      stock_levels${tous ? '' : '!inner'}(quantite, warehouse_id)`
+    let requete = adminClient
+        .from('products')
+        .select(colonnes)
         .eq('shop_id', shopId)
         .eq('est_actif', true)
-        .eq('stock_levels.warehouse_id', warehouseId)
+    if (!tous) requete = requete.eq('stock_levels.warehouse_id', warehouseId)
+    const { data } = await requete
         .or(`nom.ilike.%${propre}%,sku.ilike.%${propre}%,code_barres.eq.${propre}`)
         .limit(10)
 
-    return data ?? []
+    return (data ?? []) as unknown as {
+        id: string; nom: string; prix_vente: number; prix_minimum: number | null; tva_pct: number
+        remise_max_pct: number | null; unite: string; sku: string | null; type_produit: string
+        necessite_imei: boolean; necessite_serie: boolean; photo_url: string | null
+        stock_levels: { quantite: number; warehouse_id: string }[]
+    }[]
 }
 
 // ── Récupérer le détail d'une vente ───────────────────────────
@@ -423,17 +462,17 @@ export async function reglerRetourVente(
 async function refusCaisseFermee(
     adminClient: ReturnType<typeof createAdminClient>,
     shopId: string,
-    warehouseId: string,
+    caisseId: string,
 ): Promise<string | null> {
     const { data: ouverte } = await adminClient
         .from('cash_sessions')
         .select('jour')
         .eq('shop_id', shopId)
-        .eq('warehouse_id', warehouseId)
+        .eq('compte_id', caisseId)
         .eq('statut', 'ouverte')
         .maybeSingle()
 
-    if (!ouverte) return "La caisse n'est pas ouverte pour cet entrepôt. Ouvrez-la avant d'encaisser."
+    if (!ouverte) return "Cette caisse n'est pas ouverte. Ouvrez-la avant d'encaisser."
     if (ouverte.jour !== jourBoutique()) {
         const [a, m, j] = String(ouverte.jour).split('-')
         return `La caisse du ${j}/${m}/${a} n'a pas été fermée. Faites-la compter et fermer (Compta → Caisse), puis ouvrez celle d'aujourd'hui.`
@@ -442,7 +481,7 @@ async function refusCaisseFermee(
 }
 
 export async function ouvrirSessionCaisse(
-    warehouseId: string,
+    caisseId: string,
     fond: number,
     note: string,
 ): Promise<ResultatVente & { sessionId?: string }> {
@@ -456,10 +495,12 @@ export async function ouvrirSessionCaisse(
     }
 
     const adminClient = createAdminClient()
+    const caisse = await caisseAutorisee(adminClient, user.user_metadata.shop_id, user, caisseId)
+    if (!caisse) return { erreur: caisseId ? 'Vous ne pouvez pas ouvrir cette caisse.' : MESSAGE_SANS_CAISSE }
 
     const { data: result, error } = await adminClient.rpc('ouvrir_session_caisse', {
         p_shop_id:      user.user_metadata.shop_id,
-        p_warehouse_id: warehouseId,
+        p_compte_id:    caisse.id,
         p_fond:         fond,
         p_note:         note ?? '',
         p_user_id:      user.user_metadata.user_id,
@@ -510,7 +551,8 @@ export async function fermerSessionCaisse(
     sessionId: string,
     compte: number,
     note: string,
-): Promise<ResultatVente & { attendu?: number; compte?: number; ecart?: number }> {
+    versement = 0,
+): Promise<ResultatVente & { attendu?: number; compte?: number; ecart?: number; versement?: number; virement?: string }> {
     const supabase = await createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
@@ -518,11 +560,15 @@ export async function fermerSessionCaisse(
     if (refusLicence) return { erreur: refusLicence }
     // Compter le tiroir et constater l'ecart releve de la comptabilite,
     // pas de la vente.
-    if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) {
-        return { erreur: 'Permission insuffisante pour fermer la caisse.' }
-    }
-
+    // (mig 044) la caissière ferme aussi SA caisse : elle compte son
+    // tiroir et propose le versement vers la caisse principale.
     const adminClient = createAdminClient()
+    if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR)) {
+        const { data: session } = await adminClient.from('cash_sessions')
+            .select('compte_id').eq('id', sessionId).eq('shop_id', user.user_metadata.shop_id).maybeSingle()
+        const caisse = session ? await caisseAutorisee(adminClient, user.user_metadata.shop_id, user, session.compte_id) : null
+        if (!caisse) return { erreur: 'Permission insuffisante pour fermer cette caisse.' }
+    }
 
     const { data: result, error } = await adminClient.rpc('fermer_session_caisse', {
         p_shop_id:    user.user_metadata.shop_id,
@@ -530,20 +576,53 @@ export async function fermerSessionCaisse(
         p_compte:     compte,
         p_note:       note ?? '',
         p_user_id:    user.user_metadata.user_id,
+        p_versement:  Math.max(0, versement || 0),
     })
 
     if (error) {
         console.error('ERREUR FERMETURE CAISSE:', error)
         return { erreur: 'Erreur lors de la fermeture de la caisse.' }
     }
-    if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la fermeture.' }
+    if (!result?.succes) return { erreur: messageTresorerie(result?.erreur ?? '', 'Erreur lors de la fermeture.') }
 
     revalidatePath('/pos')
     revalidatePath('/compta/caisse')
+    revalidatePath('/compta/tresorerie')
     return {
-        succes:  true,
-        attendu: Number(result.attendu),
-        compte:  Number(result.compte),
-        ecart:   Number(result.ecart),
+        succes:    true,
+        attendu:   Number(result.attendu),
+        compte:    Number(result.compte),
+        ecart:     Number(result.ecart),
+        versement: Number(result.versement ?? 0),
+        virement:  result.virement ?? undefined,
+    }
+}
+
+// ── Fermeture d'une caisse : ce qu'il faut savoir avant de compter ──
+// (mig 044) espèces attendues, argent enregistré dans la caisse (le
+// plafond du versement) et fond du matin (à garder pour demain).
+export async function infosFermetureSession(sessionId: string): Promise<
+    { erreur: string } | { attendu: number; solde: number; fond: number; publicId: string; caisse: string; jour: string }
+> {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user || user.user_metadata?.type_acteur !== 'shop') return { erreur: 'Non autorisé.' }
+    const shopId = user.user_metadata.shop_id as string
+    const db = createAdminClient()
+    const { data: s } = await db.from('cash_sessions')
+        .select('id, public_id, jour, fond_initial, compte_id, caisse:comptes_tresorerie(nom)')
+        .eq('id', sessionId).eq('shop_id', shopId).maybeSingle()
+    if (!s) return { erreur: 'Session introuvable.' }
+    if (!aPermission(user, PERMISSIONS.COMPTABILITE_VOIR) && !(await caisseAutorisee(db, shopId, user, s.compte_id))) {
+        return { erreur: 'Permission insuffisante pour fermer cette caisse.' }
+    }
+    const [{ data: attendu }, { data: solde }] = await Promise.all([
+        db.rpc('especes_attendues_session', { p_session_id: s.id }),
+        db.rpc('solde_compte', { p_compte_id: s.compte_id }),
+    ])
+    const c = s.caisse as unknown as { nom: string } | { nom: string }[] | null
+    return {
+        attendu: Number(attendu ?? 0), solde: Number(solde ?? 0), fond: Number(s.fond_initial ?? 0),
+        publicId: s.public_id, jour: s.jour, caisse: (Array.isArray(c) ? c[0]?.nom : c?.nom) ?? 'Caisse',
     }
 }

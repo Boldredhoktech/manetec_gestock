@@ -6,22 +6,24 @@ import Link from 'next/link'
 import { Wallet, Loader2, AlertCircle, RotateCcw, Lock } from 'lucide-react'
 import { ouvrirSessionCaisse, rouvrirSessionCaisse } from '@/actions/ventes'
 import ChampNombre from '@/components/ui/ChampNombre'
+import { BoutonModale } from '@/components/ui/ModalesPartagees'
+import FermetureCaisse from '@/components/shop/compta/FermetureCaisse'
 
 export interface SessionCaissePOS {
-    id: string; warehouse_id: string; jour: string; statut: string; fermee_le: string | null
+    id: string; compte_id: string; warehouse_id: string; jour: string; statut: string; fermee_le: string | null
 }
 
-// Ce que le comptoir doit faire avant d'encaisser dans cet entrepôt.
+// Ce que le comptoir doit faire avant d'encaisser sur cette caisse (mig 044).
 export type EtatCaisse =
     | { etat: 'ouverte' }
     | { etat: 'a_ouvrir' }
     | { etat: 'comptee'; session: SessionCaissePOS }
     | { etat: 'oubliee'; session: SessionCaissePOS }
 
-export function etatCaisse(sessions: SessionCaissePOS[], warehouseId: string, jour: string): EtatCaisse {
-    const ouverte = sessions.find(s => s.warehouse_id === warehouseId && s.statut === 'ouverte')
+export function etatCaisse(sessions: SessionCaissePOS[], caisseId: string, jour: string): EtatCaisse {
+    const ouverte = sessions.find(s => s.compte_id === caisseId && s.statut === 'ouverte')
     if (ouverte) return ouverte.jour === jour ? { etat: 'ouverte' } : { etat: 'oubliee', session: ouverte }
-    const duJour = sessions.find(s => s.warehouse_id === warehouseId && s.jour === jour)
+    const duJour = sessions.find(s => s.compte_id === caisseId && s.jour === jour)
     return duJour ? { etat: 'comptee', session: duJour } : { etat: 'a_ouvrir' }
 }
 
@@ -30,10 +32,10 @@ const dateFR = (iso: string) => iso.split('-').reverse().join('/')
 // Le rapport de caisse se construit sur les sessions : on ne vend plus
 // sans avoir ouvert la caisse du jour (fond du matin).
 export default function OuvertureCaissePOS({
-    etat, warehouseId, entrepotNom, devise, peutFermerCaisse,
+    etat, caisseId, entrepotNom, devise, peutFermerCaisse,
 }: {
     etat:             Exclude<EtatCaisse, { etat: 'ouverte' }>
-    warehouseId:      string
+    caisseId:         string
     entrepotNom:      string
     devise:           string
     peutFermerCaisse: boolean
@@ -90,7 +92,7 @@ export default function OuvertureCaissePOS({
                         <button
                             type="button"
                             disabled={enAttente}
-                            onClick={() => agir(() => ouvrirSessionCaisse(warehouseId, fond, note))}
+                            onClick={() => agir(() => ouvrirSessionCaisse(caisseId, fond, note))}
                             className={bouton}
                         >
                             {enAttente && <Loader2 className="w-4 h-4 animate-spin" />}
@@ -135,13 +137,12 @@ export default function OuvertureCaissePOS({
                         </div>
                         <p className="text-sm text-muted-foreground">
                             Elle doit être comptée et fermée avant d&apos;ouvrir celle d&apos;aujourd&apos;hui.
-                            {!peutFermerCaisse && ' Demandez à un gestionnaire de la fermer.'}
                         </p>
-                        {peutFermerCaisse && (
-                            <Link href="/compta/caisse" className={bouton}>
-                                Compter et fermer la caisse
-                            </Link>
-                        )}
+                        {/* (mig 044) la caissière ferme elle-même sa caisse oubliée. */}
+                        <BoutonModale libelle="Compter et fermer la caisse" variante="primaire" pleineLargeur
+                                      titre="Fermer la caisse oubliée" description={`Journée du ${dateFR(etat.session.jour)}`}>
+                            {fermer => <FermetureCaisse sessionId={etat.session.id} devise={devise} onFini={() => fermer()} />}
+                        </BoutonModale>
                     </>
                 )}
 
