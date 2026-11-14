@@ -253,11 +253,11 @@ export default function InterfacePOS({
     const caisse = etatCaisse(sessionsCaisse, warehouseId, jourCaisse)
 
     return (
-        <div className="min-h-screen flex flex-col" style={{ background: '#f0f4ff' }}>
+        <div className="min-h-screen flex flex-col" style={{ background: 'var(--background)' }}>
 
             {/* ── TOPBAR BLEU ROI ───────────────────────────────── */}
             <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
+                style={{ background: 'var(--nav)' }}
                 className="flex items-center justify-between px-4 py-3 shadow-lg shrink-0"
             >
                 {/* Gauche : retour + infos */}
@@ -293,13 +293,13 @@ export default function InterfacePOS({
                                 )}
                                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
                                     actif
-                                        ? 'bg-white text-[#15335a] shadow-md'
+                                        ? 'bg-card text-[var(--primary-strong)] shadow-md'
                                         : passe
                                             ? 'bg-white/25 text-white'
                                             : 'bg-white/10 text-white/40'
                                 }`}>
                   <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-black ${
-                      actif ? 'bg-[#15335a] text-white' : passe ? 'bg-white/50' : 'bg-white/20'
+                      actif ? 'bg-primary text-white' : passe ? 'bg-white/50' : 'bg-white/20'
                   }`}>
                     {i + 1}
                   </span>
@@ -351,7 +351,7 @@ export default function InterfacePOS({
                     {/* GAUCHE — Recherche produits */}
                     <div
                         className="lg:flex-1 flex flex-col min-h-[55vh] lg:min-h-0 overflow-hidden"
-                        style={{ background: '#f0f4ff' }}
+                        style={{ background: 'var(--background)' }}
                     >
                         <PaniersEnAttente
                             paniers={enAttenteStore.paniers}
@@ -368,7 +368,7 @@ export default function InterfacePOS({
                     </div>
 
                     {/* DROITE — Panier */}
-                    <div className="w-full lg:w-96 flex flex-col bg-white shadow-xl overflow-hidden border-t lg:border-t-0 lg:border-l border-gray-200">
+                    <div className="w-full lg:w-96 flex flex-col bg-card shadow-xl overflow-hidden border-t lg:border-t-0 lg:border-l border-border">
                         <PanierPOS
                             panier={panier}
                             peutCreerClient={peutCreerClient}

@@ -19,10 +19,10 @@ export default function TableauClients({ clients }: Props) {
         <div>
             {clients.length === 0 ? (
                 <div className="text-center py-16 space-y-3">
-                    <div className="w-16 h-16 bg-[#15335a]/10 rounded-2xl flex items-center justify-center mx-auto">
-                        <UserSquare className="w-8 h-8 text-[#15335a]/40" />
+                    <div className="w-16 h-16 bg-[var(--primary-soft)] rounded-2xl flex items-center justify-center mx-auto">
+                        <UserSquare className="w-8 h-8 text-[var(--primary-strong)]/40" />
                     </div>
-                    <p className="text-sm text-gray-400">Aucun client ne correspond à cette recherche.</p>
+                    <p className="text-sm text-muted-foreground/80">Aucun client ne correspond à cette recherche.</p>
                 </div>
             ) : (
                 <div className="overflow-hidden">
@@ -32,7 +32,7 @@ export default function TableauClients({ clients }: Props) {
                     {/* En-tête tableau */}
                     <div
                         className="grid grid-cols-12 gap-3 px-5 py-3 text-xs font-bold text-white"
-                        style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
+                        style={{ background: 'var(--nav)' }}
                     >
                         <div className="col-span-4">Client</div>
                         <div className="col-span-2">Téléphone</div>
@@ -48,28 +48,28 @@ export default function TableauClients({ clients }: Props) {
                             <Link
                                 key={c.id}
                                 href={`/admin/clients/${c.id}`}
-                                className={`grid grid-cols-12 gap-3 items-center px-5 py-3.5 hover:bg-[#15335a]/5 transition-colors group ${
-                                    i % 2 === 0 ? '' : 'bg-gray-50/50'
+                                className={`grid grid-cols-12 gap-3 items-center px-5 py-3.5 hover:bg-[var(--primary-soft)] transition-colors group ${
+                                    i % 2 === 0 ? '' : 'bg-[var(--surface2)]/50'
                                 }`}
                             >
                                 {/* Nom + ID */}
                                 <div className="col-span-4 flex items-center gap-2.5 min-w-0">
-                                    <div className="shrink-0 w-8 h-8 bg-[#15335a]/10 rounded-full flex items-center justify-center group-hover:bg-[#15335a]/20 transition-colors">
-                    <span className="text-xs font-black text-[#15335a]">
+                                    <div className="shrink-0 w-8 h-8 bg-[var(--primary-soft)] rounded-full flex items-center justify-center group-hover:bg-[var(--primary-soft)] transition-colors">
+                    <span className="text-xs font-black text-[var(--primary-strong)]">
                       {c.nom.charAt(0).toUpperCase()}
                     </span>
                                     </div>
                                     <div className="min-w-0">
-                                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#15335a] transition-colors">
+                                        <p className="text-sm font-semibold text-foreground truncate group-hover:text-primary transition-colors">
                                             {c.nom}
                                         </p>
-                                        <p className="text-xs font-mono text-gray-400 mt-0.5">{c.public_id}</p>
+                                        <p className="text-xs font-mono text-muted-foreground/80 mt-0.5">{c.public_id}</p>
                                     </div>
                                 </div>
 
                                 {/* Téléphone */}
                                 <div className="col-span-2">
-                                    <p className="text-xs text-gray-500">{c.telephone ?? '—'}</p>
+                                    <p className="text-xs text-muted-foreground">{c.telephone ?? '—'}</p>
                                 </div>
 
                                 {/* Crédit dû */}
@@ -80,7 +80,7 @@ export default function TableauClients({ clients }: Props) {
                                             {formatMontant(c.credit_balance)}
                     </span>
                                     ) : (
-                                        <span className="text-xs text-gray-300">—</span>
+                                        <span className="text-xs text-muted-foreground/80">—</span>
                                     )}
                                 </div>
 
@@ -91,7 +91,7 @@ export default function TableauClients({ clients }: Props) {
                       {formatMontant(c.advance_balance)}
                     </span>
                                     ) : (
-                                        <span className="text-xs text-gray-300">—</span>
+                                        <span className="text-xs text-muted-foreground/80">—</span>
                                     )}
                                 </div>
 
@@ -102,13 +102,13 @@ export default function TableauClients({ clients }: Props) {
                       {formatMontant(c.change_balance)}
                     </span>
                                     ) : (
-                                        <span className="text-xs text-gray-300">—</span>
+                                        <span className="text-xs text-muted-foreground/80">—</span>
                                     )}
                                 </div>
 
                                 {/* Flèche */}
                                 <div className="col-span-1 flex justify-end">
-                                    <ChevronRight className="w-4 h-4 text-[#15335a] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
+                                    <ChevronRight className="w-4 h-4 text-[var(--primary-strong)] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all" />
                                 </div>
                             </Link>
                         ))}

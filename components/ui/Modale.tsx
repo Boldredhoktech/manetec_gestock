@@ -13,9 +13,13 @@
 
 import * as Dialog from '@radix-ui/react-dialog'
 import { X } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { ID_RACINE_APP } from '@/lib/theme'
+
+/** Vrai à l'intérieur d'une modale : les pieds de formulaire s'y collent en bas. */
+export const ContexteModale = createContext(false)
+export const useDansModale = () => useContext(ContexteModale)
 
 const LARGEURS = { sm: 'sm:max-w-md', md: 'sm:max-w-xl', lg: 'sm:max-w-3xl' } as const
 
@@ -66,7 +70,7 @@ export default function Modale({ ouvert, onFermer, titre, description, taille = 
                         </Dialog.Close>
                     </header>
                     <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 sm:px-6 py-5">
-                        {children}
+                        <ContexteModale.Provider value={true}>{children}</ContexteModale.Provider>
                     </div>
                     {pied && (
                         <footer className="flex flex-wrap justify-end gap-2.5 px-5 sm:px-6 py-4 border-t border-border bg-[var(--surface2)] rounded-b-none sm:rounded-b-2xl pb-[max(1rem,env(safe-area-inset-bottom))]">

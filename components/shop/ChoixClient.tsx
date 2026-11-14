@@ -93,14 +93,14 @@ export default function ChoixClient({
     const caisse = variante === 'caisse'
     const st = caisse
         ? {
-            champ:   'w-full px-2.5 py-2 bg-white border border-[#15335a]/20 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 text-gray-700',
-            carte:   'bg-white border border-[#15335a]/20 rounded-xl',
+            champ:   'w-full px-2.5 py-2 bg-card border border-primary/20 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring/30 text-foreground',
+            carte:   'bg-card border border-primary/20 rounded-xl',
             texte:   'text-xs', petit: 'text-[10px]',
-            accent:  'text-[#15335a]',
-            bouton:  'text-white bg-[#15335a] hover:bg-[#0f2742]',
-            neutre:  'text-gray-600 bg-gray-100 hover:bg-gray-200',
-            survol:  'hover:bg-[#f0f4ff]', fondCreer: 'bg-[#f0f4ff] hover:bg-[#e2eaff]',
-            attenue: 'text-gray-400', fort: 'text-gray-800',
+            accent:  'text-[var(--primary-strong)]',
+            bouton:  'text-white bg-primary hover:opacity-90',
+            neutre:  'text-muted-foreground bg-muted hover:bg-gray-200',
+            survol:  'hover:bg-background', fondCreer: 'bg-background hover:bg-[#e2eaff]',
+            attenue: 'text-muted-foreground/80', fort: 'text-foreground',
         }
         : {
             champ:   'w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring',
@@ -218,7 +218,7 @@ export default function ChoixClient({
             )}
 
             {terme.trim().length >= 2 && cherche && (
-                <div className={`absolute z-20 left-0 right-0 mt-1 shadow-lg overflow-hidden ${caisse ? 'bg-white border border-gray-200 rounded-xl' : 'bg-card border border-border rounded-lg'}`}>
+                <div className={`absolute z-20 left-0 right-0 mt-1 shadow-lg overflow-hidden ${caisse ? 'bg-card border border-border rounded-xl' : 'bg-card border border-border rounded-lg'}`}>
                     <div className="max-h-56 overflow-y-auto divide-y divide-border">
                         {resultats.map(c => (
                             <button
@@ -255,10 +255,10 @@ export default function ChoixClient({
     if (!caisse) return contenu
 
     return (
-        <div className="px-3 py-2.5 bg-[#f0f4ff] border-b border-gray-200 shrink-0">
+        <div className="px-3 py-2.5 bg-background border-b border-border shrink-0">
             <div className="flex items-center gap-1.5 mb-1.5">
-                <Users className="w-3.5 h-3.5 text-[#15335a]" />
-                <span className="text-xs font-bold text-[#15335a]">Client</span>
+                <Users className="w-3.5 h-3.5 text-[var(--primary-strong)]" />
+                <span className="text-xs font-bold text-[var(--primary-strong)]">Client</span>
             </div>
             {contenu}
         </div>

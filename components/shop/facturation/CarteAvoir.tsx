@@ -1,9 +1,11 @@
 'use client'
 
 import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
+import { BoutonModale, PiedFormulaire } from '@/components/ui/ModalesPartagees'
 import { creerAvoir } from '@/actions/facturation'
 import { Button } from '@/components/ui/button'
-import { Loader2, AlertCircle, CheckCircle, RotateCcw, Info } from 'lucide-react'
+import { Loader2, AlertCircle, RotateCcw, Info } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
 import ChampNombre from '@/components/ui/ChampNombre'
 import { useState } from 'react'
@@ -21,29 +23,18 @@ interface Props {
     montantTtc:  number
     aUnClient:   boolean
 }
-interface EtatAction { erreur?: string; succes?: boolean; detail?: string }
+interface EtatAction { erreur?: string }
 
 export default function CarteAvoir({
     factureId, avoirs, resteAPayer, montantTtc, aUnClient,
 }: Props) {
-    const [montant, setMontant] = useState(0)
-
-    const [etat, action, enAttente] = useActionState(
-        async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => {
-            const res = await creerAvoir(formData)
-            if (res?.erreur) return { erreur: res.erreur }
-            return { succes: true, detail: res?.detail }
-        },
-        {}
-    )
-
     // Un avoir ne peut pas dépasser ce que la facture a facturé, avoirs
     // déjà émis déduits.
     const dejaAvoir = avoirs.reduce((somme, a) => somme + a.montant, 0)
     const couvrable = montantTtc - dejaAvoir
 
     return (
-        <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 space-y-4">
             <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" />
                 Avoirs
@@ -73,17 +64,39 @@ export default function CarteAvoir({
                 </div>
             )}
 
+            <BoutonModale libelle="Émettre un avoir" icone={RotateCcw} pleineLargeur
+                          titre="Émettre un avoir" description="Un avoir réduit ce que le client doit, ou crédite son avance.">
+                {fermer => (
+                    <FormulaireAvoir factureId={factureId} resteAPayer={resteAPayer}
+                                     couvrable={couvrable} aUnClient={aUnClient} onSucces={fermer} />
+                )}
+            </BoutonModale>
+        </div>
+    )
+}
+
+function FormulaireAvoir({ factureId, resteAPayer, couvrable, aUnClient, onSucces }: {
+    factureId: string; resteAPayer: number; couvrable: number; aUnClient: boolean; onSucces: () => void
+}) {
+    const router = useRouter()
+    const [montant, setMontant] = useState(0)
+    const [etat, action, enAttente] = useActionState(
+        async (_prev: EtatAction, formData: FormData): Promise<EtatAction> => {
+            const res = await creerAvoir(formData)
+            if (res?.erreur) return { erreur: res.erreur }
+            router.refresh()
+            onSucces()
+            return {}
+        },
+        {}
+    )
+    return (
+        <>
             {/* Messages */}
             {etat.erreur && (
                 <div className="flex items-center gap-2 bg-destructive/10 border border-destructive/30 text-destructive rounded-lg px-3 py-2 text-xs">
                     <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                     {etat.erreur}
-                </div>
-            )}
-            {etat.succes && (
-                <div className="flex items-start gap-2 bg-green-50 border border-green-200 text-green-700 rounded-lg px-3 py-2 text-xs">
-                    <CheckCircle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
-                    <span>Avoir créé. {etat.detail}</span>
                 </div>
             )}
 
@@ -118,15 +131,16 @@ export default function CarteAvoir({
                     </span>
                 </p>
 
-                <Button type="submit" variant="outline" size="sm"
-                        disabled={enAttente || couvrable <= 0 || (!aUnClient && resteAPayer <= 0)}
-                        className="w-full">
-                    {enAttente
-                        ? <><Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />Création...</>
-                        : 'Émettre un avoir'
-                    }
-                </Button>
+                <PiedFormulaire>
+                    <Button type="submit" disabled={enAttente || couvrable <= 0 || (!aUnClient && resteAPayer <= 0)}
+                            className="h-11 px-5 rounded-xl font-semibold">
+                        {enAttente
+                            ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
+                            : 'Émettre l\u2019avoir'
+                        }
+                    </Button>
+                </PiedFormulaire>
             </form>
-        </div>
+        </>
     )
 }

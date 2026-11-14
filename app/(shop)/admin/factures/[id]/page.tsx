@@ -7,13 +7,15 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, Pencil } from 'lucide-react'
+import { Pencil } from 'lucide-react'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { classeBouton } from '@/components/ui/classe-bouton'
 import CarteDetailFacture from '@/components/shop/facturation/CarteDetailFacture'
 import CartePaiementFacture from '@/components/shop/facturation/CartePaiementFacture'
 import CarteAvoir from '@/components/shop/facturation/CarteAvoir'
 import CarteAnnulationFacture from '@/components/shop/facturation/CarteAnnulationFacture'
 import HistoriqueReglements from '@/components/shop/facturation/HistoriqueReglements'
-import { etatFacture, CLASSES_TON_SOMBRE } from '@/lib/facturation/etat-facture'
+import { etatFacture } from '@/lib/facturation/etat-facture'
 
 export const metadata: Metadata = { title: 'Détail facture' }
 
@@ -62,43 +64,28 @@ export default async function PageDetailFacture({ params }: Props) {
         && ((facture.avoirs as any[]) ?? []).length === 0
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
-                <div className="flex items-center gap-4">
-                    <Link href="/admin/factures"
-                          className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-white" />
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-bold text-white">{facture.public_id}</h1>
-                        <p className="text-sm text-white/70 mt-0.5">
-                            {(facture.clients as any)?.nom ?? 'Client non spécifié'}
-                        </p>
-                    </div>
-                    <div className="ml-auto flex items-center gap-2">
+            <EnTetePage
+                titre={facture.public_id}
+                sousTitre={(facture.clients as any)?.nom ?? 'Client non spécifié'}
+                ariane={[{ label: 'Ventes' }, { label: 'Factures', href: '/admin/factures' }, { label: facture.public_id }]}
+                actions={
+                    <>
                         {modifiable && (
-                            <Link href={`/admin/factures/${facture.id}/modifier`}
-                                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 text-xs font-bold text-white transition-colors">
-                                <Pencil className="w-3.5 h-3.5" />
-                                Modifier
+                            <Link href={`/admin/factures/${facture.id}/modifier`} className={classeBouton('secondaire')}>
+                                <Pencil className="w-4 h-4" aria-hidden="true" />Modifier
                             </Link>
                         )}
-                        <span className={`px-3 py-1.5 rounded-full text-xs font-bold border ${CLASSES_TON_SOMBRE[etat.ton]}`}>
-                            {etat.libelle}
-                        </span>
-                    </div>
-                </div>
-            </header>
+                        {facture.statut !== 'payee' && facture.statut !== 'annulee' && aPermission(user, PERMISSIONS.FACTURES_PAIEMENT) && (
+                            <CartePaiementFacture facture={facture} />
+                        )}
+                    </>
+                }
+            />
 
-            <main className="flex-1 p-4 sm:p-6 max-w-4xl mx-auto w-full space-y-5">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-5xl w-full space-y-5">
                 <CarteDetailFacture facture={facture} boutique={boutique} />
-                {facture.statut !== 'payee' && facture.statut !== 'annulee' && (
-                    <CartePaiementFacture facture={facture} />
-                )}
                 <HistoriqueReglements
                     factureId={facture.id}
                     reglements={((facture.facture_payments as any[]) ?? [])

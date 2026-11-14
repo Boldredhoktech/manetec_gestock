@@ -160,12 +160,12 @@ export default function PaiementPOS({
     }
 
     return (
-        <div className="flex-1 flex flex-col bg-[#f0f4ff] overflow-auto">
+        <div className="flex-1 flex flex-col bg-background overflow-auto">
             <div className="max-w-lg mx-auto w-full px-4 py-6 space-y-4">
 
                 {/* Retour */}
                 <button type="button" onClick={onRetour}
-                        className="flex items-center gap-2 text-sm font-medium text-[#15335a] hover:text-[#0f2742] transition-colors">
+                        className="flex items-center gap-2 text-sm font-medium text-[var(--primary-strong)] hover:text-primary transition-colors">
                     <ArrowLeft className="w-4 h-4" />
                     Retour au panier
                 </button>
@@ -173,7 +173,7 @@ export default function PaiementPOS({
                 {/* Carte total */}
                 <div
                     className="rounded-2xl p-5 text-white shadow-xl"
-                    style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
+                    style={{ background: 'var(--nav)' }}
                 >
                     <p className="text-sm font-medium text-white/75 mb-1">Total à régler</p>
                     <p className="text-4xl font-black tracking-tight">
@@ -185,9 +185,9 @@ export default function PaiementPOS({
                 </div>
 
                 {/* Modes de paiement */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-3">
-                    <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                        <CreditCard className="w-4 h-4 text-[#15335a]" />
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-3">
+                    <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                        <CreditCard className="w-4 h-4 text-[var(--primary-strong)]" />
                         Modes de paiement
                     </h3>
 
@@ -208,8 +208,8 @@ export default function PaiementPOS({
                                                 onClick={() => choisirType(i, t)}
                                                 className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
                                                     c?.type === t
-                                                        ? 'bg-[#15335a] text-white border-[#15335a]'
-                                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                                                        ? 'bg-primary text-white border-primary'
+                                                        : 'bg-[var(--surface2)] text-foreground border-border hover:bg-muted'
                                                 }`}>
                                             {t === 'caisse' ? 'Espèces' : LIBELLES_TYPE[t]}
                                         </button>
@@ -220,22 +220,22 @@ export default function PaiementPOS({
                                         value={p.compte_id}
                                         aria-label="Compte qui reçoit l'argent"
                                         onChange={e => choisirCompte(i, comptes.find(x => x.id === e.target.value))}
-                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                        className="w-full px-3 py-2 bg-[var(--surface2)] border border-border rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-ring/30"
                                     >
                                         {autresDuType.map(x => <option key={x.id} value={x.id}>{x.nom}</option>)}
                                     </select>
                                 )}
                                 {c && (autresDuType.length <= 1) && (
-                                    <p className="text-xs text-gray-500">→ {c.nom}</p>
+                                    <p className="text-xs text-muted-foreground">→ {c.nom}</p>
                                 )}
                                 {c && referenceRequise(c.type) && (
                                     <input type="text" placeholder="Référence de transaction *"
                                            value={p.reference}
                                            onChange={e => modifierPaiement(i, 'reference', e.target.value)}
-                                           className={`w-full px-3 py-2 bg-gray-50 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30 font-mono ${
+                                           className={`w-full px-3 py-2 bg-[var(--surface2)] border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30 font-mono ${
                                                p.montant > 0 && !p.reference?.trim()
                                                    ? 'border-red-300'
-                                                   : 'border-gray-200'
+                                                   : 'border-border'
                                            }`}
                                     />
                                 )}
@@ -245,11 +245,11 @@ export default function PaiementPOS({
                                     value={p.montant}
                                     onChange={v => modifierPaiement(i, 'montant', v)}
                                     aria-label="Montant de ce règlement"
-                                    className="w-28 px-2 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                    className="w-28 px-2 py-2.5 bg-[var(--surface2)] border border-border rounded-xl text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-ring/30"
                                 />
                                 {paiements.length > 1 && (
                                     <button type="button" onClick={() => setPaiements(prev => prev.filter((_, idx) => idx !== i))}
-                                            className="p-2 text-gray-300 hover:text-red-500 transition-colors">
+                                            className="p-2 text-muted-foreground/80 hover:text-red-500 transition-colors">
                                         <Trash2 className="w-4 h-4" />
                                     </button>
                                 )}
@@ -259,7 +259,7 @@ export default function PaiementPOS({
                     })}
 
                     <button type="button" onClick={ajouterPaiement}
-                            className="flex items-center gap-2 text-xs font-bold text-[#15335a] hover:text-[#0f2742] transition-colors">
+                            className="flex items-center gap-2 text-xs font-bold text-[var(--primary-strong)] hover:text-primary transition-colors">
                         <Plus className="w-3.5 h-3.5" />
                         Ajouter un mode de paiement
                     </button>
@@ -267,8 +267,8 @@ export default function PaiementPOS({
 
                 {/* Soldes client */}
                 {client && (client.advance_balance > 0 || client.change_balance > 0 || true) && (
-                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-3">
-                        <h3 className="text-sm font-bold text-gray-800">
+                    <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-3">
+                        <h3 className="text-sm font-bold text-foreground">
                             Soldes de {client.nom}
                         </h3>
 
@@ -283,7 +283,7 @@ export default function PaiementPOS({
                                 <ChampNombre
                                     value={advanceUtilise} onChange={setAdvanceUtilise}
                                     aria-label="Avance utilisée"
-                                    className="w-28 px-2 py-2 bg-white border border-green-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-green-400"
+                                    className="w-28 px-2 py-2 bg-card border border-green-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-green-400"
                                 />
                             </div>
                         )}
@@ -299,7 +299,7 @@ export default function PaiementPOS({
                                 <ChampNombre
                                     value={changeUtilise} onChange={setChangeUtilise}
                                     aria-label="Monnaie utilisée"
-                                    className="w-28 px-2 py-2 bg-white border border-blue-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-blue-400"
+                                    className="w-28 px-2 py-2 bg-card border border-blue-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-blue-400"
                                 />
                             </div>
                         )}
@@ -320,7 +320,7 @@ export default function PaiementPOS({
                                 <ChampNombre
                                     value={creditRembourse} onChange={setCreditRembourse}
                                     aria-label="Ardoise remboursée"
-                                    className="w-28 px-2 py-2 bg-white border border-red-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-red-400"
+                                    className="w-28 px-2 py-2 bg-card border border-red-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-red-400"
                                 />
                             </div>
                         )}
@@ -343,33 +343,33 @@ export default function PaiementPOS({
                             <ChampNombre
                                 value={creditAccorde} onChange={setCreditAccorde}
                                 aria-label="Crédit accordé"
-                                className="w-28 px-2 py-2 bg-white border border-amber-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-amber-400"
+                                className="w-28 px-2 py-2 bg-card border border-amber-200 rounded-lg text-sm font-bold text-right focus:outline-none focus:ring-2 focus:ring-amber-400"
                             />
                         </div>
                     </div>
                 )}
 
                 {/* Résumé */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm border border-gray-200 space-y-2">
-                    <h3 className="text-sm font-bold text-gray-800">Résumé</h3>
+                <div className="bg-card rounded-2xl p-5 shadow-sm border border-border space-y-2">
+                    <h3 className="text-sm font-bold text-foreground">Résumé</h3>
 
                     <div className="space-y-1.5">
                         {[
-                            { label: 'Total des articles', val: formatMontant(montantTotal, devise),  couleur: 'text-gray-700' },
+                            { label: 'Total des articles', val: formatMontant(montantTotal, devise),  couleur: 'text-foreground' },
                             advanceUtilise > 0 && { label: 'Avance utilisée', val: formatMontant(advanceUtilise, devise), couleur: 'text-green-600' },
                             changeUtilise > 0  && { label: 'Monnaie utilisée', val: formatMontant(changeUtilise, devise), couleur: 'text-blue-600'  },
                             creditAccorde > 0  && { label: 'Accordé à crédit', val: formatMontant(creditAccorde, devise), couleur: 'text-amber-600' },
                             creditRembourse > 0 && { label: 'Ardoise réglée',  val: formatMontant(creditRembourse, devise), couleur: 'text-red-600' },
-                            { label: 'À encaisser',       val: formatMontant(aEncaisser, devise),     couleur: 'text-gray-900 font-black' },
-                            { label: 'Reçu du client',    val: formatMontant(totalPaiements, devise), couleur: 'text-gray-600' },
+                            { label: 'À encaisser',       val: formatMontant(aEncaisser, devise),     couleur: 'text-foreground font-black' },
+                            { label: 'Reçu du client',    val: formatMontant(totalPaiements, devise), couleur: 'text-muted-foreground' },
                         ].filter(Boolean).map((item: any, i) => (
                             <div key={i} className="flex justify-between text-sm">
-                                <span className="text-gray-500">{item.label}</span>
+                                <span className="text-muted-foreground">{item.label}</span>
                                 <span className={`font-semibold ${item.couleur}`}>{item.val}</span>
                             </div>
                         ))}
 
-                        <div className="border-t border-gray-100 pt-2 mt-2">
+                        <div className="border-t border-border pt-2 mt-2">
                             {resteAPayer > 0.001 ? (
                                 <div className="flex justify-between text-sm">
                                     <span className="font-bold text-red-600">Reste à payer</span>
@@ -391,11 +391,11 @@ export default function PaiementPOS({
 
                     {/* Garder monnaie */}
                     {montantRendu > 0.001 && client && (
-                        <label className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors">
+                        <label className="flex items-center gap-2.5 p-3 bg-[var(--surface2)] rounded-xl cursor-pointer hover:bg-muted transition-colors">
                             <input type="checkbox" checked={garderMonnaie}
                                    onChange={e => setGarderMonnaie(e.target.checked)}
-                                   className="rounded accent-[#15335a] w-4 h-4" />
-                            <span className="text-xs font-medium text-gray-600">
+                                   className="rounded accent-[var(--primary)] w-4 h-4" />
+                            <span className="text-xs font-medium text-muted-foreground">
                 Conserver {formatMontant(montantRendu, devise)} en attente pour {client.nom}
               </span>
                         </label>
@@ -431,7 +431,7 @@ export default function PaiementPOS({
                     className="w-full py-4 font-black text-base rounded-2xl text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{
                         background: peutValider && !enAttente
-                            ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)'
+                            ? 'var(--primary)'
                             : '#d1d5db',
                         boxShadow: peutValider && !enAttente
                             ? '0 4px 16px rgba(22,163,74,0.35)'

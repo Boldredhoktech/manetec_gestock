@@ -8,11 +8,12 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Plus, FileText, ClipboardList } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import TableauFactures from '@/components/shop/facturation/TableauFactures'
 import TableauDevis from '@/components/shop/facturation/TableauDevis'
 import FiltresListe from '@/components/shop/FiltresListe'
 import Pagination from '@/components/shop/Pagination'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { classeBouton } from '@/components/ui/classe-bouton'
 
 export const metadata: Metadata = { title: 'Facturation' }
 
@@ -81,32 +82,23 @@ export default async function PageFactures({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">Facturation</h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            Factures, proformas et avoirs
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Button variant="outline" asChild>
-                            <Link href="/admin/factures/devis/nouveau">
-                                <ClipboardList className="w-4 h-4 mr-2" />
-                                Nouvelle proforma
-                            </Link>
-                        </Button>
-                        <Button asChild>
-                            <Link href="/admin/factures/nouvelle">
-                                <Plus className="w-4 h-4 mr-2" />
-                                Nouvelle facture
-                            </Link>
-                        </Button>
-                    </div>
-                </div>
-            </header>
+            <EnTetePage
+                titre="Facturation"
+                sousTitre="Factures, proformas et avoirs"
+                ariane={[{ label: 'Ventes' }, { label: 'Factures' }]}
+                actions={
+                    <>
+                        <Link href="/admin/factures/devis/nouveau" className={classeBouton('secondaire')}>
+                            <ClipboardList className="w-4 h-4" aria-hidden="true" />Nouvelle proforma
+                        </Link>
+                        <Link href="/admin/factures/nouvelle" className={classeBouton('primaire')}>
+                            <Plus className="w-4 h-4" aria-hidden="true" />Nouvelle facture
+                        </Link>
+                    </>
+                }
+            />
 
-            <main className="flex-1 p-4 sm:p-6 space-y-8">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-8">
                 <div className="space-y-4">
                     <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
                         <FileText className="w-4 h-4" />

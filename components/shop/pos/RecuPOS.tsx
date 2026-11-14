@@ -70,10 +70,10 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
             {/* Aperçu reçu thermique */}
             <div
                 id="recu-thermique"
-                className="bg-white border border-border rounded-xl p-5 w-full max-w-xs space-y-3 font-mono text-xs print:shadow-none"
+                className="bg-card border border-border rounded-xl p-5 w-full max-w-xs space-y-3 font-mono text-xs print:shadow-none"
             >
                 {/* En-tête boutique */}
-                <div className="text-center space-y-0.5 border-b border-dashed border-gray-300 pb-3">
+                <div className="text-center space-y-0.5 border-b border-dashed border-border pb-3">
                     <p className="font-bold text-sm text-foreground">{boutique.nom}</p>
                     {vente?.shops?.adresse && (
                         <p className="text-muted-foreground">{vente.shops.adresse}</p>
@@ -90,7 +90,7 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
                 </div>
 
                 {/* Infos vente */}
-                <div className="space-y-0.5 border-b border-dashed border-gray-300 pb-3">
+                <div className="space-y-0.5 border-b border-dashed border-border pb-3">
                     <div className="flex justify-between">
                         <span className="font-bold">N° :</span>
                         <span>{publicId}</span>
@@ -114,7 +114,7 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
                 </div>
 
                 {/* Articles */}
-                <div className="space-y-2 border-b border-dashed border-gray-300 pb-3">
+                <div className="space-y-2 border-b border-dashed border-border pb-3">
                     {vente?.sale_items?.map((item: any) => (
                         <div key={item.id}>
                             <p className="font-bold text-foreground truncate">
@@ -142,7 +142,7 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
                 </div>
 
                 {/* Totaux */}
-                <div className="space-y-1 border-b border-dashed border-gray-300 pb-3">
+                <div className="space-y-1 border-b border-dashed border-border pb-3">
                     {vente?.montant_tva > 0 && (
                         <div className="flex justify-between text-muted-foreground">
                             <span>TVA</span>
@@ -156,7 +156,7 @@ export default function RecuPOS({ saleId, publicId, boutique, onNouvelleVente }:
                 </div>
 
                 {/* Paiements */}
-                <div className="space-y-1 border-b border-dashed border-gray-300 pb-3">
+                <div className="space-y-1 border-b border-dashed border-border pb-3">
                     {vente?.sale_payments?.map((p: any, i: number) => (
                         <div key={i} className="flex justify-between text-muted-foreground">
               <span>

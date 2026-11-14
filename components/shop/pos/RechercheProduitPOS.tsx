@@ -60,9 +60,9 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
         <div className="flex flex-col h-full">
 
             {/* Barre de recherche */}
-            <div className="p-4 bg-white border-b border-gray-200 shadow-sm">
+            <div className="p-4 bg-card border-b border-border shadow-sm">
                 <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[#15335a]" />
+                    <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--primary-strong)]" />
                     <input
                         ref={inputRef}
                         type="text"
@@ -70,12 +70,12 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
                         onChange={e => setTerme(e.target.value)}
                         placeholder="Rechercher un produit (nom, SKU, code-barres)..."
                         autoFocus
-                        className="w-full pl-11 pr-4 py-3 bg-[#f0f4ff] border-2 border-[#15335a]/20 rounded-xl text-sm font-medium focus:outline-none focus:border-[#15335a]/60 focus:bg-white transition-all"
+                        className="w-full pl-11 pr-4 py-3 bg-background border-2 border-primary/20 rounded-xl text-sm font-medium focus:outline-none focus:border-primary/40 focus:bg-white transition-all"
                     />
                     {terme && (
                         <button
                             onClick={() => { setTerme(''); setResultats([]); inputRef.current?.focus() }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-lg leading-none"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground/80 hover:text-muted-foreground text-lg leading-none"
                         >
                             ×
                         </button>
@@ -88,25 +88,25 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
 
                 {chargement ? (
                     <div className="flex items-center justify-center py-16 gap-3">
-                        <div className="w-6 h-6 border-2 border-[#15335a] border-t-transparent rounded-full animate-spin" />
-                        <span className="text-sm text-[#15335a] font-medium">Recherche...</span>
+                        <div className="w-6 h-6 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                        <span className="text-sm text-[var(--primary-strong)] font-medium">Recherche...</span>
                     </div>
 
                 ) : terme.length < 2 ? (
                     <div className="flex flex-col items-center justify-center py-16 space-y-4">
-                        <div className="w-20 h-20 bg-white rounded-2xl shadow-md flex items-center justify-center">
-                            <Search className="w-9 h-9 text-[#15335a]/30" />
+                        <div className="w-20 h-20 bg-card rounded-2xl shadow-md flex items-center justify-center">
+                            <Search className="w-9 h-9 text-[var(--primary-strong)]/30" />
                         </div>
                         <div className="text-center">
-                            <p className="text-sm font-semibold text-gray-500">Rechercher un produit</p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-sm font-semibold text-muted-foreground">Rechercher un produit</p>
+                            <p className="text-xs text-muted-foreground/80 mt-1">
                                 Tapez le nom, SKU ou scannez un code-barres
                             </p>
                         </div>
                         <div className="flex gap-2 mt-2">
                             {['Nom', 'SKU', 'Code-barres'].map(t => (
                                 <span key={t}
-                                      className="flex items-center gap-1 px-2.5 py-1 bg-white border border-gray-200 rounded-full text-xs text-gray-400">
+                                      className="flex items-center gap-1 px-2.5 py-1 bg-card border border-border rounded-full text-xs text-muted-foreground/80">
                   {t === 'Code-barres'
                       ? <Barcode className="w-3 h-3" />
                       : t === 'SKU'
@@ -121,13 +121,13 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
 
                 ) : resultats.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16 space-y-3">
-                        <div className="w-16 h-16 bg-white rounded-2xl shadow-sm flex items-center justify-center">
-                            <Package className="w-7 h-7 text-gray-300" />
+                        <div className="w-16 h-16 bg-card rounded-2xl shadow-sm flex items-center justify-center">
+                            <Package className="w-7 h-7 text-muted-foreground/80" />
                         </div>
-                        <p className="text-sm font-medium text-gray-500">
+                        <p className="text-sm font-medium text-muted-foreground">
                             Aucun produit pour "<strong>{terme}</strong>"
                         </p>
-                        <p className="text-xs text-gray-400">Vérifiez l'orthographe ou essayez le SKU</p>
+                        <p className="text-xs text-muted-foreground/80">Vérifiez l'orthographe ou essayez le SKU</p>
                     </div>
 
                 ) : (
@@ -145,10 +145,10 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
                                     onClick={() => handleAjouter(p)}
                                     className={`relative text-left rounded-2xl border-2 p-3.5 transition-all duration-200 group ${
                                         rupture
-                                            ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
+                                            ? 'bg-[var(--surface2)] border-border opacity-60 cursor-not-allowed'
                                             : vientAjout
                                                 ? 'bg-green-50 border-green-400 scale-95'
-                                                : 'bg-white border-gray-200 hover:border-[#15335a] hover:shadow-lg hover:shadow-[#15335a]/10 hover:scale-[1.02]'
+                                                : 'bg-card border-border hover:border-primary hover:shadow-lg hover:shadow-black/10 hover:scale-[1.02]'
                                     }`}
                                 >
                                     {/* Badge stock */}
@@ -173,48 +173,48 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherIm
                                     {afficherImages && p.photo_url && (
                                         // eslint-disable-next-line @next/next/no-img-element
                                         <img src={p.photo_url} alt="" loading="lazy"
-                                             className={`w-full h-24 object-cover rounded-xl mb-3 bg-gray-100 ${rupture ? 'grayscale' : ''}`} />
+                                             className={`w-full h-24 object-cover rounded-xl mb-3 bg-muted ${rupture ? 'grayscale' : ''}`} />
                                     )}
 
                                     {/* Icône type */}
                                     {!(afficherImages && p.photo_url) && <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors ${
                                         rupture
-                                            ? 'bg-gray-100'
+                                            ? 'bg-muted'
                                             : vientAjout
                                                 ? 'bg-green-500'
-                                                : 'bg-[#15335a]/10 group-hover:bg-[#15335a]/20'
+                                                : 'bg-[var(--primary-soft)] group-hover:bg-[var(--primary-soft)]'
                                     }`}>
                                         {vientAjout
                                             ? <Plus className="w-5 h-5 text-white" />
-                                            : <Package className={`w-5 h-5 ${rupture ? 'text-gray-400' : 'text-[#15335a]'}`} />
+                                            : <Package className={`w-5 h-5 ${rupture ? 'text-muted-foreground/80' : 'text-[var(--primary-strong)]'}`} />
                                         }
                                     </div>}
 
                                     {/* Nom */}
                                     <p className={`text-sm font-bold leading-tight mb-1 line-clamp-2 ${
-                                        rupture ? 'text-gray-400' : 'text-gray-800 group-hover:text-[#15335a]'
+                                        rupture ? 'text-muted-foreground/80' : 'text-foreground group-hover:text-primary'
                                     } transition-colors`}>
                                         {p.nom}
                                     </p>
 
                                     {/* SKU */}
                                     {p.sku && (
-                                        <p className="text-xs text-gray-400 font-mono mb-2">{p.sku}</p>
+                                        <p className="text-xs text-muted-foreground/80 font-mono mb-2">{p.sku}</p>
                                     )}
 
                                     {/* Prix */}
                                     <div className="flex items-center justify-between mt-auto">
                                         <p className={`text-base font-black ${
-                                            rupture ? 'text-gray-400' : 'text-[#15335a]'
+                                            rupture ? 'text-muted-foreground/80' : 'text-[var(--primary-strong)]'
                                         }`}>
                                             {formatMontant(p.prix_vente)}
                                         </p>
                                         <span className={`text-xs ${
                                             rupture
-                                                ? 'text-gray-400'
+                                                ? 'text-muted-foreground/80'
                                                 : stock <= 5 && !rupture
                                                     ? 'text-amber-500 font-bold'
-                                                    : 'text-gray-400'
+                                                    : 'text-muted-foreground/80'
                                         }`}>
                       {!rupture && `/${p.unite}`}
                     </span>

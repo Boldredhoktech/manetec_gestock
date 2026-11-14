@@ -7,9 +7,9 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { chargerClientChoisi } from '@/lib/clients/client-choisi'
 import { redirect, notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft, Info } from 'lucide-react'
+import { Info } from 'lucide-react'
 import FormulaireFactureDirecte from '@/components/shop/facturation/FormulaireFactureDirecte'
+import EnTetePage from '@/components/shop/EnTetePage'
 
 export const metadata: Metadata = { title: 'Modifier la facture' }
 
@@ -67,19 +67,12 @@ export default async function PageModifierFacture({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <Link href={`/admin/factures/${id}`}
-                          className="text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">Modifier la facture</h1>
-                        <p className="text-xs font-mono text-muted-foreground mt-0.5">{facture.public_id}</p>
-                    </div>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6 max-w-3xl space-y-4">
+            <EnTetePage
+                titre="Modifier la facture"
+                sousTitre={facture.public_id}
+                ariane={[{ label: 'Factures', href: '/admin/factures' }, { label: facture.public_id, href: `/admin/factures/${id}` }, { label: 'Modifier' }]}
+            />
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-3xl space-y-4">
                 <div className="flex items-start gap-3 bg-muted/50 border border-border rounded-lg px-4 py-3 text-sm text-muted-foreground">
                     <Info className="w-4 h-4 mt-0.5 shrink-0" />
                     La facture garde son numéro. La modification est enregistrée dans son historique

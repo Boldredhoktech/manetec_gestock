@@ -7,9 +7,8 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { chargerClientChoisi } from '@/lib/clients/client-choisi'
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import FormulaireDevis from '@/components/shop/facturation/FormulaireDevis'
+import EnTetePage from '@/components/shop/EnTetePage'
 
 export const metadata: Metadata = { title: 'Nouvelle proforma' }
 
@@ -38,16 +37,11 @@ export default async function PageNouveauDevis({ searchParams }: PageProps) {
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <Link href="/admin/factures"
-                          className="text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <h1 className="text-xl font-bold text-foreground">Nouvelle proforma</h1>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6 max-w-3xl">
+            <EnTetePage
+                titre="Nouvelle proforma"
+                ariane={[{ label: 'Ventes' }, { label: 'Factures', href: '/admin/factures' }, { label: 'Nouvelle proforma' }]}
+            />
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-3xl">
                 <FormulaireDevis
                     clientInitial={clientInitial}
                     peutCreerClient={aPermission(user, PERMISSIONS.CLIENTS_CREER)}

@@ -174,7 +174,7 @@ export default function CarteDetailFacture({ facture, boutique }: Props) {
             </div>
 
             {/* Montant en toutes lettres */}
-            <div className="rounded-xl bg-muted/40 border-l-4 border-[#15335a] px-4 py-3">
+            <div className="rounded-xl bg-muted/40 border-l-4 border-primary px-4 py-3">
                 <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
                     Arrêtée la présente facture à la somme de
                 </p>

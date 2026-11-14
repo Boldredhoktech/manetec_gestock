@@ -33,19 +33,19 @@ export default function CarteActionsClient({ clientId, clientNom, estActif }: Pr
         <div className="space-y-4">
 
             {/* Actions principales */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
 
-                <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                    <div className="bg-[#f59e0b]/10 p-2 rounded-lg">
-                        <Zap className="w-5 h-5 text-[#f59e0b]" />
+                <div className="flex items-center gap-2 pb-3 border-b border-border">
+                    <div className="bg-accent p-2 rounded-lg">
+                        <Zap className="w-5 h-5 text-accent-foreground" />
                     </div>
-                    <h2 className="text-sm font-bold text-gray-900">Actions rapides</h2>
+                    <h2 className="text-sm font-bold text-foreground">Actions rapides</h2>
                 </div>
 
                 {/* Créer une facture */}
                 <Link
                     href={`/admin/factures/nouvelle?clientId=${clientId}`}
-                    className="flex items-center gap-3 w-full p-3.5 bg-[#15335a] hover:bg-[#0f2742] text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-[#15335a]/30 group"
+                    className="flex items-center gap-3 w-full p-3.5 bg-primary hover:opacity-90 text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-black/10 group"
                 >
                     <div className="bg-white/20 p-2 rounded-lg group-hover:bg-white/30 transition-colors">
                         <FileText className="w-4 h-4 text-white" />
@@ -59,7 +59,7 @@ export default function CarteActionsClient({ clientId, clientNom, estActif }: Pr
                 {/* Créer un devis */}
                 <Link
                     href={`/admin/factures/devis/nouveau?clientId=${clientId}`}
-                    className="flex items-center gap-3 w-full p-3.5 bg-purple-600 hover:bg-purple-700 text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-purple-500/30 group"
+                    className="flex items-center gap-3 w-full p-3.5 bg-[var(--nav)] hover:opacity-90 text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-black/10 group"
                 >
                     <div className="bg-white/20 p-2 rounded-lg group-hover:bg-white/30 transition-colors">
                         <ShoppingCart className="w-4 h-4 text-white" />
@@ -73,28 +73,28 @@ export default function CarteActionsClient({ clientId, clientNom, estActif }: Pr
                 {/* Créer un avoir */}
                 <Link
                     href={`/admin/factures?nouveauAvoir=true&clientId=${clientId}&clientNom=${encodeURIComponent(clientNom)}`}
-                    className="flex items-center gap-3 w-full p-3.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-amber-500/30 group"
+                    className="flex items-center gap-3 w-full p-3.5 bg-[#FACC15] hover:brightness-95 text-[#1A1400] rounded-xl transition-all duration-200 hover:shadow-lg hover:shadow-black/10 group"
                 >
-                    <div className="bg-white/20 p-2 rounded-lg group-hover:bg-white/30 transition-colors">
-                        <RotateCcw className="w-4 h-4 text-white" />
+                    <div className="bg-black/10 p-2 rounded-lg group-hover:bg-black/15 transition-colors">
+                        <RotateCcw className="w-4 h-4 text-[#1A1400]" />
                     </div>
                     <div className="flex-1">
                         <p className="text-sm font-bold">Émettre un avoir</p>
-                        <p className="text-xs text-white/70">Sur une facture existante</p>
+                        <p className="text-xs text-[#1A1400]/70">Sur une facture existante</p>
                     </div>
                 </Link>
 
             </div>
 
             {/* Zone danger */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-3">
+            <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-3">
 
-                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                <p className="text-xs font-bold text-muted-foreground/80 uppercase tracking-wider">
                     Zone de gestion
                 </p>
 
                 {erreur && (
-                    <div className="flex items-center gap-2 p-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+                    <div className="flex items-center gap-2 p-2.5 bg-[var(--rouge-doux)] border border-[var(--rouge-texte)]/30 rounded-lg text-xs text-[var(--rouge-texte)]">
                         <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                         {erreur}
                     </div>

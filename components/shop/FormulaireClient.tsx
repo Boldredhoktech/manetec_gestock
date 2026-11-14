@@ -5,6 +5,7 @@ import { creerClient } from '@/actions/clients'
 import { Button } from '@/components/ui/button'
 import ChampNombre from '@/components/ui/ChampNombre'
 import { Loader2, AlertCircle } from 'lucide-react'
+import { PiedFormulaire } from '@/components/ui/ModalesPartagees'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
@@ -35,7 +36,7 @@ export default function FormulaireClient() {
             )}
 
             {/* Informations principales */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Informations personnelles</h2>
 
                 <div className="space-y-1.5">
@@ -95,7 +96,7 @@ export default function FormulaireClient() {
             </div>
 
             {/* Informations légales */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">
                     Informations légales (optionnel)
                 </h2>
@@ -116,7 +117,7 @@ export default function FormulaireClient() {
             </div>
 
             {/* Notes */}
-            <div className="bg-card border border-border rounded-xl p-5 space-y-4">
+            <div className="bloc-form bg-card border border-border rounded-xl p-5 space-y-4">
                 <h2 className="text-sm font-semibold text-foreground">Notes internes</h2>
 
                 <div className="space-y-1.5">
@@ -139,12 +140,14 @@ export default function FormulaireClient() {
                           className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50 resize-none" />
             </div>
 
-            <Button type="submit" disabled={enAttente} className="w-full">
-                {enAttente
-                    ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
-                    : 'Créer le client'
-                }
-            </Button>
+            <PiedFormulaire>
+                <Button type="submit" disabled={enAttente} className="h-11 px-5 rounded-xl font-semibold">
+                    {enAttente
+                        ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Création...</>
+                        : 'Créer le client'
+                    }
+                </Button>
+            </PiedFormulaire>
 
         </form>
     )

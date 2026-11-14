@@ -18,7 +18,7 @@ interface Props {
 }
 
 const STATUT_CONFIG: Record<string, { label: string; classe: string }> = {
-    brouillon: { label: 'Brouillon', classe: 'bg-gray-100 text-gray-600 border-gray-200'    },
+    brouillon: { label: 'Brouillon', classe: 'bg-muted text-muted-foreground border-border'    },
     envoye:    { label: 'Envoyé',    classe: 'bg-blue-100 text-blue-700 border-blue-200'     },
     accepte:   { label: 'Accepté',   classe: 'bg-green-100 text-green-700 border-green-200'  },
     refuse:    { label: 'Refusé',    classe: 'bg-red-100 text-red-700 border-red-200'         },
@@ -65,24 +65,24 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6">
+        <div className="bg-card border border-border rounded-2xl p-6 shadow-sm space-y-6">
 
             {/* En-tête */}
             <div className="flex items-start justify-between">
                 <div>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-foreground">
                         Proforma {devis.public_id}
                     </p>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-sm text-muted-foreground mt-1">
                         Émis le {formatDate(devis.date_devis)}
                     </p>
                     {devis.date_validite && (
-                        <p className="text-sm text-gray-500 mt-0.5">
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             Échéance : {formatDate(devis.date_validite)}
                         </p>
                     )}
                     {devis.objet && (
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="text-sm text-muted-foreground mt-1">
                             <span className="font-medium">Objet :</span> {devis.objet}
                         </p>
                     )}
@@ -103,55 +103,55 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
             {/* Boutique ↔ Client */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
                 <div className="space-y-1">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">De</p>
-                    <p className="font-semibold text-gray-900">{boutique?.nom}</p>
-                    {boutique?.adresse   && <p className="text-gray-500">{boutique.adresse}</p>}
-                    {boutique?.telephone_1 && <p className="text-gray-500">{boutique.telephone_1}</p>}
-                    {boutique?.ifu       && <p className="text-gray-400 text-xs">IFU : {boutique.ifu}</p>}
+                    <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">De</p>
+                    <p className="font-semibold text-foreground">{boutique?.nom}</p>
+                    {boutique?.adresse   && <p className="text-muted-foreground">{boutique.adresse}</p>}
+                    {boutique?.telephone_1 && <p className="text-muted-foreground">{boutique.telephone_1}</p>}
+                    {boutique?.ifu       && <p className="text-muted-foreground/80 text-xs">IFU : {boutique.ifu}</p>}
                 </div>
                 <div className="space-y-1">
-                    <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">À</p>
+                    <p className="text-xs font-semibold text-muted-foreground/80 uppercase tracking-wider">À</p>
                     {clientData ? (
                         <>
-                            <p className="font-semibold text-gray-900">{clientData.nom}</p>
-                            {clientData.adresse   && <p className="text-gray-500">{clientData.adresse}</p>}
-                            {clientData.telephone && <p className="text-gray-500">{clientData.telephone}</p>}
-                            {clientData.ifu       && <p className="text-gray-400 text-xs">IFU : {clientData.ifu}</p>}
+                            <p className="font-semibold text-foreground">{clientData.nom}</p>
+                            {clientData.adresse   && <p className="text-muted-foreground">{clientData.adresse}</p>}
+                            {clientData.telephone && <p className="text-muted-foreground">{clientData.telephone}</p>}
+                            {clientData.ifu       && <p className="text-muted-foreground/80 text-xs">IFU : {clientData.ifu}</p>}
                         </>
                     ) : (
-                        <p className="text-gray-400">Client non spécifié</p>
+                        <p className="text-muted-foreground/80">Client non spécifié</p>
                     )}
                 </div>
             </div>
 
             {/* Lignes */}
-            <div className="border border-gray-200 rounded-xl overflow-x-auto">
+            <div className="border border-border rounded-xl overflow-x-auto">
                 <table className="w-full min-w-[520px] text-sm">
                     <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                        <th className="text-left px-4 py-2.5 font-medium text-gray-500">Désignation</th>
-                        <th className="text-right px-4 py-2.5 font-medium text-gray-500">Qté</th>
-                        <th className="text-right px-4 py-2.5 font-medium text-gray-500">P.U. HT</th>
-                        <th className="text-right px-4 py-2.5 font-medium text-gray-500">Remise</th>
-                        <th className="text-right px-4 py-2.5 font-medium text-gray-500">TVA</th>
-                        <th className="text-right px-4 py-2.5 font-medium text-gray-500">Total TTC</th>
+                    <tr className="bg-[var(--surface2)] border-b border-border">
+                        <th className="text-left px-4 py-2.5 font-medium text-muted-foreground">Désignation</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Qté</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">P.U. HT</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Remise</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">TVA</th>
+                        <th className="text-right px-4 py-2.5 font-medium text-muted-foreground">Total TTC</th>
                     </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-100">
+                    <tbody className="divide-y divide-border">
                     {devis.devis_items?.map((item: any) => (
                         <tr key={item.id}>
-                            <td className="px-4 py-2.5 text-gray-800">{item.designation}</td>
-                            <td className="px-4 py-2.5 text-right text-gray-500">{item.quantite}</td>
-                            <td className="px-4 py-2.5 text-right text-gray-500">
+                            <td className="px-4 py-2.5 text-foreground">{item.designation}</td>
+                            <td className="px-4 py-2.5 text-right text-muted-foreground">{item.quantite}</td>
+                            <td className="px-4 py-2.5 text-right text-muted-foreground">
                                 {formatMontant(item.prix_unitaire, boutique?.devise)}
                             </td>
-                            <td className="px-4 py-2.5 text-right text-gray-500">
+                            <td className="px-4 py-2.5 text-right text-muted-foreground">
                                 {item.remise_pct > 0 ? `${item.remise_pct}%` : '—'}
                             </td>
-                            <td className="px-4 py-2.5 text-right text-gray-500">
+                            <td className="px-4 py-2.5 text-right text-muted-foreground">
                                 {item.tva_pct > 0 ? `${item.tva_pct}%` : '—'}
                             </td>
-                            <td className="px-4 py-2.5 text-right font-medium text-gray-900">
+                            <td className="px-4 py-2.5 text-right font-medium text-foreground">
                                 {formatMontant(item.montant_ttc, boutique?.devise)}
                             </td>
                         </tr>
@@ -163,7 +163,7 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
             {/* Totaux */}
             <div className="flex justify-end">
                 <div className="w-64 space-y-2 text-sm">
-                    <div className="flex justify-between text-gray-500">
+                    <div className="flex justify-between text-muted-foreground">
                         <span>Sous-total HT</span>
                         <span>{formatMontant(devis.montant_ht + devis.remise_val, boutique?.devise)}</span>
                     </div>
@@ -174,12 +174,12 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
                         </div>
                     )}
                     {devis.montant_tva > 0 && (
-                        <div className="flex justify-between text-gray-500">
+                        <div className="flex justify-between text-muted-foreground">
                             <span>TVA</span>
                             <span>{formatMontant(devis.montant_tva, boutique?.devise)}</span>
                         </div>
                     )}
-                    <div className="flex justify-between font-bold text-gray-900 text-base border-t border-gray-200 pt-2">
+                    <div className="flex justify-between font-bold text-foreground text-base border-t border-border pt-2">
                         <span>Total TTC</span>
                         <span>{formatMontant(devis.montant_ttc, boutique?.devise)}</span>
                     </div>
@@ -187,18 +187,18 @@ export default function CarteDetailDevis({ devis, boutique }: Props) {
             </div>
 
             {/* Montant en toutes lettres */}
-            <div className="rounded-xl bg-gray-50 border-l-4 border-[#15335a] px-4 py-3">
-                <p className="text-[11px] font-bold text-gray-500 uppercase tracking-wide">
+            <div className="rounded-xl bg-[var(--surface2)] border-l-4 border-primary px-4 py-3">
+                <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wide">
                     Arrêtée la présente proforma à la somme de
                 </p>
-                <p className="text-sm font-bold text-gray-800 mt-0.5">
+                <p className="text-sm font-bold text-foreground mt-0.5">
                     {capitaliser(nombreEnLettresPDF(devis.montant_ttc))} {deviseEnLettresPDF(boutique?.devise ?? 'FCFA')}.
                 </p>
             </div>
 
             {/* Actions selon statut */}
             {['brouillon', 'envoye'].includes(devis.statut) && !devis.converti_en_facture && (
-                <div className="flex flex-wrap gap-2 pt-2 border-t border-gray-100">
+                <div className="flex flex-wrap gap-2 pt-2 border-t border-border">
                     {/* Un devis n'est qu'une proposition : tant qu'il est
                         ouvert, il se corrige au lieu d'être ressaisi. */}
                     <Button variant="outline" size="sm" asChild>

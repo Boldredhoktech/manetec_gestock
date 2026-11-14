@@ -29,13 +29,13 @@ export default function PaniersEnAttente({
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-4 mb-4 space-y-3 shadow-sm">
+        <div className="bg-card border border-border rounded-2xl p-4 mb-4 space-y-3 shadow-sm">
             <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-bold text-gray-800 flex items-center gap-2">
-                    <PauseCircle className="w-4 h-4 text-[#15335a]" />
+                <h3 className="text-sm font-bold text-foreground flex items-center gap-2">
+                    <PauseCircle className="w-4 h-4 text-[var(--primary-strong)]" />
                     Paniers en attente
                     {paniers.length > 0 && (
-                        <span className="px-1.5 py-0.5 rounded-full bg-[#15335a] text-white text-[11px] font-bold">
+                        <span className="px-1.5 py-0.5 rounded-full bg-primary text-white text-[11px] font-bold">
                             {paniers.length}
                         </span>
                     )}
@@ -43,7 +43,7 @@ export default function PaniersEnAttente({
 
                 {!panierCourantVide && (
                     <button type="button" onClick={onMettreDeCote}
-                            className="text-xs font-bold text-[#15335a] hover:text-[#0f2742] transition-colors">
+                            className="text-xs font-bold text-[var(--primary-strong)] hover:text-primary transition-colors">
                         Mettre de côté
                     </button>
                 )}
@@ -53,23 +53,23 @@ export default function PaniersEnAttente({
                 <ul className="space-y-1.5">
                     {paniers.map(p => (
                         <li key={p.id}
-                            className="flex items-center gap-2 bg-gray-50 rounded-xl px-3 py-2">
+                            className="flex items-center gap-2 bg-[var(--surface2)] rounded-xl px-3 py-2">
                             <div className="flex-1 min-w-0">
-                                <p className="text-xs font-semibold text-gray-800 truncate">
+                                <p className="text-xs font-semibold text-foreground truncate">
                                     {p.clientNom ?? 'Client de passage'}
                                 </p>
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                     {p.libelle} · {heure(p.misEnAttenteLe)}
                                 </p>
                             </div>
                             <button type="button" onClick={() => onReprendre(p.id)}
                                     aria-label="Reprendre ce panier"
-                                    className="p-1.5 rounded-lg text-[#15335a] hover:bg-white transition-colors">
+                                    className="p-1.5 rounded-lg text-[var(--primary-strong)] hover:bg-white transition-colors">
                                 <Play className="w-4 h-4" />
                             </button>
                             <button type="button" onClick={() => onRetirer(p.id)}
                                     aria-label="Abandonner ce panier"
-                                    className="p-1.5 rounded-lg text-gray-300 hover:text-red-500 transition-colors">
+                                    className="p-1.5 rounded-lg text-muted-foreground/80 hover:text-red-500 transition-colors">
                                 <Trash2 className="w-4 h-4" />
                             </button>
                         </li>

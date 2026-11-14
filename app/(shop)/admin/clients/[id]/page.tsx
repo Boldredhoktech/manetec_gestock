@@ -6,10 +6,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import {
-    ArrowLeft, UserSquare, Phone, Mail, MapPin,
-    Globe, FileText, CreditCard, ShoppingCart,
-    Plus, RotateCcw, Building2,
+    UserSquare, Phone, Mail, MapPin,
+    Globe, FileText,
+    Building2, Pencil,
 } from 'lucide-react'
+import EnTetePage from '@/components/shop/EnTetePage'
+import FormulaireModifierClient from '@/components/shop/clients/FormulaireModifierClient'
+import { ModaleUrl } from '@/components/ui/ModalesPartagees'
+import { classeBouton } from '@/components/ui/classe-bouton'
 import CarteSoldesClient from '@/components/shop/CarteSoldesClient'
 import CarteHistoriqueClient from '@/components/shop/CarteHistoriqueClient'
 import CarteVentesClient from '@/components/shop/clients/CarteVentesClient'
@@ -77,58 +81,43 @@ export default async function PageDetailClient({ params }: Props) {
         .from('shops').select('devise, remise_max_pct').eq('id', shopId).single()
 
     return (
-        <div className="flex flex-col min-h-screen bg-[#f8fafc]">
+        <div className="flex flex-col min-h-screen">
 
-            {/* HEADER BLEU ROI */}
-            <header
-                style={{ background: 'linear-gradient(135deg, #15335a 0%, #0f2742 100%)' }}
-                className="px-6 py-5 shadow-lg"
-            >
-                <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link href="/admin/clients"
-                              className="flex items-center justify-center w-9 h-9 rounded-xl bg-white/20 hover:bg-white/30 transition-colors">
-                            <ArrowLeft className="w-5 h-5 text-white" />
-                        </Link>
-                        <div>
-                            <div className="flex items-center gap-3">
-                                <h1 className="text-xl font-bold text-white">{client.nom}</h1>
-                                {!client.est_actif && (
-                                    <span className="px-2.5 py-0.5 bg-white/20 text-white text-xs font-bold rounded-full">
-                    DÉSACTIVÉ
-                  </span>
-                                )}
-                            </div>
-                            <p className="text-sm font-mono text-white/70 mt-0.5">{client.public_id}</p>
-                        </div>
-                    </div>
+            <EnTetePage
+                titre={client.nom}
+                sousTitre={`${client.public_id}${client.est_actif ? '' : ' · désactivé'}`}
+                ariane={[{ label: 'Ventes' }, { label: 'Clients', href: '/admin/clients' }, { label: client.nom }]}
+                actions={
+                    <Link href={`/admin/clients/${id}?modifier=1`} scroll={false} className={classeBouton('secondaire')}>
+                        <Pencil className="w-4 h-4" aria-hidden="true" />Modifier
+                    </Link>
+                }
+            />
+            <ModaleUrl param="modifier" titre="Modifier le client" description={client.nom} taille="lg">
+                <FormulaireModifierClient client={client} />
+            </ModaleUrl>
 
-                    {/* Stats rapides dans le header */}
-                    <div className="hidden sm:flex items-center gap-3">
-                        <div className="text-center px-4 py-2 bg-white/15 rounded-xl">
-                            <p className="text-xs text-white/70">Achats</p>
-                            <p className="text-lg font-black text-white">{totalAchats}</p>
-                        </div>
-                        <div className="text-center px-4 py-2 bg-white/15 rounded-xl">
-                            <p className="text-xs text-white/70">CA total</p>
-                            <p className="text-lg font-black text-white">
-                                {new Intl.NumberFormat('fr-FR').format(caTotal)} {boutique?.devise}
-                            </p>
-                        </div>
-                        {client.credit_balance > 0 && (
-                            <div className="text-center px-4 py-2 bg-red-500/30 rounded-xl border border-red-400/50">
-                                <p className="text-xs text-red-200">Crédit dû</p>
-                                <p className="text-lg font-black text-red-300">
-                                    {new Intl.NumberFormat('fr-FR').format(client.credit_balance)}
-                                </p>
-                            </div>
-                        )}
-                    </div>
+            <section aria-label="Chiffres du client" className="px-4 sm:px-6 lg:px-8 pb-4 grid grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="rounded-2xl p-4 bg-card border border-border">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">Achats</p>
+                    <p className="titre-design text-xl font-bold tabular-nums mt-1">{totalAchats}</p>
                 </div>
-            </header>
+                <div className="rounded-2xl p-4 bg-card border border-border">
+                    <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">CA total</p>
+                    <p className="titre-design text-xl font-bold tabular-nums mt-1">
+                        {new Intl.NumberFormat('fr-FR').format(caTotal)} {boutique?.devise}
+                    </p>
+                </div>
+                <div className={`col-span-2 lg:col-span-1 rounded-2xl p-4 border ${client.credit_balance > 0 ? 'bg-[var(--rouge-doux)] border-[var(--rouge-texte)]/30' : 'bg-card border-border'}`}>
+                    <p className={`text-xs font-bold uppercase tracking-wide ${client.credit_balance > 0 ? 'text-[var(--rouge-texte)]' : 'text-muted-foreground'}`}>Me doit</p>
+                    <p className={`titre-design text-xl font-bold tabular-nums mt-1 ${client.credit_balance > 0 ? 'text-[var(--rouge-texte)]' : ''}`}>
+                        {new Intl.NumberFormat('fr-FR').format(client.credit_balance)} {boutique?.devise}
+                    </p>
+                </div>
+            </section>
 
-            <main className="flex-1 p-4 sm:p-6">
-                <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
 
                     {/* Colonne gauche */}
                     <div className="lg:col-span-2 space-y-5">
@@ -172,21 +161,21 @@ function CarteProfilClient({
     ].filter(Boolean) as { icone: any; val: string; label: string }[]
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
 
-            <div className="flex items-center gap-2 pb-3 border-b border-gray-100">
-                <div className="bg-[#15335a]/10 p-2 rounded-lg">
-                    <UserSquare className="w-5 h-5 text-[#15335a]" />
+            <div className="flex items-center gap-2 pb-3 border-b border-border">
+                <div className="bg-[var(--primary-soft)] p-2 rounded-lg">
+                    <UserSquare className="w-5 h-5 text-[var(--primary-strong)]" />
                 </div>
-                <h2 className="text-sm font-bold text-gray-900">Profil client</h2>
-                <Link href={`/admin/clients/${client.id}/modifier`}
-                      className="ml-auto text-xs text-[#15335a] font-bold hover:underline">
+                <h2 className="text-sm font-bold text-foreground">Profil client</h2>
+                <Link href={`/admin/clients/${client.id}?modifier=1`} scroll={false}
+                      className="ml-auto text-xs text-[var(--primary-strong)] font-bold hover:underline">
                     Modifier
                 </Link>
             </div>
 
             {infos.length === 0 ? (
-                <p className="text-sm text-gray-400 italic">
+                <p className="text-sm text-muted-foreground/80 italic">
                     Aucune information de contact renseignée.
                 </p>
             ) : (
@@ -194,11 +183,11 @@ function CarteProfilClient({
                     {infos.map((info, i) => {
                         const Icone = info.icone
                         return (
-                            <div key={i} className="flex items-center gap-2.5 p-3 bg-gray-50 rounded-xl">
-                                <Icone className="w-4 h-4 text-[#15335a] shrink-0" />
+                            <div key={i} className="flex items-center gap-2.5 p-3 bg-[var(--surface2)] rounded-xl">
+                                <Icone className="w-4 h-4 text-[var(--primary-strong)] shrink-0" />
                                 <div className="min-w-0">
-                                    <p className="text-xs text-gray-400">{info.label}</p>
-                                    <p className="text-sm font-medium text-gray-800 truncate">{info.val}</p>
+                                    <p className="text-xs text-muted-foreground/80">{info.label}</p>
+                                    <p className="text-sm font-medium text-foreground truncate">{info.val}</p>
                                 </div>
                             </div>
                         )
@@ -207,9 +196,9 @@ function CarteProfilClient({
             )}
 
             {client.notes && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
-                    <p className="text-xs font-bold text-amber-600 mb-1">Note interne</p>
-                    <p className="text-sm text-amber-800">{client.notes}</p>
+                <div className="p-3 bg-accent border border-[#FACC15]/40 rounded-xl">
+                    <p className="text-xs font-bold text-accent-foreground mb-1">Note interne</p>
+                    <p className="text-sm text-accent-foreground">{client.notes}</p>
                 </div>
             )}
         </div>

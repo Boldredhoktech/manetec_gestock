@@ -6,9 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { redirect, notFound } from 'next/navigation'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import FicheVente from '@/components/shop/ventes/FicheVente'
+import EnTetePage from '@/components/shop/EnTetePage'
 
 export const metadata: Metadata = { title: 'Détail vente' }
 
@@ -56,22 +55,12 @@ export default async function PageDetailVente({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center gap-3">
-                    <Link href="/admin/ventes" className="text-muted-foreground hover:text-foreground">
-                        <ArrowLeft className="w-5 h-5" />
-                    </Link>
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground font-mono">
-                            {vente.public_id}
-                        </h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {(vente.clients as { nom: string } | null)?.nom ?? 'Client de passage'}
-                        </p>
-                    </div>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6 max-w-3xl">
+            <EnTetePage
+                titre={vente.public_id}
+                sousTitre={(vente.clients as { nom: string } | null)?.nom ?? 'Client de passage'}
+                ariane={[{ label: 'Ventes', href: '/admin/ventes' }, { label: vente.public_id }]}
+            />
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 max-w-3xl">
                 <FicheVente
                     vente={vente as never}
                     aDesRetours={(nbRetours ?? 0) > 0}

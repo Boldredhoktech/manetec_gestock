@@ -13,6 +13,11 @@ export function estTheme(v: unknown): v is Theme {
 }
 
 /** Script exécuté avant le premier affichage pour le thème « systeme ». */
+// + impression : tout s'imprime en clair (reçus, factures), puis le
+// thème sombre revient.
 export const SCRIPT_THEME_SYSTEME =
-    `(function(){try{var r=document.getElementById('${ID_RACINE_APP}');` +
-    `if(r&&r.dataset.theme==='systeme'&&matchMedia('(prefers-color-scheme: dark)').matches)r.classList.add('dark')}catch(e){}})()`
+    `(function(){try{var r=document.getElementById('${ID_RACINE_APP}');if(!r)return;` +
+    `if(r.dataset.theme==='systeme'&&matchMedia('(prefers-color-scheme: dark)').matches)r.classList.add('dark');` +
+    `addEventListener('beforeprint',function(){r.dataset.sombreAvantImpression=r.classList.contains('dark')?'1':'';r.classList.remove('dark')});` +
+    `addEventListener('afterprint',function(){if(r.dataset.sombreAvantImpression==='1')r.classList.add('dark')})` +
+    `}catch(e){}})()`

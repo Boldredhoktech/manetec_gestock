@@ -8,11 +8,12 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ShoppingCart } from 'lucide-react'
-import { Button } from '@/components/ui/button'
 import TableauVentes from '@/components/shop/ventes/TableauVentes'
 import FiltresListe from '@/components/shop/FiltresListe'
 import Pagination from '@/components/shop/Pagination'
 import { bornesInstant } from '@/lib/dates/periode'
+import EnTetePage from '@/components/shop/EnTetePage'
+import { classeBouton } from '@/components/ui/classe-bouton'
 
 export const metadata: Metadata = { title: 'Ventes' }
 
@@ -84,23 +85,17 @@ export default async function PageVentes({
 
     return (
         <div className="flex flex-col min-h-screen">
-            <header className="border-b border-border bg-card px-4 sm:px-6 py-4">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <h1 className="text-xl font-bold text-foreground">Ventes</h1>
-                        <p className="text-sm text-muted-foreground mt-0.5">
-                            {count ?? 0} vente(s)
-                        </p>
-                    </div>
-                    <Button asChild>
-                        <Link href="/pos">
-                            <ShoppingCart className="w-4 h-4 mr-2" />
-                            Ouvrir la caisse
-                        </Link>
-                    </Button>
-                </div>
-            </header>
-            <main className="flex-1 p-4 sm:p-6 space-y-4">
+            <EnTetePage
+                titre="Ventes"
+                sousTitre={`${count ?? 0} vente(s)`}
+                ariane={[{ label: 'Ventes' }, { label: 'Historique des ventes' }]}
+                actions={
+                    <Link href="/pos" className={classeBouton('primaire')}>
+                        <ShoppingCart className="w-4 h-4" aria-hidden="true" />Ouvrir la caisse
+                    </Link>
+                }
+            />
+            <main className="flex-1 px-4 sm:px-6 lg:px-8 pb-8 space-y-4">
                 <FiltresListe
                     placeholder="Numéro de vente"
                     filtres={[

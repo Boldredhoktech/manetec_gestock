@@ -52,39 +52,39 @@ export default function OuvertureCaissePOS({
         router.refresh()
     }
 
-    const bouton = 'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white bg-[#15335a] hover:bg-[#0f2742] disabled:opacity-50'
+    const bouton = 'w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-white bg-primary hover:opacity-90 disabled:opacity-50'
 
     return (
         <div className="flex-1 flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-gray-200 p-6 space-y-4">
+            <div className="w-full max-w-md bg-card rounded-2xl shadow-xl border border-border p-6 space-y-4">
 
                 {etat.etat === 'a_ouvrir' && (
                     <>
                         <div className="flex items-center gap-3">
-                            <div className="p-2.5 rounded-xl bg-[#f0f4ff]"><Wallet className="w-5 h-5 text-[#15335a]" /></div>
+                            <div className="p-2.5 rounded-xl bg-background"><Wallet className="w-5 h-5 text-[var(--primary-strong)]" /></div>
                             <div>
-                                <h2 className="text-base font-bold text-gray-900">Ouvrir la caisse</h2>
-                                <p className="text-xs text-gray-500">{entrepotNom} · aujourd&apos;hui</p>
+                                <h2 className="text-base font-bold text-foreground">Ouvrir la caisse</h2>
+                                <p className="text-xs text-muted-foreground">{entrepotNom} · aujourd&apos;hui</p>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                             Comptez les espèces présentes dans le tiroir avant la première vente. Ce fond servira
                             au comptage de ce soir.
                         </p>
                         <label className="block space-y-1">
-                            <span className="text-xs font-bold text-gray-700">Fond de caisse ({devise})</span>
+                            <span className="text-xs font-bold text-foreground">Fond de caisse ({devise})</span>
                             <ChampNombre
                                 value={fond}
                                 onChange={setFond}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                             />
                         </label>
                         <label className="block space-y-1">
-                            <span className="text-xs font-bold text-gray-700">Note (facultatif)</span>
+                            <span className="text-xs font-bold text-foreground">Note (facultatif)</span>
                             <input
                                 value={note}
                                 onChange={e => setNote(e.target.value)}
-                                className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                className="w-full px-3 py-2.5 border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
                             />
                         </label>
                         <button
@@ -104,11 +104,11 @@ export default function OuvertureCaissePOS({
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-xl bg-amber-50"><Lock className="w-5 h-5 text-amber-600" /></div>
                             <div>
-                                <h2 className="text-base font-bold text-gray-900">Caisse fermée pour aujourd&apos;hui</h2>
-                                <p className="text-xs text-gray-500">{entrepotNom}</p>
+                                <h2 className="text-base font-bold text-foreground">Caisse fermée pour aujourd&apos;hui</h2>
+                                <p className="text-xs text-muted-foreground">{entrepotNom}</p>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                             Le tiroir a déjà été compté. Pour encaisser encore, rouvrez la caisse : le comptage
                             sera annulé (il reste noté) et il faudra recompter avant de partir.
                         </p>
@@ -129,11 +129,11 @@ export default function OuvertureCaissePOS({
                         <div className="flex items-center gap-3">
                             <div className="p-2.5 rounded-xl bg-red-50"><AlertCircle className="w-5 h-5 text-red-600" /></div>
                             <div>
-                                <h2 className="text-base font-bold text-gray-900">La caisse du {dateFR(etat.session.jour)} n&apos;a pas été fermée</h2>
-                                <p className="text-xs text-gray-500">{entrepotNom}</p>
+                                <h2 className="text-base font-bold text-foreground">La caisse du {dateFR(etat.session.jour)} n&apos;a pas été fermée</h2>
+                                <p className="text-xs text-muted-foreground">{entrepotNom}</p>
                             </div>
                         </div>
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-muted-foreground">
                             Elle doit être comptée et fermée avant d&apos;ouvrir celle d&apos;aujourd&apos;hui.
                             {!peutFermerCaisse && ' Demandez à un gestionnaire de la fermer.'}
                         </p>
