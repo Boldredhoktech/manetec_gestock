@@ -7,6 +7,7 @@ import { aPermission } from '@/lib/auth/permissions-serveur'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { ROLES, PERMISSIONS } from '@/lib/constants/permissions'
+import { appliquerImageProduit } from '@/lib/produits/image'
 
 // ── Créer un entrepôt ─────────────────────────────────────────
 export async function creerEntrepot(formData: FormData) {
@@ -295,6 +296,10 @@ export async function creerProduit(formData: FormData) {
         )
     }
 
+    // Photo (forfait Pro et au-dessus) : un refus n'empêche pas la création.
+    const avertissementImage = await appliquerImageProduit(adminClient, shopId, produit.id, formData)
+    if (avertissementImage) console.warn('IMAGE PRODUIT:', avertissementImage)
+
     // Le stock initial passe par le point d'entrée unique : il est
     // journalisé comme n'importe quel autre mouvement.
     if (stockInitial > 0) {
@@ -577,7 +582,9 @@ export async function modifierProduit(formData: FormData) {
         if (erreurHistorique) console.error('ERREUR HISTORIQUE PRIX:', erreurHistorique)
     }
 
+    const avertissement = await appliquerImageProduit(adminClient, shopId, productId, formData)
+
     revalidatePath(`/stock/produits/${productId}`)
     revalidatePath('/stock/produits')
-    return { succes: true }
+    return { succes: true, avertissement }
 }

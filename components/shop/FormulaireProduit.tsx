@@ -4,18 +4,21 @@ import { useActionState } from 'react'
 import { creerProduit } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle } from 'lucide-react'
+import ChampImageProduit from '@/components/shop/produits/ChampImageProduit'
 
 interface Props {
     categories: { id: string; nom: string; parent_id: string | null }[]
     marques:    { id: string; nom: string }[]
     entrepots:  { id: string; nom: string; est_defaut: boolean }[]
+    /** Forfait Pro et au-dessus : le champ photo n'existe pas sinon. */
+    imagesAutorisees?: boolean
 }
 
 const etatInitial = { erreur: undefined as string | undefined }
 
 const UNITES = ['pièce', 'kg', 'g', 'litre', 'ml', 'carton', 'sachet', 'boîte', 'mètre']
 
-export default function FormulaireProduit({ categories, marques, entrepots }: Props) {
+export default function FormulaireProduit({ categories, marques, entrepots, imagesAutorisees = false }: Props) {
     const entrepotDefaut = entrepots.find(e => e.est_defaut)
 
     const [etat, action, enAttente] = useActionState(
@@ -60,6 +63,8 @@ export default function FormulaireProduit({ categories, marques, entrepots }: Pr
                         className="w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50"
                     />
                 </div>
+
+                {imagesAutorisees && <ChampImageProduit disabled={enAttente} />}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5">

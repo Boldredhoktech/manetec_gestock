@@ -65,7 +65,9 @@ export default function SidebarDrawer({ title, children }: Props) {
                 className={cn(
                     'sidebar-royal w-60 shrink-0 flex flex-col z-50',
                     'fixed inset-y-0 left-0 transition-transform duration-300 ease-in-out',
-                    'lg:static lg:translate-x-0 lg:min-h-screen',
+                    // Ordinateur : la barre reste à la hauteur de l'écran et
+                    // défile seule, indépendamment de la page.
+                    'lg:sticky lg:top-0 lg:h-screen lg:translate-x-0',
                     open ? 'translate-x-0' : '-translate-x-full',
                 )}
             >

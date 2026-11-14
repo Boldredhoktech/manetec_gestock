@@ -15,15 +15,19 @@ interface Produit {
     remise_max_pct: number | null; unite: string
     sku: string | null; type_produit: string
     necessite_imei: boolean; necessite_serie: boolean
+    photo_url?: string | null
     stock_levels: { quantite: number }[]
 }
 
 interface Props {
     warehouseId: string
     onAjouter:   (produit: Produit) => void
+    /** Forfait Pro et au-dessus : la photo du produit est affichée. Sinon,
+     *  aucune zone image (14/11). */
+    afficherImages?: boolean
 }
 
-export default function RechercheProduitPOS({ warehouseId, onAjouter }: Props) {
+export default function RechercheProduitPOS({ warehouseId, onAjouter, afficherImages = false }: Props) {
     const [terme,       setTerme]       = useState('')
     const [resultats,   setResultats]   = useState<Produit[]>([])
     const [chargement,  setChargement]  = useState(false)
@@ -165,8 +169,15 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter }: Props) {
                                         </div>
                                     )}
 
+                                    {/* Photo (forfait Pro) */}
+                                    {afficherImages && p.photo_url && (
+                                        // eslint-disable-next-line @next/next/no-img-element
+                                        <img src={p.photo_url} alt="" loading="lazy"
+                                             className={`w-full h-24 object-cover rounded-xl mb-3 bg-gray-100 ${rupture ? 'grayscale' : ''}`} />
+                                    )}
+
                                     {/* Icône type */}
-                                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors ${
+                                    {!(afficherImages && p.photo_url) && <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 transition-colors ${
                                         rupture
                                             ? 'bg-gray-100'
                                             : vientAjout
@@ -177,7 +188,7 @@ export default function RechercheProduitPOS({ warehouseId, onAjouter }: Props) {
                                             ? <Plus className="w-5 h-5 text-white" />
                                             : <Package className={`w-5 h-5 ${rupture ? 'text-gray-400' : 'text-[#15335a]'}`} />
                                         }
-                                    </div>
+                                    </div>}
 
                                     {/* Nom */}
                                     <p className={`text-sm font-bold leading-tight mb-1 line-clamp-2 ${

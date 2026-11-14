@@ -6,6 +6,7 @@ import { modifierProduit } from '@/actions/produits'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, CheckCircle } from 'lucide-react'
 import ChampNombre from '@/components/ui/ChampNombre'
+import ChampImageProduit from '@/components/shop/produits/ChampImageProduit'
 
 interface Produit {
     id:              string
@@ -27,12 +28,15 @@ interface Produit {
     necessite_serie: boolean
     est_retournable: boolean
     garantie_mois:   number | null
+    photo_url?:      string | null
 }
 
 interface Props {
     produit:    Produit
     categories: { id: string; nom: string }[]
     marques:    { id: string; nom: string }[]
+    /** Forfait Pro et au-dessus : le champ photo n'existe pas sinon. */
+    imagesAutorisees?: boolean
 }
 
 const UNITES = ['unité', 'kg', 'g', 'litre', 'ml', 'mètre', 'cm', 'boîte', 'carton', 'paire', 'lot']
@@ -42,7 +46,7 @@ const TYPES  = [
     { val: 'kit',      label: 'Kit — assemblage de produits' },
 ]
 
-export default function FormulaireModifierProduit({ produit, categories, marques }: Props) {
+export default function FormulaireModifierProduit({ produit, categories, marques, imagesAutorisees = false }: Props) {
     const router = useRouter()
 
     const [nom,           setNom]           = useState(produit.nom)
@@ -63,6 +67,9 @@ export default function FormulaireModifierProduit({ produit, categories, marques
     const [necessiteSerie, setNecessiteSerie] = useState(produit.necessite_serie)
     const [estRetournable, setEstRetournable] = useState(produit.est_retournable)
     const [garantieMois,  setGarantieMois]  = useState(produit.garantie_mois ?? 0)
+
+    const [photo, setPhoto] = useState<File | null>(null)
+    const [retirerPhoto, setRetirerPhoto] = useState(false)
 
     const [enAttente, setEnAttente] = useState(false)
     const [erreur,    setErreur]    = useState<string>()
@@ -96,10 +103,15 @@ export default function FormulaireModifierProduit({ produit, categories, marques
         if (necessiteSerie) formData.set('necessite_serie', 'true')
         if (estRetournable) formData.set('est_retournable', 'true')
 
+        if (photo) formData.set('photo', photo)
+        if (retirerPhoto) formData.set('retirerPhoto', 'true')
+
         const res = await modifierProduit(formData)
         setEnAttente(false)
 
         if (res?.erreur) { setErreur(res.erreur); return }
+        // Fiche enregistrée mais image refusée : on le dit au lieu de partir.
+        if (res && 'avertissement' in res && res.avertissement) { setErreur(res.avertissement); return }
 
         setSucces(true)
         setTimeout(() => router.push(`/stock/produits/${produit.id}`), 1200)
@@ -134,6 +146,14 @@ export default function FormulaireModifierProduit({ produit, categories, marques
                     <input type="text" value={nom} onChange={e => setNom(e.target.value)}
                            placeholder="Nom du produit" className={inputClass} />
                 </div>
+
+                {imagesAutorisees && (
+                    <ChampImageProduit
+                        urlActuelle={produit.photo_url}
+                        disabled={enAttente}
+                        onChange={(f, retirer) => { setPhoto(f); setRetirerPhoto(retirer) }}
+                    />
+                )}
 
                 <div className="space-y-1.5">
                     <label className="text-sm font-medium text-gray-700">Description</label>

@@ -15,6 +15,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import Link from 'next/link'
+import { useLayoutEffect, useRef } from 'react'
 import { CHEMIN_ABONNEMENT } from '@/lib/abonnement/regle'
 import { fichePlan, labelPlan } from '@/lib/abonnement/catalogue'
 import Image from 'next/image'
@@ -33,6 +34,8 @@ import { NAVIGATION_BOUTIQUE } from '@/lib/constants/navigation'
 // exception, « /admin/dashboard » resterait allumé sur chaque page admin.
 const RACINES = ['/admin/dashboard', '/compta/dashboard']
 
+const CLE_DEFILEMENT = 'manetec.sidebar.defilement'
+
 interface Props {
     /** Plan lu en base par le wrapper. Plus de repli sur le JWT (ABO-19) :
      *  figé à la connexion, il ignorerait un plan payé entre-temps. */
@@ -45,6 +48,15 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
     const pathname       = usePathname()
     const { session }    = useSessionBoutique()
     const { peutFaire }  = usePermission()
+
+    // Le menu garde sa position d'une page à l'autre (chaque section a son
+    // propre layout, donc sa propre barre) et l'élément actif est toujours
+    // ramené dans la zone visible : sinon, après un clic sur « Trésorerie »,
+    // la barre repartait du haut et cachait la page en cours.
+    const refNav = useRef<HTMLElement>(null)
+    const memoriserDefilement = () => {
+        try { sessionStorage.setItem(CLE_DEFILEMENT, String(refNav.current?.scrollTop ?? 0)) } catch { /* indisponible */ }
+    }
 
     const limites       = getPlanLimites(planReel)
     const estSuperAdmin = estAdminComplet(session?.role)
@@ -64,6 +76,25 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
             }))
             .filter(groupe => groupe.items.length > 0)
         : []
+
+    // Après chaque navigation (et quand le menu apparaît) : on reprend la
+    // position mémorisée, puis on s'assure que l'élément actif est visible.
+    const nbLiens = navigation.reduce((n, g) => n + g.items.length, 0)
+    useLayoutEffect(() => {
+        const nav = refNav.current
+        if (!nav || nbLiens === 0) return
+        try {
+            const memo = Number(sessionStorage.getItem(CLE_DEFILEMENT))
+            if (Number.isFinite(memo)) nav.scrollTop = memo
+        } catch { /* indisponible */ }
+        const actif = nav.querySelector<HTMLElement>('.sidebar-item.active')
+        if (actif) {
+            const haut = actif.offsetTop - nav.offsetTop
+            const visible = haut >= nav.scrollTop && haut + actif.offsetHeight <= nav.scrollTop + nav.clientHeight
+            if (!visible) nav.scrollTop = Math.max(0, haut - nav.clientHeight / 2 + actif.offsetHeight / 2)
+        }
+        memoriserDefilement()
+    }, [pathname, nbLiens])
 
     return (
         <SidebarDrawer title={session?.shop_nom ?? 'Boutique'}>
@@ -94,7 +125,8 @@ export default function SidebarBoutique({ planReel, expiree = false }: Props) {
                 </div>
             </div>
 
-            <nav className="flex-1 px-3 py-4 space-y-5 overflow-y-auto">
+            <nav ref={refNav} onScroll={memoriserDefilement}
+                 className="flex-1 min-h-0 px-3 py-4 space-y-5 overflow-y-auto overscroll-contain">
                 {navigation.map(groupe => (
                     <div key={groupe.groupe}>
                         <p className="sidebar-group-label px-3 mb-1.5">{groupe.groupe}</p>

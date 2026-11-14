@@ -95,7 +95,6 @@ export async function analyserImport(formData: FormData): Promise<ResultatAnalys
         const nomsEntrepots = new Set((entrepots ?? []).map(e => cle(e.nom)))
         const catsConnues = new Set((cats ?? []).map(c => cle(c.nom)))
         const marquesConnues = new Set((marques ?? []).map(m => cle(m.nom)))
-        const nouvellesCats = new Set<string>(), nouvellesMarques = new Set<string>()
         const vus = new Map<string, Set<string>>()   // produit du fichier → entrepôts déjà vus
         const max = limites.max_produits
         let nouveaux = 0
@@ -124,9 +123,11 @@ export async function analyserImport(formData: FormData): Promise<ResultatAnalys
                 vus.set(k, new Set([lieu]))
                 nouveaux++
             }
+            // Plus de création automatique : une catégorie / marque inconnue
+            // est ignorée, le produit sera classé ensuite depuis sa fiche.
             const cat = cle(v.categorie), marque = cle(v.marque)
-            if (cat && !catsConnues.has(cat) && !nouvellesCats.has(cat)) { nouvellesCats.add(cat); a.notes.push(`Catégorie « ${v.categorie} » créée.`) }
-            if (marque && !marquesConnues.has(marque) && !nouvellesMarques.has(marque)) { nouvellesMarques.add(marque); a.notes.push(`Marque « ${v.marque} » créée.`) }
+            if (cat && !catsConnues.has(cat)) a.notes.push(`Catégorie « ${v.categorie} » inconnue : produit importé sans catégorie.`)
+            if (marque && !marquesConnues.has(marque)) a.notes.push(`Marque « ${v.marque} » inconnue : produit importé sans marque.`)
             if (qte > 0 && !ent) a.notes.push('Stock placé dans l\'entrepôt par défaut.')
         }
     }

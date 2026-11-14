@@ -273,7 +273,7 @@ export async function rechercherProduitsPOS(terme: string, warehouseId: string) 
         .select(`
       id, public_id, nom, type_produit, sku, code_barres,
       prix_vente, prix_gros, prix_minimum, unite,
-      tva_pct, remise_max_pct, necessite_imei, necessite_serie,
+      tva_pct, remise_max_pct, necessite_imei, necessite_serie, photo_url,
       stock_levels!inner(quantite, warehouse_id)
     `)
         .eq('shop_id', shopId)

@@ -28,7 +28,9 @@ export default async function PageLoginBoutique({
                 : null
 
     return (
-        <main className="min-h-screen w-full lg:grid lg:grid-cols-2 bg-[#0f2742]">
+        // Une seule page, sans défilement : tout tient dans la hauteur
+        // réelle de l'écran (dvh, qui tient compte des barres du mobile).
+        <main className="min-h-[100dvh] w-full lg:h-[100dvh] lg:overflow-hidden lg:grid lg:grid-cols-2 bg-[#0f2742]">
 
             {/* ── Panneau gauche : flyer réel (caché sur mobile) ── */}
             <section className="relative hidden lg:block overflow-hidden"
@@ -39,32 +41,35 @@ export default async function PageLoginBoutique({
                     alt="Manetec Gestock — gérez votre stock, développez votre business"
                     fill
                     priority
-                    className="object-cover object-top animate-fade-in"
+                    sizes="50vw"
+                    // Le flyer (portrait 2:3) est montré EN ENTIER : rogné, il
+                    // perdait son bas sur les écrans larges et peu hauts.
+                    className="object-contain p-6 animate-fade-in"
                 />
                 {/* léger voile pour la profondeur */}
                 <div className="absolute inset-0 bg-gradient-to-t from-[#0f2742]/40 via-transparent to-transparent" />
             </section>
 
             {/* ── Panneau droit : formulaire ── */}
-            <section className="flex min-h-screen items-center justify-center p-6 sm:p-10 bg-background">
+            <section className="flex min-h-[100dvh] lg:min-h-0 lg:h-full items-center justify-center px-4 py-5 sm:px-8 bg-background overflow-y-auto">
                 <div className="w-full max-w-md animate-fade-up">
 
                     {/* Logo + titre */}
-                    <div className="flex flex-col items-center text-center mb-6">
+                    <div className="flex flex-col items-center text-center mb-4">
                         <Link href="/" className="flex items-center gap-2.5">
-                            <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-white shadow border border-border">
-                                <Image src="/logo/app_logo.png" alt={ENTREPRISE.produit} width={34} height={34} className="object-contain" />
+                            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white shadow border border-border">
+                                <Image src="/logo/app_logo.png" alt={ENTREPRISE.produit} width={28} height={28} className="object-contain" />
                             </span>
-                            <span className="text-xl font-black text-[#15335a]">{ENTREPRISE.produit}</span>
+                            <span className="text-lg font-black text-[#15335a]">{ENTREPRISE.produit}</span>
                         </Link>
-                        <h1 className="mt-5 text-2xl font-bold text-foreground">Connexion à votre boutique</h1>
-                        <p className="text-sm text-muted-foreground mt-1">
+                        <h1 className="mt-3 text-xl sm:text-2xl font-bold text-foreground">Connexion à votre boutique</h1>
+                        <p className="text-sm text-muted-foreground mt-0.5">
                             Entrez votre identifiant et votre mot de passe
                         </p>
                     </div>
 
                     {messageSuspension && (
-                        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3.5 py-3 text-sm mb-5">
+                        <div className="flex items-start gap-2 bg-red-50 border border-red-200 text-red-700 rounded-xl px-3.5 py-2.5 text-sm mb-3">
                             <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                             <span>{messageSuspension}</span>
                         </div>
@@ -72,15 +77,15 @@ export default async function PageLoginBoutique({
 
                     <FormulaireConnexionBoutique />
 
-                    <div className="text-center mt-6 text-sm">
-                        <p className="text-muted-foreground">Pas encore de boutique ?</p>
+                    <div className="mt-4 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm">
+                        <span className="text-muted-foreground">Pas encore de boutique ?</span>
                         <Link href="/inscription" className="font-bold text-[#15335a] hover:text-[#ef5e22] transition-colors">
                             Créer ma boutique gratuitement →
                         </Link>
                     </div>
-                    <div className="text-center mt-4">
+                    <div className="text-center mt-2">
                         <Link href="/" className="text-xs text-muted-foreground hover:text-foreground transition-colors">
-                            ← Retour à l'accueil
+                            ← Retour à l&apos;accueil
                         </Link>
                     </div>
                 </div>

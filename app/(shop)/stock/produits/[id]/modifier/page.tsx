@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import FormulaireModifierProduit from '@/components/shop/produits/FormulaireModifierProduit'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
+import { imagesAutorisees } from '@/lib/produits/image'
 
 export const metadata: Metadata = { title: 'Modifier le produit' }
 
@@ -77,6 +78,7 @@ export default async function PageModifierProduit({ params }: Props) {
                     produit={produit}
                     categories={categories ?? []}
                     marques={marques ?? []}
+                    imagesAutorisees={await imagesAutorisees(adminClient, shopId)}
                 />
             </main>
         </div>

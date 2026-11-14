@@ -1,10 +1,9 @@
 'use client'
 
 import { useActionState, useEffect, useState } from 'react'
-import { ENTREPRISE } from '@/lib/config/entreprise'
 import { connexionBoutique } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
-import { Store, User, Lock, Loader2, AlertCircle } from 'lucide-react'
+import { User, Lock, Loader2, AlertCircle } from 'lucide-react'
 
 const etatInitial = { erreur: undefined as string | undefined }
 
@@ -51,22 +50,9 @@ export default function FormulaireConnexionBoutique() {
     )
 
     return (
-        <div className="bg-card border border-border rounded-2xl shadow-lg p-8 space-y-6">
-
-            {/* En-tête */}
-            <div className="text-center space-y-2">
-                <div className="flex justify-center">
-                    <div className="bg-primary/10 p-3 rounded-full">
-                        <Store className="w-8 h-8 text-primary" />
-                    </div>
-                </div>
-                <h1 className="text-2xl font-bold text-foreground">
-                    Manetec Gestock
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Connectez-vous à votre boutique
-                </p>
-            </div>
+        // Tient sur un seul écran avec la page : pas d'en-tête répété
+        // (logo et titre sont déjà au-dessus), marges serrées.
+        <div className="bg-card border border-border rounded-2xl shadow-lg p-5 sm:p-6 space-y-4">
 
             {/* Message d'erreur */}
             {etat.erreur && (
@@ -77,7 +63,7 @@ export default function FormulaireConnexionBoutique() {
             )}
 
             {/* Formulaire */}
-            <form action={action} className="space-y-4">
+            <form action={action} className="space-y-3.5">
 
                 {/* Identifiant utilisateur */}
                 <div className="space-y-1.5">
@@ -101,11 +87,11 @@ export default function FormulaireConnexionBoutique() {
                             disabled={enAttente}
                             value={identifiant}
                             onChange={e => setIdentifiant(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                         />
                     </div>
                     <p className="text-xs text-muted-foreground">
-                        Votre nom suivi de celui de votre boutique, par exemple : admin@maboutique
+                        Ex. : admin@maboutique
                     </p>
                 </div>
 
@@ -127,7 +113,7 @@ export default function FormulaireConnexionBoutique() {
                             autoComplete="current-password"
                             placeholder="••••••••••"
                             disabled={enAttente}
-                            className="w-full pl-10 pr-4 py-2.5 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            className="w-full pl-10 pr-4 py-2 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed transition"
                         />
                     </div>
                 </div>
@@ -142,11 +128,10 @@ export default function FormulaireConnexionBoutique() {
                         disabled={enAttente}
                         className="mt-0.5 h-4 w-4 rounded border-input accent-primary cursor-pointer"
                     />
-                    <span className="text-sm text-muted-foreground leading-snug">
-                        Se souvenir de mon identifiant sur cet appareil
-                        <span className="block text-xs text-muted-foreground/70 mt-0.5">
-                            Le mot de passe n'est jamais enregistré par l'application. À éviter sur un appareil partagé.
-                        </span>
+                    <span className="text-sm text-muted-foreground leading-snug"
+                          title="Le mot de passe n'est jamais enregistré par l'application. À éviter sur un appareil partagé.">
+                        Se souvenir de mon identifiant
+                        <span className="block text-xs text-muted-foreground/70">Jamais le mot de passe. À éviter sur un appareil partagé.</span>
                     </span>
                 </label>
 
@@ -167,11 +152,6 @@ export default function FormulaireConnexionBoutique() {
                 </Button>
 
             </form>
-
-            {/* Pied */}
-            <p className="text-center text-xs text-muted-foreground">
-                Manetec Gestock · Propulsé par {ENTREPRISE.nom}
-            </p>
 
         </div>
     )

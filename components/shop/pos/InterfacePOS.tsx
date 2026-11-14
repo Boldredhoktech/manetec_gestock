@@ -19,6 +19,7 @@ import { lireClient } from '@/actions/clients'
 import { controleIdentifiants } from '@/lib/ventes/identifiants'
 import OuvertureCaissePOS, { etatCaisse, type SessionCaissePOS } from '@/components/shop/pos/OuvertureCaissePOS'
 import type { ClientChoisi } from '@/lib/clients/client-choisi'
+import { getPlanLimites } from '@/lib/constants/plans'
 
 type Client = ClientChoisi
 
@@ -361,6 +362,7 @@ export default function InterfacePOS({
                         />
                         <RechercheProduitPOS
                             warehouseId={warehouseId}
+                            afficherImages={getPlanLimites(boutique.plan).images_produits}
                             onAjouter={ajouterAuPanier}
                         />
                     </div>

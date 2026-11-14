@@ -10,6 +10,8 @@ export interface PlanLimites {
     rapports:         boolean
     communications:   boolean
     multi_entrepots:  boolean
+    /** Photo des produits (fiche + POS) : réservée au Pro et au-dessus (14/11). */
+    images_produits:  boolean
     label:            string
 }
 
@@ -22,6 +24,7 @@ const STARTER: PlanLimites = {
     rapports:         false,
     communications:   false,
     multi_entrepots:  false,
+    images_produits:  false,
     label:            'Starter',
 }
 
@@ -35,6 +38,7 @@ const PLANS: Record<PlanId, PlanLimites> = {
         devis:            true,
         rapports:         true,
         multi_entrepots:  true,
+        images_produits:  true,
         label:            'Essai',
     },
     starter: STARTER,
@@ -47,6 +51,7 @@ const PLANS: Record<PlanId, PlanLimites> = {
         rapports:         true,
         communications:   false,
         multi_entrepots:  true,
+        images_produits:  true,
         label:            'Pro',
     },
     enterprise: {
@@ -58,6 +63,7 @@ const PLANS: Record<PlanId, PlanLimites> = {
         rapports:         true,
         communications:   true,
         multi_entrepots:  true,
+        images_produits:  true,
         label:            'Enterprise',
     },
 }

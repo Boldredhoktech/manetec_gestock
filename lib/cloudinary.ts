@@ -30,6 +30,8 @@ export async function uploadImageCloudinary(
     buffer: Buffer,
     sousDossier: string,
     publicId: string,
+    /** Images de produits : petites et en WebP (14/11). Défaut : logos. */
+    options?: { largeur?: number; format?: 'webp' | 'png' },
 ): Promise<UploadResultat> {
     return new Promise((resolve, reject) => {
         const flux = cloudinary.uploader.upload_stream(
@@ -40,7 +42,8 @@ export async function uploadImageCloudinary(
                 invalidate:    true,
                 resource_type: 'image',
                 // Limite la taille stockée (logos légers pour l'app et les PDF)
-                transformation: [{ width: 600, height: 600, crop: 'limit' }, { quality: 'auto' }],
+                transformation: [{ width: options?.largeur ?? 600, height: options?.largeur ?? 600, crop: 'limit' }, { quality: 'auto' }],
+                ...(options?.format ? { format: options.format } : {}),
             },
             (erreur, resultat) => {
                 if (erreur || !resultat) {
