@@ -17,6 +17,8 @@ interface Depense {
     libelle:          string
     montant:          number
     moyen_paiement:   string
+    compte_id:        string
+    compte?:          { nom: string } | null
     category_id:      string | null
     date_depense:     string
     note:             string | null
@@ -81,7 +83,8 @@ export default function FicheDepense({ depense, categories, historique, peutModi
         router.refresh()
     }
 
-    const moyenLabel = MOYENS_PAIEMENT.find(m => m.code === depense.moyen_paiement)?.label
+    const moyenLabel = depense.compte?.nom
+        ?? MOYENS_PAIEMENT.find(m => m.code === depense.moyen_paiement)?.label
         ?? depense.moyen_paiement
     const categorieNom = categories.find(c => c.id === depense.category_id)?.nom ?? null
 
@@ -167,7 +170,7 @@ export default function FicheDepense({ depense, categories, historique, peutModi
                             </select>
                         </div>
                         <ChampsReglement
-                            moyenParDefaut={depense.moyen_paiement}
+                            compteParDefaut={depense.compte_id}
                             referenceParDefaut={depense.reference ?? ''}
                             disabled={enAttente}
                         />

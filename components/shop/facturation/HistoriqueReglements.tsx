@@ -19,6 +19,8 @@ export interface Reglement {
     public_id:        string
     montant:          number
     moyen_paiement:   string
+    compte_id:        string
+    compte?:          { nom: string } | null
     reference:        string | null
     date_paiement:    string
     est_annule:       boolean
@@ -120,7 +122,7 @@ export default function HistoriqueReglements({
                                     {formatMontant(r.montant)}
                                 </p>
                                 <p className="text-xs text-muted-foreground">
-                                    {MOYENS_PAIEMENT.find(m => m.code === r.moyen_paiement)?.label ?? r.moyen_paiement}
+                                    {r.compte?.nom ?? MOYENS_PAIEMENT.find(m => m.code === r.moyen_paiement)?.label ?? r.moyen_paiement}
                                     {' · '}{formatDate(r.date_paiement)}
                                     {r.reference ? ` · ${r.reference}` : ''}
                                 </p>
@@ -179,7 +181,7 @@ export default function HistoriqueReglements({
 
                                 <ChampsReglement
                                     compact
-                                    moyenParDefaut={r.moyen_paiement}
+                                    compteParDefaut={r.compte_id}
                                     referenceParDefaut={r.reference ?? ''}
                                 />
 

@@ -5,10 +5,10 @@ import { refusAbonnement } from '@/lib/abonnement/etat'
 import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
 import { revalidatePath } from 'next/cache'
 import { jourBoutique } from '@/lib/dates/periode'
 import { controleIdentifiants } from '@/lib/ventes/identifiants'
+import { moyenDuCompte, referenceRequise } from '@/lib/tresorerie/comptes'
 
 export interface LigneVente {
     product_id:     string
@@ -30,6 +30,9 @@ export interface LigneVente {
 }
 
 export interface PaiementVente {
+    /** Compte de trésorerie qui reçoit l'argent (mig 041). */
+    compte_id:      string
+    /** Déduit du compte ; gardé pour le reçu et l'affichage. */
     moyen_paiement: string
     montant:        number
     reference:      string
@@ -175,15 +178,25 @@ export async function enregistrerVente(donnees: DonneesVente) {
         }
     }
 
-    // La référence est obligatoire pour les moyens qui l'exigent : la
-    // règle vivait dans MOYENS_PAIEMENT et n'était appliquée nulle part
-    // au comptoir.
+    // Chaque règlement désigne un COMPTE de la boutique (mig 041).
+    //   · les espèces vont dans la caisse DE L'ENTREPÔT de la vente ;
+    //   · la référence est obligatoire pour un Mobile Money ou une banque.
+    const idsComptes = [...new Set(donnees.paiements.map(p => p.compte_id).filter(Boolean))]
+    const { data: comptesVente } = await adminClient
+        .from('comptes_tresorerie')
+        .select('id, type, nom, operateur, warehouse_id, est_actif')
+        .eq('shop_id', shopId)
+        .in('id', idsComptes.length ? idsComptes : ['00000000-0000-0000-0000-000000000000'])
     for (const p of donnees.paiements) {
-        const moyen = MOYENS_PAIEMENT.find(m => m.code === p.moyen_paiement)
-        if (!moyen) return { erreur: `Moyen de paiement inconnu : ${p.moyen_paiement}.` }
-        if (moyen.reference_requise && !p.reference?.trim()) {
-            return { erreur: `Une référence de transaction est obligatoire pour ${moyen.label}.` }
+        const compte = comptesVente?.find(c => c.id === p.compte_id)
+        if (!compte || !compte.est_actif) return { erreur: 'Compte de paiement invalide : choisissez-le à nouveau.' }
+        if (compte.type === 'caisse' && compte.warehouse_id !== donnees.warehouse_id) {
+            return { erreur: 'Les espèces doivent entrer dans la caisse de cet entrepôt.' }
         }
+        if (referenceRequise(compte.type) && !p.reference?.trim()) {
+            return { erreur: `Une référence de transaction est obligatoire pour ${compte.nom}.` }
+        }
+        p.moyen_paiement = moyenDuCompte(compte.type, compte.operateur)
     }
 
     // Appeler la fonction atomique Supabase

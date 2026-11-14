@@ -5,17 +5,10 @@ import { useRouter } from 'next/navigation'
 import { payerFactureFournisseur } from '@/actions/fournisseurs'
 import { Loader2, AlertCircle, CheckCircle, CreditCard } from 'lucide-react'
 import { formatDate, formatMontant } from '@/lib/utils'
+import ChampsReglement from '@/components/shop/compta/ChampsReglement'
 
 interface Props { facture: any; boutique: any }
 
-const MOYENS = [
-    { val: 'cash',          label: 'Espèces'      },
-    { val: 'wave',          label: 'Wave'         },
-    { val: 'mtn_momo',      label: 'MTN MoMo'    },
-    { val: 'moov_money',    label: 'Moov Money'  },
-    { val: 'bank_transfer', label: 'Virement'     },
-    { val: 'bank_card',     label: 'Carte bancaire'},
-]
 
 export default function CarteDetailFactureFournisseur({ facture, boutique }: Props) {
     const router    = useRouter()
@@ -27,22 +20,20 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
     const paiements = (facture.supplier_payments as any[]) ?? []
 
     const [montantPaiement, setMontantPaiement] = useState('')
-    const [moyen,           setMoyen]           = useState('cash')
-    const [reference,       setReference]       = useState('')
     const [enAttente,       setEnAttente]        = useState(false)
     const [msg,             setMsg]              = useState<{ type: 'succes'|'erreur'; texte: string } | null>(null)
 
-    async function handlePayer() {
+    async function handlePayer(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault()
         if (!montantPaiement || parseFloat(montantPaiement) <= 0) {
             setMsg({ type: 'erreur', texte: 'Entrez un montant valide.' })
             return
         }
         setEnAttente(true); setMsg(null)
-        const formData = new FormData()
+        // compteId et reference viennent de ChampsReglement (mig 041).
+        const formData = new FormData(e.currentTarget)
         formData.set('factureId', facture.id)
         formData.set('montant',   montantPaiement)
-        formData.set('moyen',     moyen)
-        formData.set('reference', reference)
         const res = await payerFactureFournisseur(formData)
         setEnAttente(false)
         if (res?.erreur) { setMsg({ type: 'erreur', texte: res.erreur }); return }
@@ -184,7 +175,8 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
                         </div>
                     )}
 
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <form onSubmit={handlePayer} className="space-y-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div className="space-y-1.5">
                             <label className="text-sm font-medium text-gray-700">Montant *</label>
                             <input type="number" min="0" step="0.01"
@@ -193,20 +185,10 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
                                    placeholder={`Max : ${facture.montant_restant}`}
                                    className={inputClass} />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Moyen de paiement</label>
-                            <select value={moyen} onChange={e => setMoyen(e.target.value)} className={inputClass}>
-                                {MOYENS.map(m => <option key={m.val} value={m.val}>{m.label}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-gray-700">Référence</label>
-                            <input type="text" value={reference} onChange={e => setReference(e.target.value)}
-                                   placeholder="N° chèque, reçu..." className={inputClass} />
-                        </div>
+                        <ChampsReglement disabled={enAttente} />
                     </div>
 
-                    <button onClick={handlePayer} disabled={enAttente}
+                    <button type="submit" disabled={enAttente}
                             className="w-full flex items-center justify-center gap-2.5 py-3 font-bold text-white rounded-xl disabled:opacity-50"
                             style={{ background: 'linear-gradient(135deg, #059669, #047857)' }}>
                         {enAttente
@@ -214,6 +196,7 @@ export default function CarteDetailFactureFournisseur({ facture, boutique }: Pro
                             : <><CreditCard className="w-4 h-4" />Enregistrer le paiement</>
                         }
                     </button>
+                    </form>
                 </div>
             )}
         </div>

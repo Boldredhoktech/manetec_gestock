@@ -394,6 +394,7 @@ export default function InterfacePOS({
             {etape === 'paiement' && (
                 <PaiementPOS
                     montantTotal={montantTotal}
+                    warehouseId={warehouseId}
                     devise={boutique.devise}
                     client={clientSelectionne}
                     enAttente={enAttente}

@@ -8,7 +8,11 @@ import {
 } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
 import type { PaiementVente } from '@/actions/ventes'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
+import { listerComptesChoix } from '@/actions/tresorerie'
+import {
+    LIBELLES_TYPE, TYPES_COMPTE, moyenDuCompte, referenceRequise,
+    type CompteChoix, type TypeCompte,
+} from '@/lib/tresorerie/comptes'
 import ChampNombre from '@/components/ui/ChampNombre'
 
 interface Client {
@@ -18,6 +22,8 @@ interface Client {
 
 interface Props {
     montantTotal:  number
+    /** Entrepôt de la vente : les espèces vont dans SA caisse (mig 041). */
+    warehouseId:   string
     devise:        string
     client:        Client | null
     enAttente:     boolean
@@ -36,12 +42,35 @@ interface Props {
 }
 
 export default function PaiementPOS({
-                                        montantTotal, devise, client,
+                                        montantTotal, warehouseId, devise, client,
                                         enAttente, erreur, onValider, onRetour,
                                     }: Props) {
+    // Comptes de trésorerie de la boutique. Espèces = la caisse de
+    // l'entrepôt, sans choix ; les autres types : le compte exact.
+    const [comptes, setComptes] = useState<CompteChoix[]>([])
+    const [erreurComptes, setErreurComptes] = useState<string | null>(null)
+    const caisse = comptes.find(c => c.type === 'caisse' && c.warehouse_id === warehouseId)
+
     const [paiements, setPaiements]         = useState<PaiementVente[]>([
-        { moyen_paiement: 'cash', montant: montantTotal, reference: '' },
+        { compte_id: '', moyen_paiement: 'cash', montant: montantTotal, reference: '' },
     ])
+
+    useEffect(() => {
+        let actif = true
+        listerComptesChoix().then(res => {
+            if (!actif) return
+            if ('erreur' in res) { setErreurComptes(res.erreur); return }
+            setComptes(res.comptes)
+            const c = res.comptes.find(x => x.type === 'caisse' && x.warehouse_id === warehouseId)
+            if (!c) setErreurComptes('La caisse de cet entrepôt est introuvable.')
+            else setPaiements(prev => prev.map(p => p.compte_id ? p : { ...p, compte_id: c.id }))
+        })
+        return () => { actif = false }
+    }, [warehouseId])
+
+    const typesDisponibles = TYPES_COMPTE.filter(t =>
+        t === 'caisse' ? !!caisse : comptes.some(c => c.type === t))
+    const compteDe = (p: PaiementVente) => comptes.find(c => c.id === p.compte_id)
     const [creditAccorde, setCreditAccorde]   = useState(0)
     const [advanceUtilise, setAdvanceUtilise] = useState(0)
     const [changeUtilise, setChangeUtilise]   = useState(0)
@@ -81,16 +110,27 @@ export default function PaiementPOS({
     // La référence est obligatoire pour six moyens sur huit ; la règle
     // vivait dans MOYENS_PAIEMENT sans être appliquée au comptoir.
     const referenceManquante = paiements.some(p => {
-        const m = MOYENS_PAIEMENT.find(x => x.code === p.moyen_paiement)
-        return p.montant > 0 && m?.reference_requise && !p.reference?.trim()
+        const c = compteDe(p)
+        return p.montant > 0 && !!c && referenceRequise(c.type) && !p.reference?.trim()
     })
+    const compteManquant = paiements.some(p => p.montant > 0 && !compteDe(p))
 
     const creditDepasse = creditAccorde > creditMax + 0.001
-    const peutValider   = resteAPayer <= 0.001 && !referenceManquante && !creditDepasse
+    const peutValider   = resteAPayer <= 0.001 && !referenceManquante && !creditDepasse && !compteManquant
 
     function ajouterPaiement() {
         setMontantSaisi(true)
-        setPaiements(prev => [...prev, { moyen_paiement: 'cash', montant: 0, reference: '' }])
+        setPaiements(prev => [...prev, { compte_id: caisse?.id ?? '', moyen_paiement: 'cash', montant: 0, reference: '' }])
+    }
+
+    function choisirCompte(i: number, c: CompteChoix | undefined) {
+        setPaiements(prev => prev.map((p, idx) => idx === i
+            ? { ...p, compte_id: c?.id ?? '', moyen_paiement: c ? moyenDuCompte(c.type, c.operateur) : p.moyen_paiement }
+            : p))
+    }
+
+    function choisirType(i: number, t: TypeCompte) {
+        choisirCompte(i, t === 'caisse' ? caisse : comptes.find(c => c.type === t))
     }
 
     function modifierPaiement(i: number, champ: keyof PaiementVente, val: string | number) {
@@ -151,19 +191,44 @@ export default function PaiementPOS({
                         Modes de paiement
                     </h3>
 
-                    {paiements.map((p, i) => (
+                    {erreurComptes && (
+                        <p className="text-sm text-red-600">{erreurComptes}</p>
+                    )}
+
+                    {paiements.map((p, i) => {
+                        const c = compteDe(p)
+                        const autresDuType = c && c.type !== 'caisse' ? comptes.filter(x => x.type === c.type) : []
+                        return (
                         <div key={i} className="flex gap-2 items-start">
                             <div className="flex-1 space-y-2">
-                                <select
-                                    value={p.moyen_paiement}
-                                    onChange={e => modifierPaiement(i, 'moyen_paiement', e.target.value)}
-                                    className="w-full px-3 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
-                                >
-                                    {MOYENS_PAIEMENT.map(m => (
-                                        <option key={m.code} value={m.code}>{m.label}</option>
+                                <div role="group" aria-label="Type de compte" className="flex flex-wrap gap-1.5">
+                                    {typesDisponibles.map(t => (
+                                        <button key={t} type="button"
+                                                aria-pressed={c?.type === t}
+                                                onClick={() => choisirType(i, t)}
+                                                className={`px-2.5 py-1.5 rounded-lg text-xs font-bold border transition-colors ${
+                                                    c?.type === t
+                                                        ? 'bg-[#15335a] text-white border-[#15335a]'
+                                                        : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
+                                                }`}>
+                                            {t === 'caisse' ? 'Espèces' : LIBELLES_TYPE[t]}
+                                        </button>
                                     ))}
-                                </select>
-                                {MOYENS_PAIEMENT.find(m => m.code === p.moyen_paiement)?.reference_requise && (
+                                </div>
+                                {autresDuType.length > 1 && (
+                                    <select
+                                        value={p.compte_id}
+                                        aria-label="Compte qui reçoit l'argent"
+                                        onChange={e => choisirCompte(i, comptes.find(x => x.id === e.target.value))}
+                                        className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-[#15335a]/30"
+                                    >
+                                        {autresDuType.map(x => <option key={x.id} value={x.id}>{x.nom}</option>)}
+                                    </select>
+                                )}
+                                {c && (autresDuType.length <= 1) && (
+                                    <p className="text-xs text-gray-500">→ {c.nom}</p>
+                                )}
+                                {c && referenceRequise(c.type) && (
                                     <input type="text" placeholder="Référence de transaction *"
                                            value={p.reference}
                                            onChange={e => modifierPaiement(i, 'reference', e.target.value)}
@@ -190,7 +255,8 @@ export default function PaiementPOS({
                                 )}
                             </div>
                         </div>
-                    ))}
+                        )
+                    })}
 
                     <button type="button" onClick={ajouterPaiement}
                             className="flex items-center gap-2 text-xs font-bold text-[#15335a] hover:text-[#0f2742] transition-colors">
@@ -348,7 +414,9 @@ export default function PaiementPOS({
                     explication laisse le caissier chercher devant le client. */}
                 {!peutValider && !enAttente && (
                     <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-2.5">
-                        {referenceManquante
+                        {compteManquant
+                            ? 'Choisissez le compte qui reçoit chaque règlement.'
+                            : referenceManquante
                             ? 'Saisissez la référence de transaction du règlement.'
                             : creditDepasse
                                 ? 'Le crédit accordé dépasse ce qui reste à payer.'

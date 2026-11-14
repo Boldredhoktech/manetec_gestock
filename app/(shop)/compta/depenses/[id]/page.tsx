@@ -30,7 +30,7 @@ export default async function PageDepense({
         adminClient
             .from('expenses')
             .select(`
-                id, public_id, libelle, montant, moyen_paiement, category_id,
+                id, public_id, libelle, montant, moyen_paiement, compte_id, compte:comptes_tresorerie(nom), category_id,
                 date_depense, note, reference, created_at,
                 est_annule, annule_le, motif_annulation, modifie_le
             `)
@@ -63,7 +63,7 @@ export default async function PageDepense({
             </header>
             <main className="flex-1 p-4 sm:p-6 max-w-2xl">
                 <FicheDepense
-                    depense={depense}
+                    depense={depense as unknown as React.ComponentProps<typeof FicheDepense>["depense"]}
                     // La catégorie retirée d'une dépense passée reste
                     // proposée pour ne pas la perdre à la première
                     // modification.

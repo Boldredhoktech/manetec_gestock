@@ -8,6 +8,7 @@ import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { messageTresorerie } from '@/lib/tresorerie/comptes'
 
 // ── Créer un fournisseur ───────────────────────────────────────
 export async function creerFournisseur(formData: FormData) {
@@ -328,22 +329,24 @@ export async function payerFournisseur(formData: FormData) {
     const adminClient  = createAdminClient()
     const supplierId   = formData.get('supplierId') as string
     const montant      = parseFloat(formData.get('montant') as string)
-    const moyen        = formData.get('moyen') as string
+    const compteId     = (formData.get('compteId') as string) || ''
     const reference    = (formData.get('reference') as string) || ''
     const note         = (formData.get('note') as string) || ''
 
     if (!supplierId || isNaN(montant) || montant <= 0) return { erreur: 'Données invalides.' }
+    if (!compteId) return { erreur: 'Choisissez le compte de trésorerie.' }
 
-    const { data: result } = await adminClient.rpc('payer_fournisseur', {
+    const { data: result, error } = await adminClient.rpc('payer_fournisseur', {
         p_shop_id:     user.user_metadata.shop_id,
         p_supplier_id: supplierId,
         p_montant:     montant,
-        p_moyen:       moyen,
+        p_compte_id:   compteId,
         p_reference:   reference,
         p_note:        note,
         p_user_id:     user.user_metadata.user_id,
     })
 
+    if (error) return { erreur: messageTresorerie(error.message, 'Erreur lors du paiement.') }
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur.' }
 
     revalidatePath('/stock/fournisseurs')
@@ -643,10 +646,11 @@ export async function payerFactureFournisseur(formData: FormData) {
 
     const factureId = formData.get('factureId') as string
     const montant   = parseFloat(formData.get('montant') as string)
-    const moyen     = (formData.get('moyen') as string) || 'cash'
+    const compteId  = (formData.get('compteId') as string) || ''
     const reference = (formData.get('reference') as string) || ''
 
     if (!factureId || isNaN(montant) || montant <= 0) return { erreur: 'Données invalides.' }
+    if (!compteId) return { erreur: 'Choisissez le compte de trésorerie.' }
 
     // Un seul appel : la RPC verrouille la facture, ecrit le paiement
     // dans la table unique supplier_payments avec le lettrage, met a
@@ -658,7 +662,7 @@ export async function payerFactureFournisseur(formData: FormData) {
         p_shop_id:    shopId,
         p_facture_id: factureId,
         p_montant:    montant,
-        p_moyen:      moyen,
+        p_compte_id:  compteId,
         p_reference:  reference,
         p_note:       '',
         p_user_id:    user.user_metadata.user_id,
@@ -666,7 +670,7 @@ export async function payerFactureFournisseur(formData: FormData) {
 
     if (error) {
         console.error('ERREUR PAIEMENT FACTURE FOURNISSEUR:', error)
-        return { erreur: 'Erreur lors du paiement.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors du paiement.') }
     }
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors du paiement.' }
 

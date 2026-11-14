@@ -25,6 +25,7 @@ interface Versement {
     deductions:     number
     date_paiement:  string
     moyen_paiement: string
+    compte_id:      string
     est_annule:       boolean
     motif_annulation: string | null
 }
@@ -348,7 +349,7 @@ export default function ListeEmployes({
                                                                    className="w-full px-1.5 py-1 bg-background border border-input rounded text-xs" />
                                                             <ChampsReglement
                                                                 compact
-                                                                moyenParDefaut={v.moyen_paiement}
+                                                                compteParDefaut={v.compte_id}
                                                             />
                                                             <div className="flex gap-1">
                                                                 <Button type="button" size="sm" variant="outline"

@@ -1891,6 +1891,27 @@ $$;
 ALTER FUNCTION "public"."garde_plan_boutique"() OWNER TO "postgres";
 
 
+CREATE OR REPLACE FUNCTION "public"."garde_suffixe_identifiant"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+DECLARE
+    v_suffixe TEXT;
+BEGIN
+    SELECT suffixe_identifiant INTO v_suffixe FROM public.shops WHERE id = NEW.shop_id;
+    IF split_part(NEW.identifiant, '@', 2) IS DISTINCT FROM v_suffixe THEN
+        RAISE EXCEPTION 'Identifiant « % » : le suffixe doit être celui de la boutique (@%).',
+            NEW.identifiant, v_suffixe
+            USING ERRCODE = 'check_violation';
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."garde_suffixe_identifiant"() OWNER TO "postgres";
+
+
 CREATE OR REPLACE FUNCTION "public"."generate_platform_id"("p_prefix" "text") RETURNS "text"
     LANGUAGE "plpgsql"
     AS $$
@@ -2449,6 +2470,26 @@ COMMENT ON FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_deb
 
 
 
+CREATE OR REPLACE FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) RETURNS "text"
+    LANGUAGE "sql" IMMUTABLE
+    SET "search_path" TO ''
+    AS $$
+    SELECT regexp_replace(
+        lower(translate(coalesce(p_texte, ''),
+            'àâäáãåçéèêëíìîïñóòôöõúùûüýÿÀÂÄÁÃÅÇÉÈÊËÍÌÎÏÑÓÒÔÖÕÚÙÛÜÝŸ',
+            'aaaaaaceeeeiiiinooooouuuuyyaaaaaaceeeeiiiinooooouuuuyy')),
+        CASE WHEN p_garder_ponctuation THEN '[^a-z0-9._-]' ELSE '[^a-z0-9]' END,
+        '', 'g')
+$$;
+
+
+ALTER FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) OWNER TO "postgres";
+
+
+COMMENT ON FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) IS 'Minuscules, sans accents ni espaces. Avec ponctuation : garde . _ - (partie nom d''un identifiant) ; sans : lettres et chiffres seuls (suffixe de boutique). Même règle que lib/auth/identifiant.ts.';
+
+
+
 CREATE OR REPLACE FUNCTION "public"."operation_solde_client"("p_shop_id" "uuid", "p_client_id" "uuid", "p_type" "text", "p_montant" numeric, "p_note" "text", "p_user_id" "uuid") RETURNS "jsonb"
     LANGUAGE "plpgsql"
     AS $$
@@ -2789,6 +2830,24 @@ $$;
 
 
 ALTER FUNCTION "public"."prolonger_abonnement"("p_paiement_id" "uuid", "p_reference_transaction" "text", "p_details_prestataire" "jsonb") OWNER TO "postgres";
+
+
+CREATE OR REPLACE FUNCTION "public"."propager_suffixe_identifiant"() RETURNS "trigger"
+    LANGUAGE "plpgsql"
+    SET "search_path" TO ''
+    AS $$
+BEGIN
+    IF NEW.suffixe_identifiant IS DISTINCT FROM OLD.suffixe_identifiant THEN
+        UPDATE public.shop_users
+        SET identifiant = split_part(identifiant, '@', 1) || '@' || NEW.suffixe_identifiant
+        WHERE shop_id = NEW.id;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+
+ALTER FUNCTION "public"."propager_suffixe_identifiant"() OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."recalculer_statut_facture"("p_facture_id" "uuid") RETURNS "void"
@@ -4276,12 +4335,18 @@ CREATE TABLE IF NOT EXISTS "public"."shop_users" (
     "created_by" "uuid",
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
+    "identifiant_ancien" "text",
+    CONSTRAINT "shop_users_identifiant_forme" CHECK (("identifiant" ~ '^[a-z0-9][a-z0-9._-]{0,39}@[a-z0-9]{2,30}$'::"text")),
     CONSTRAINT "shop_users_preference_theme_check" CHECK (("preference_theme" = ANY (ARRAY['clair'::"text", 'sombre'::"text", 'systeme'::"text"]))),
     CONSTRAINT "shop_users_role_check" CHECK (("role" = ANY (ARRAY['super_admin_boutique'::"text", 'admin_boutique'::"text", 'vendeur'::"text", 'stock_manager'::"text", 'comptable'::"text"])))
 );
 
 
 ALTER TABLE "public"."shop_users" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."shop_users"."identifiant_ancien" IS 'Identifiant d''avant la mig 040 (connexion avec ShopId). Accepté à la connexion pendant la transition, puis sans usage.';
+
 
 
 CREATE TABLE IF NOT EXISTS "public"."shops" (
@@ -4312,7 +4377,9 @@ CREATE TABLE IF NOT EXISTS "public"."shops" (
     "created_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "now"() NOT NULL,
     "autoriser_stock_negatif" boolean DEFAULT false NOT NULL,
-    CONSTRAINT "shops_plan_check" CHECK (("plan" = ANY (ARRAY['essai'::"text", 'starter'::"text", 'pro'::"text", 'enterprise'::"text"])))
+    "suffixe_identifiant" "text" NOT NULL,
+    CONSTRAINT "shops_plan_check" CHECK (("plan" = ANY (ARRAY['essai'::"text", 'starter'::"text", 'pro'::"text", 'enterprise'::"text"]))),
+    CONSTRAINT "shops_suffixe_identifiant_forme" CHECK (("suffixe_identifiant" ~ '^[a-z0-9]{2,30}$'::"text"))
 );
 
 
@@ -4324,6 +4391,10 @@ COMMENT ON COLUMN "public"."shops"."note_activation" IS 'Note libre de l''agent 
 
 
 COMMENT ON COLUMN "public"."shops"."autoriser_stock_negatif" IS 'Décision D3 du module POS. FALSE (défaut) : une vente qui ferait passer le stock sous zéro est refusée. TRUE : elle passe, et l''écart devient visible à l''inventaire. Jamais un choix silencieux : la vente forcée laisse une note sur son mouvement.';
+
+
+
+COMMENT ON COLUMN "public"."shops"."suffixe_identifiant" IS 'Partie après @ des identifiants de connexion de la boutique (ex. boldboutik → admin@boldboutik). Unique sur la plateforme.';
 
 
 
@@ -4842,11 +4913,6 @@ ALTER TABLE ONLY "public"."shop_users"
 
 
 
-ALTER TABLE ONLY "public"."shop_users"
-    ADD CONSTRAINT "shop_users_shop_id_identifiant_key" UNIQUE ("shop_id", "identifiant");
-
-
-
 ALTER TABLE ONLY "public"."shops"
     ADD CONSTRAINT "shops_pkey" PRIMARY KEY ("id");
 
@@ -4854,6 +4920,11 @@ ALTER TABLE ONLY "public"."shops"
 
 ALTER TABLE ONLY "public"."shops"
     ADD CONSTRAINT "shops_public_id_key" UNIQUE ("public_id");
+
+
+
+ALTER TABLE ONLY "public"."shops"
+    ADD CONSTRAINT "shops_suffixe_identifiant_key" UNIQUE ("suffixe_identifiant");
 
 
 
@@ -5386,7 +5457,23 @@ CREATE INDEX "idx_warehouses_shop_id" ON "public"."warehouses" USING "btree" ("s
 
 
 
+CREATE INDEX "shop_users_identifiant_ancien_idx" ON "public"."shop_users" USING "btree" ("identifiant_ancien") WHERE ("identifiant_ancien" IS NOT NULL);
+
+
+
+CREATE UNIQUE INDEX "shop_users_identifiant_unique" ON "public"."shop_users" USING "btree" ("identifiant");
+
+
+
+CREATE OR REPLACE TRIGGER "shop_users_garde_suffixe" BEFORE INSERT OR UPDATE OF "identifiant", "shop_id" ON "public"."shop_users" FOR EACH ROW EXECUTE FUNCTION "public"."garde_suffixe_identifiant"();
+
+
+
 CREATE OR REPLACE TRIGGER "shops_garde_plan" BEFORE UPDATE OF "plan", "plan_expire_le" ON "public"."shops" FOR EACH ROW EXECUTE FUNCTION "public"."garde_plan_boutique"();
+
+
+
+CREATE OR REPLACE TRIGGER "shops_propager_suffixe" AFTER UPDATE OF "suffixe_identifiant" ON "public"."shops" FOR EACH ROW EXECUTE FUNCTION "public"."propager_suffixe_identifiant"();
 
 
 
@@ -7140,6 +7227,12 @@ GRANT ALL ON FUNCTION "public"."garde_plan_boutique"() TO "service_role";
 
 
 
+GRANT ALL ON FUNCTION "public"."garde_suffixe_identifiant"() TO "anon";
+GRANT ALL ON FUNCTION "public"."garde_suffixe_identifiant"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."garde_suffixe_identifiant"() TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."generate_platform_id"("p_prefix" "text") TO "anon";
 GRANT ALL ON FUNCTION "public"."generate_platform_id"("p_prefix" "text") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."generate_platform_id"("p_prefix" "text") TO "service_role";
@@ -7188,6 +7281,12 @@ GRANT ALL ON FUNCTION "public"."mouvements_caisse_jour"("p_shop_id" "uuid", "p_d
 
 
 
+GRANT ALL ON FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) TO "anon";
+GRANT ALL ON FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) TO "authenticated";
+GRANT ALL ON FUNCTION "public"."normaliser_identifiant"("p_texte" "text", "p_garder_ponctuation" boolean) TO "service_role";
+
+
+
 GRANT ALL ON FUNCTION "public"."operation_solde_client"("p_shop_id" "uuid", "p_client_id" "uuid", "p_type" "text", "p_montant" numeric, "p_note" "text", "p_user_id" "uuid") TO "anon";
 GRANT ALL ON FUNCTION "public"."operation_solde_client"("p_shop_id" "uuid", "p_client_id" "uuid", "p_type" "text", "p_montant" numeric, "p_note" "text", "p_user_id" "uuid") TO "authenticated";
 GRANT ALL ON FUNCTION "public"."operation_solde_client"("p_shop_id" "uuid", "p_client_id" "uuid", "p_type" "text", "p_montant" numeric, "p_note" "text", "p_user_id" "uuid") TO "service_role";
@@ -7220,6 +7319,12 @@ GRANT ALL ON FUNCTION "public"."payer_fournisseur"("p_shop_id" "uuid", "p_suppli
 
 REVOKE ALL ON FUNCTION "public"."prolonger_abonnement"("p_paiement_id" "uuid", "p_reference_transaction" "text", "p_details_prestataire" "jsonb") FROM PUBLIC;
 GRANT ALL ON FUNCTION "public"."prolonger_abonnement"("p_paiement_id" "uuid", "p_reference_transaction" "text", "p_details_prestataire" "jsonb") TO "service_role";
+
+
+
+GRANT ALL ON FUNCTION "public"."propager_suffixe_identifiant"() TO "anon";
+GRANT ALL ON FUNCTION "public"."propager_suffixe_identifiant"() TO "authenticated";
+GRANT ALL ON FUNCTION "public"."propager_suffixe_identifiant"() TO "service_role";
 
 
 

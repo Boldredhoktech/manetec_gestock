@@ -31,6 +31,14 @@ export function aPermission(user: UserLike, permission: string): boolean {
     return defauts.includes(permission) || etendues.includes(permission)
 }
 
+/**
+ * Voir les soldes de trésorerie : permission dédiée, ou « Gérer la
+ * trésorerie » (on ne gère pas des comptes dont on ignore le solde).
+ */
+export function peutVoirSoldes(user: UserLike): boolean {
+    return aPermission(user, 'treasury.balances.view') || aPermission(user, 'treasury.manage')
+}
+
 /** Variante qui renvoie directement l'objet d'erreur standard, ou null si OK. */
 export function refusSiPasPermission(
     user: UserLike,

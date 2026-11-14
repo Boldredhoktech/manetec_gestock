@@ -27,7 +27,7 @@ import {
     LayoutDashboard, Users, Settings, UserSquare, ShoppingCart,
     Package, FileText, Warehouse, Tags, Award, BarChart3, Receipt,
     ClipboardCheck, Send, Truck, CreditCard, PackageCheck, FileInput,
-    ArrowLeftRight, SlidersHorizontal, Undo2, ClipboardList, Wallet,
+    ArrowLeftRight, SlidersHorizontal, Undo2, ClipboardList, Wallet, Landmark,
 } from 'lucide-react'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 
@@ -117,6 +117,8 @@ export const NAVIGATION_BOUTIQUE: GroupeNavigation[] = [
         items: [
             { label: 'Tableau de bord', href: '/compta/dashboard',  icone: LayoutDashboard,
               permission: PERMISSIONS.COMPTABILITE_VOIR },
+            { label: 'Trésorerie',      href: '/compta/tresorerie', icone: Landmark,
+              permission: PERMISSIONS.TRESORERIE_SOLDES_VOIR },
             { label: 'Caisse',          href: '/compta/caisse',     icone: Wallet,
               permission: PERMISSIONS.COMPTABILITE_VOIR },
             { label: 'Dépenses',        href: '/compta/depenses',   icone: Receipt,

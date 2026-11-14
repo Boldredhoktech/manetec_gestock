@@ -75,6 +75,10 @@ export const PERMISSIONS = {
     SALAIRES_GERER: 'salaries.manage',
     RAPPORTS_GENERER: 'reports.generate',
     RAPPORTS_TOUS: 'reports.all',
+    // Trésorerie (mig 041). Gérer = créer/modifier les comptes, virements,
+    // retraits/apports, rapprochements ; elle donne aussi la vue des soldes.
+    TRESORERIE_SOLDES_VOIR: 'treasury.balances.view',
+    TRESORERIE_GERER: 'treasury.manage',
     // Administration
     UTILISATEURS_GERER: 'users.manage',
     PARAMETRES_GERER: 'settings.manage',
@@ -133,6 +137,7 @@ export const PERMISSIONS_PAR_DEFAUT: Record<RoleBoutique, string[]> = {
         PERMISSIONS.SALAIRES_GERER,
         PERMISSIONS.RAPPORTS_GENERER,
         PERMISSIONS.RAPPORTS_TOUS,
+        PERMISSIONS.TRESORERIE_GERER,
     ],
 }
 

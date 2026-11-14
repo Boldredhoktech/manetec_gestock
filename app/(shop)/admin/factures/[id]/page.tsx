@@ -35,7 +35,7 @@ export default async function PageDetailFacture({ params }: Props) {
             *,
             clients(nom, email, telephone, adresse, ifu, rccm, ville, pays),
             facture_items(*, products(nom, unite)),
-            facture_payments(*),
+            facture_payments(*, compte:comptes_tresorerie(nom)),
             avoirs(*)
         `)
         .eq('id', id)

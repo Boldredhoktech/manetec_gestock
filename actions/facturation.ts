@@ -9,6 +9,7 @@ import { PERMISSIONS } from '@/lib/constants/permissions'
 import { getPlanLimites } from '@/lib/constants/plans'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
+import { messageTresorerie } from '@/lib/tresorerie/comptes'
 
 // ── Types ──────────────────────────────────────────────────────
 export interface LigneFacture {
@@ -323,7 +324,7 @@ export async function payerFacture(formData: FormData) {
     const adminClient  = createAdminClient()
     const factureId    = formData.get('factureId') as string
     const montant      = parseFloat(formData.get('montant') as string)
-    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const moyen        = (formData.get('compteId') as string) || ''
     const reference    = (formData.get('reference') as string) || ''
     const note         = (formData.get('note') as string) || ''
     // La date réelle du règlement, et non celle de la saisie : depuis le
@@ -343,7 +344,7 @@ export async function payerFacture(formData: FormData) {
         p_shop_id:       user.user_metadata.shop_id,
         p_facture_id:    factureId,
         p_montant:       montant,
-        p_moyen:         moyen,
+        p_compte_id:     moyen,
         p_reference:     reference,
         p_note:          note,
         p_user_id:       user.user_metadata.user_id,
@@ -352,7 +353,7 @@ export async function payerFacture(formData: FormData) {
 
     if (error) {
         console.error('ERREUR REGLEMENT FACTURE:', error)
-        return { erreur: 'Erreur lors de l\'enregistrement du règlement.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors de l\'enregistrement du règlement.') }
     }
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur.' }
 
@@ -534,7 +535,7 @@ export async function modifierPaiementFacture(formData: FormData): Promise<Resul
     const paiementId   = formData.get('paiementId') as string
     const factureId    = formData.get('factureId') as string
     const montant      = parseFloat(formData.get('montant') as string)
-    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const moyen        = (formData.get('compteId') as string) || ''
     const reference    = (formData.get('reference') as string)?.trim() || ''
     const datePaiement = (formData.get('datePaiement') as string) || ''
 
@@ -545,7 +546,7 @@ export async function modifierPaiementFacture(formData: FormData): Promise<Resul
         p_shop_id:       user.user_metadata.shop_id,
         p_paiement_id:   paiementId,
         p_montant:       montant,
-        p_moyen:         moyen,
+        p_compte_id:     moyen,
         p_reference:     reference,
         p_date_paiement: datePaiement,
         p_user_id:       user.user_metadata.user_id,
@@ -553,7 +554,7 @@ export async function modifierPaiementFacture(formData: FormData): Promise<Resul
 
     if (error) {
         console.error('ERREUR MODIFICATION REGLEMENT:', error)
-        return { erreur: 'Erreur lors de la modification.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors de la modification.') }
     }
     if (!result?.succes) return { erreur: result?.erreur ?? 'Erreur lors de la modification.' }
 

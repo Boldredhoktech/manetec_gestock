@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/server'
 import { aPermission } from '@/lib/auth/permissions-serveur'
 import { PERMISSIONS } from '@/lib/constants/permissions'
 import { journaliserCorrection, champsModifies } from '@/lib/audit/journaliser'
+import { messageTresorerie } from '@/lib/tresorerie/comptes'
 import {
     bornesDuMois, DECALAGE_BOUTIQUE_HEURES, MOIS_FR,
 } from '@/lib/dates/periode'
@@ -54,7 +55,8 @@ export async function creerDepense(formData: FormData) {
 
     const libelle      = (formData.get('libelle') as string)?.trim()
     const montant      = parseFloat(formData.get('montant') as string)
-    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const compteId     = (formData.get('compteId') as string) || ''
+    if (!compteId) return { erreur: 'Choisissez le compte de trésorerie.' }
     const categoryId   = (formData.get('categoryId') as string) || null
     const dateDepense  = (formData.get('dateDepense') as string) ||
         new Date().toISOString().split('T')[0]
@@ -76,14 +78,14 @@ export async function creerDepense(formData: FormData) {
         category_id:   categoryId || null,
         libelle,
         montant,
-        moyen_paiement: moyen,
+        compte_id:      compteId,
         reference,
         date_depense:  dateDepense,
         note,
         created_by:    user.user_metadata.user_id,
     })
 
-    if (error) return { erreur: 'Erreur lors de la création.' }
+    if (error) return { erreur: messageTresorerie(error.message, 'Erreur lors de la création.') }
 
     revalidatePath('/compta/depenses')
     redirect('/compta/depenses')
@@ -181,7 +183,8 @@ export async function payerSalaire(formData: FormData): Promise<ResultatCorrecti
     const salaireBase  = parseFloat(formData.get('salaireBase') as string) || 0
     const bonus        = parseFloat(formData.get('bonus') as string) || 0
     const deductions   = parseFloat(formData.get('deductions') as string) || 0
-    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const compteId     = (formData.get('compteId') as string) || ''
+    if (!compteId) return { erreur: 'Choisissez le compte de trésorerie.' }
     const datePaiement = (formData.get('datePaiement') as string) || ''
     const reference    = (formData.get('reference') as string)?.trim() || null
     const note         = (formData.get('note') as string)?.trim() || null
@@ -227,7 +230,7 @@ export async function payerSalaire(formData: FormData): Promise<ResultatCorrecti
         bonus,
         deductions,
         montant_net:    montantNet,
-        moyen_paiement: moyen,
+        compte_id:      compteId,
         date_paiement:  datePaiement,
         reference,
         note,
@@ -236,7 +239,7 @@ export async function payerSalaire(formData: FormData): Promise<ResultatCorrecti
 
     if (error) {
         console.error('ERREUR VERSEMENT SALAIRE:', error)
-        return { erreur: 'Erreur lors de l\'enregistrement du versement.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors de l\'enregistrement du versement.') }
     }
 
     revalidatePath('/compta/salaires')
@@ -622,7 +625,8 @@ export async function modifierDepense(formData: FormData): Promise<ResultatCorre
     const id           = formData.get('id') as string
     const libelle      = (formData.get('libelle') as string)?.trim()
     const montant      = parseFloat(formData.get('montant') as string)
-    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const compteId     = (formData.get('compteId') as string) || ''
+    if (!compteId) return { erreur: 'Choisissez le compte de trésorerie.' }
     const categoryId   = (formData.get('categoryId') as string) || null
     const dateDepense  = (formData.get('dateDepense') as string) || ''
     const reference    = (formData.get('reference') as string)?.trim() || null
@@ -638,7 +642,7 @@ export async function modifierDepense(formData: FormData): Promise<ResultatCorre
 
     const { data: avant } = await adminClient
         .from('expenses')
-        .select('id, public_id, libelle, montant, moyen_paiement, category_id, date_depense, reference, note, est_annule')
+        .select('id, public_id, libelle, montant, compte_id, category_id, date_depense, reference, note, est_annule')
         .eq('id', id)
         .eq('shop_id', shopId)
         .maybeSingle()
@@ -649,7 +653,7 @@ export async function modifierDepense(formData: FormData): Promise<ResultatCorre
     const apres = {
         libelle,
         montant,
-        moyen_paiement: moyen,
+        compte_id:      compteId,
         category_id:    categoryId || null,
         date_depense:   dateDepense,
         reference,
@@ -659,7 +663,7 @@ export async function modifierDepense(formData: FormData): Promise<ResultatCorre
     const modifications = champsModifies(avant, apres, {
         libelle:        'Libellé',
         montant:        'Montant',
-        moyen_paiement: 'Moyen de paiement',
+        compte_id:      'Compte',
         category_id:    'Catégorie',
         date_depense:   'Date',
         reference:      'Référence',
@@ -676,7 +680,7 @@ export async function modifierDepense(formData: FormData): Promise<ResultatCorre
 
     if (error) {
         console.error('ERREUR MODIFICATION DEPENSE:', error)
-        return { erreur: 'Erreur lors de la modification.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors de la modification.') }
     }
 
     await journaliserCorrection({
@@ -914,7 +918,7 @@ export async function modifierEmploye(formData: FormData): Promise<ResultatCorre
 
     if (error) {
         console.error('ERREUR MODIFICATION EMPLOYE:', error)
-        return { erreur: 'Erreur lors de la modification.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors de la modification.') }
     }
 
     await journaliserCorrection({
@@ -996,7 +1000,8 @@ export async function modifierVersementSalaire(formData: FormData): Promise<Resu
     const salaireBase  = parseFloat(formData.get('salaireBase') as string) || 0
     const bonus        = parseFloat(formData.get('bonus') as string) || 0
     const deductions   = parseFloat(formData.get('deductions') as string) || 0
-    const moyen        = (formData.get('moyen') as string) || 'cash'
+    const compteId     = (formData.get('compteId') as string) || ''
+    if (!compteId) return { erreur: 'Choisissez le compte de trésorerie.' }
     const datePaiement = (formData.get('datePaiement') as string) || ''
     const montantNet   = salaireBase + bonus - deductions
 
@@ -1009,7 +1014,7 @@ export async function modifierVersementSalaire(formData: FormData): Promise<Resu
 
     const { data: avant } = await adminClient
         .from('salary_payments')
-        .select('id, public_id, salaire_base, bonus, deductions, montant_net, moyen_paiement, date_paiement, est_annule')
+        .select('id, public_id, salaire_base, bonus, deductions, montant_net, compte_id, date_paiement, est_annule')
         .eq('id', id)
         .eq('shop_id', shopId)
         .maybeSingle()
@@ -1022,7 +1027,7 @@ export async function modifierVersementSalaire(formData: FormData): Promise<Resu
         bonus,
         deductions,
         montant_net:    montantNet,
-        moyen_paiement: moyen,
+        compte_id:      compteId,
         date_paiement:  datePaiement,
     }
 
@@ -1031,7 +1036,7 @@ export async function modifierVersementSalaire(formData: FormData): Promise<Resu
         bonus:          'Bonus',
         deductions:     'Déductions',
         montant_net:    'Net versé',
-        moyen_paiement: 'Moyen de paiement',
+        compte_id:      'Compte',
         date_paiement:  'Date de versement',
     })
 
@@ -1045,7 +1050,7 @@ export async function modifierVersementSalaire(formData: FormData): Promise<Resu
 
     if (error) {
         console.error('ERREUR MODIFICATION VERSEMENT:', error)
-        return { erreur: 'Erreur lors de la modification.' }
+        return { erreur: messageTresorerie(error.message, 'Erreur lors de la modification.') }
     }
 
     await journaliserCorrection({

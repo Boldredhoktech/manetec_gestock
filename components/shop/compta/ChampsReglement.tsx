@@ -1,63 +1,124 @@
 'use client'
 
-import { useState } from 'react'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
+import { useEffect, useMemo, useState } from 'react'
+import { listerComptesChoix } from '@/actions/tresorerie'
+import {
+    LIBELLES_TYPE, TYPES_COMPTE, decouvertInterdit, referenceRequise, formatF,
+    type CompteChoix, type TypeCompte,
+} from '@/lib/tresorerie/comptes'
 
 // ══════════════════════════════════════════════════════════════
-// Moyen de paiement + référence.
+// Compte de trésorerie + référence (mig 041).
 //
-// `MOYENS_PAIEMENT` déclare `reference_requise: true` pour six moyens
-// sur huit, mais seule la caisse appliquait la règle : un virement de
-// salaire ou une dépense par Mobile Money s'enregistrait sans numéro.
-// Pire, `creerDepense` et `payerSalaire` LISAIENT déjà un champ
-// `reference` qu'aucun formulaire n'affichait — il valait toujours NULL.
+// Avant, on choisissait un « moyen de paiement » ; désormais on choisit
+// le TYPE (Caisse, Mobile Money, Banque, TPE) puis le COMPTE exact qui
+// reçoit ou paie l'argent. Le moyen de paiement en est déduit par la
+// base. Seuls les types qui ont au moins un compte actif sont proposés.
 //
-// Le champ de référence n'apparaît que lorsqu'il sert, et devient
-// obligatoire exactement quand la table le dit.
+// Champs envoyés : `compteId` et, quand le type l'exige, `reference`.
 // ══════════════════════════════════════════════════════════════
 
 export default function ChampsReglement({
-    moyenParDefaut = 'cash',
+    compteParDefaut,
     referenceParDefaut = '',
     disabled,
     compact,
 }: {
-    moyenParDefaut?:     string
+    compteParDefaut?:    string | null
     referenceParDefaut?: string
     disabled?:           boolean
     compact?:            boolean
 }) {
-    const [moyen, setMoyen] = useState(moyenParDefaut)
+    const [comptes, setComptes]   = useState<CompteChoix[] | null>(null)
+    const [erreur, setErreur]     = useState<string | null>(null)
+    const [type, setType]         = useState<TypeCompte | null>(null)
+    const [compteId, setCompteId] = useState<string>('')
 
-    const exigeReference = MOYENS_PAIEMENT
-        .find(m => m.code === moyen)?.reference_requise ?? false
+    useEffect(() => {
+        let actif = true
+        listerComptesChoix().then(res => {
+            if (!actif) return
+            if ('erreur' in res) { setErreur(res.erreur); return }
+            setComptes(res.comptes)
+            const initial = res.comptes.find(c => c.id === compteParDefaut)
+                ?? res.comptes.find(c => c.type === 'caisse')
+                ?? res.comptes[0]
+            if (initial) { setType(initial.type); setCompteId(initial.id) }
+        })
+        return () => { actif = false }
+    }, [compteParDefaut])
+
+    const typesDisponibles = useMemo(
+        () => TYPES_COMPTE.filter(t => comptes?.some(c => c.type === t)),
+        [comptes],
+    )
+    const comptesDuType = comptes?.filter(c => c.type === type) ?? []
+    const compte = comptes?.find(c => c.id === compteId)
+
+    function choisirType(t: TypeCompte) {
+        setType(t)
+        setCompteId(comptes?.find(c => c.type === t)?.id ?? '')
+    }
 
     const classeChamp = compact
         ? 'w-full px-2 py-1.5 bg-background border border-input rounded text-xs focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50'
         : 'w-full px-3 py-2.5 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50'
+    const classeLabel = compact ? 'text-xs text-muted-foreground' : 'text-sm font-medium text-foreground'
 
-    const classeLabel = compact
-        ? 'text-xs text-muted-foreground'
-        : 'text-sm font-medium text-foreground'
+    if (erreur) return <p className="text-sm text-destructive">{erreur}</p>
+    if (!comptes) return <p className="text-sm text-muted-foreground">Chargement des comptes…</p>
+    if (comptes.length === 0) {
+        return <p className="text-sm text-destructive">Aucun compte de trésorerie actif : créez-en un dans Comptabilité › Trésorerie.</p>
+    }
 
     return (
         <>
+            <input type="hidden" name="compteId" value={compteId} />
+
             <div className={compact ? '' : 'space-y-1.5'}>
-                <label className={classeLabel}>Moyen de paiement</label>
-                <select
-                    name="moyen"
-                    value={moyen}
-                    onChange={e => setMoyen(e.target.value)}
-                    disabled={disabled}
-                    className={classeChamp + (compact ? ' mt-0.5' : '')}
-                >
-                    {MOYENS_PAIEMENT.map(m => (
-                        <option key={m.code} value={m.code}>{m.label}</option>
+                <span className={classeLabel}>Type de compte</span>
+                <div role="group" aria-label="Type de compte" className={`flex flex-wrap gap-1.5 ${compact ? 'mt-0.5' : ''}`}>
+                    {typesDisponibles.map(t => (
+                        <button
+                            key={t}
+                            type="button"
+                            aria-pressed={type === t}
+                            disabled={disabled}
+                            onClick={() => choisirType(t)}
+                            className={`rounded-lg border font-medium transition-colors disabled:opacity-50 ${compact ? 'px-2 py-1 text-xs' : 'px-3 py-2 text-sm'} ${
+                                type === t
+                                    ? 'bg-primary text-primary-foreground border-primary'
+                                    : 'bg-background text-foreground border-input hover:bg-muted'
+                            }`}
+                        >
+                            {LIBELLES_TYPE[t]}
+                        </button>
                     ))}
-                </select>
+                </div>
             </div>
 
-            {exigeReference && (
+            <div className={compact ? '' : 'space-y-1.5'}>
+                <label className={classeLabel} htmlFor="champ-compte">Compte</label>
+                <select
+                    id="champ-compte"
+                    value={compteId}
+                    onChange={e => setCompteId(e.target.value)}
+                    disabled={disabled}
+                    required
+                    className={classeChamp + (compact ? ' mt-0.5' : '')}
+                >
+                    {comptesDuType.map(c => (
+                        <option key={c.id} value={c.id}>
+                            {c.nom}{c.solde !== undefined ? ` — ${formatF(c.solde)}` : ''}
+                        </option>
+                    ))}
+                </select>
+                {compte?.solde !== undefined && compte.solde < 0 && !decouvertInterdit(compte.type) && (
+                    <p className="text-xs text-amber-700">Attention : ce compte est à découvert ({formatF(compte.solde)}).</p>
+                )}
+            </div>
+
+            {compte && referenceRequise(compte.type) && (
                 <div className={compact ? '' : 'space-y-1.5'}>
                     <label className={classeLabel}>
                         Référence de la transaction <span className="text-destructive">*</span>

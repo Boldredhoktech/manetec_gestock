@@ -53,7 +53,7 @@ export default async function PageSalaires({
             // que soit la date à laquelle l'argent est sorti.
             adminClient
                 .from('salary_payments')
-                .select('id, public_id, employee_id, montant_net, salaire_base, bonus, deductions, date_paiement, moyen_paiement, est_annule, motif_annulation')
+                .select('id, public_id, employee_id, montant_net, salaire_base, bonus, deductions, date_paiement, moyen_paiement, compte_id, est_annule, motif_annulation')
                 .eq('shop_id', shopId)
                 .eq('periode_mois', mois)
                 .eq('periode_annee', annee)

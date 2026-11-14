@@ -22,7 +22,10 @@ export function usePermission() {
         if (estAdminComplet(session.role)) return true
 
         const defauts = PERMISSIONS_PAR_DEFAUT[session.role as RoleBoutique] ?? []
-        return defauts.includes(permission) || session.permissions.includes(permission)
+        const possede = (p: string) => defauts.includes(p) || session.permissions.includes(p)
+        // Même règle que peutVoirSoldes() : gérer la trésorerie donne la vue des soldes.
+        if (permission === 'treasury.balances.view') return possede(permission) || possede('treasury.manage')
+        return possede(permission)
     }
 
     function estRole(role: string): boolean {

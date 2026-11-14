@@ -5,7 +5,7 @@ import { payerFournisseur } from '@/actions/fournisseurs'
 import { Button } from '@/components/ui/button'
 import { Loader2, AlertCircle, CheckCircle, Banknote } from 'lucide-react'
 import { formatMontant } from '@/lib/utils'
-import { MOYENS_PAIEMENT } from '@/lib/constants/moyens-paiement'
+import ChampsReglement from '@/components/shop/compta/ChampsReglement'
 
 interface Props {
     fournisseur: { id: string; solde_dû: number }
@@ -60,21 +60,13 @@ export default function CartePaiementFournisseur({ fournisseur }: Props) {
                                required disabled={enAttente}
                                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
                     </div>
-                    <div className="space-y-1.5">
-                        <label className="text-xs font-medium text-foreground">Moyen de paiement</label>
-                        <select name="moyen" disabled={enAttente}
-                                className="w-full px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50">
-                            {MOYENS_PAIEMENT.map(m => (
-                                <option key={m.code} value={m.code}>{m.label}</option>
-                            ))}
-                        </select>
-                    </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <input name="reference" type="text" placeholder="Référence"
-                           disabled={enAttente}
-                           className="px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
+                <div className="space-y-3">
+                    <ChampsReglement compact disabled={enAttente} />
+                </div>
+
+                <div className="grid grid-cols-1 gap-3">
                     <input name="note" type="text" placeholder="Note"
                            disabled={enAttente}
                            className="px-3 py-2 bg-background border border-input rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-ring disabled:opacity-50" />
